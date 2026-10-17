@@ -145,13 +145,8 @@ public class DemoSeedService {
         return ids;
     }
 
-    /** 차단 관계. user_blocks는 V2의 V3 마이그레이션에서 생긴다 — 테이블이 있을 때만 넣는다. */
+    /** 차단 관계 (demo-scenario 3-1, user_blocks는 V3). */
     private void seedBlocks(Map<String, Long> userIds) {
-        Boolean exists = jdbcTemplate.queryForObject("SELECT to_regclass('user_blocks') IS NOT NULL", Boolean.class);
-        if (!Boolean.TRUE.equals(exists)) {
-            log.warn("user_blocks table not found; demo block relation (user05-user06) skipped");
-            return;
-        }
         for (String[] pair : DemoSeedData.BLOCKS) {
             jdbcTemplate.update("INSERT INTO user_blocks (blocker_id, blocked_id, source) VALUES (?, ?, 'REPORT')",
                     userIds.get(pair[0]), userIds.get(pair[1]));

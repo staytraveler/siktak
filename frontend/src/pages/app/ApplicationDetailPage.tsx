@@ -5,7 +5,7 @@ import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
 import type { ApplicationItem, ResolutionChoice } from '../../api/types'
 import StatusBadges from '../../components/StatusBadges'
-import UserPicker from '../../components/UserPicker'
+import SessionBar from '../../components/SessionBar'
 import { formatDateTime, PAYMENT_STATUS } from '../../lib/format'
 
 // 신청 상세 (/app/applications/:id): 상태 → 결제 → 확정 테이블·단체방 → 피드백
@@ -20,7 +20,7 @@ export default function ApplicationDetailPage() {
         <Link to="/app" className="text-sm text-gray-600">
           ← 홈
         </Link>
-        <UserPicker area="app" />
+        <SessionBar />
       </header>
       {applications.isPending && <p className="mt-6 text-sm text-gray-500">불러오는 중…</p>}
       {applications.isSuccess && !application && (

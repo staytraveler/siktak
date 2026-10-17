@@ -178,4 +178,9 @@ public class Application extends BaseTimeEntity {
     public void assignSlot(Long slotId) {
         this.assignedSlotId = slotId;
     }
+
+    /** 매칭 미배치·실패 시 참가자에게 보여줄 문구 (matching.md 7-2). 상태가 아니라 안내 문구라 이력은 남기지 않는다. */
+    public void recordMatchFailReason(String reason) {
+        this.matchFailReason = reason;
+    }
 }

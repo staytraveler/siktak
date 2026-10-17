@@ -5,7 +5,7 @@ import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
 import DeployStatus from '../../components/DeployStatus'
 import StatusBadges from '../../components/StatusBadges'
-import UserPicker from '../../components/UserPicker'
+import SessionBar from '../../components/SessionBar'
 import { formatDateTime } from '../../lib/format'
 
 // 참가자 앱 홈 (/app). 모바일 우선. 위에서 내 상태, 아래에서 모집 중 회차 신청.
@@ -33,7 +33,7 @@ export default function ParticipantHomePage() {
     <main className="mx-auto min-h-screen max-w-md bg-white p-4">
       <header className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-bold">우연한 식탁</h1>
-        <UserPicker area="app" />
+        <SessionBar />
       </header>
 
       <section className="mt-6">

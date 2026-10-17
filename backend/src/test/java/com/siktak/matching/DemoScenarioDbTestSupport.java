@@ -154,7 +154,7 @@ abstract class DemoScenarioDbTestSupport {
     @BeforeEach
     void seed() {
         // 공유 DB에 이미 있는 모집 중 회차(데모 시드 등)가 도래 회차 일괄 실행·대체 일정 추천에 섞이지 않게 빼 둔다 (롤백됨)
-        jdbc.update("update event_slots set slot_status = 'CANCELED' where slot_status in ('OPEN', 'CLOSED')");
+        jdbc.update("update event_slots set slot_status = 'MATCHED' where slot_status in ('OPEN', 'CLOSED')");
         String tag = UUID.randomUUID().toString().substring(0, 8);
         Instant t0 = Instant.parse("2026-10-17T03:00:00Z");
         clock.set(t0);

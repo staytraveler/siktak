@@ -48,9 +48,6 @@ siktak:
     refund-retry-max: 3
   notification:
     channel: in-app
-  matching:
-    # v2: 매칭 엔진(matching.domain.engine) / simple: 2.3 가짜 순차 매칭 (데모 직전 비상 전환용)
-    engine: ${SIKTAK_MATCHING_ENGINE:v2}
   # 데모 도구: 데모 시계(offset)·시드 초기화·J1~J6 점프 (docs/demo-scenario.md). false면 offset 0 고정, 데모 API 404
   demo:
     enabled: ${SIKTAK_DEMO_ENABLED:true}
@@ -60,3 +57,6 @@ siktak:
   scheduler:
     enabled: ${SIKTAK_SCHEDULER_ENABLED:true}
     tick: PT1M
+  matching:
+    # v2: 매칭 엔진(matching.domain.engine) / simple: 2.3 가짜 순차 매칭 (데모 직전 비상 전환용)
+    engine: ${SIKTAK_MATCHING_ENGINE:v2}

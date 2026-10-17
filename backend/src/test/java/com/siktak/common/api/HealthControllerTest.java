@@ -22,10 +22,12 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.siktak.common.config.SecurityConfig;
 import com.siktak.common.infra.DatabaseHealthChecker;
+import com.siktak.common.security.JwtConfig;
+import com.siktak.common.security.JwtUserAuthenticationConverter;
 import com.siktak.user.infra.UserRepository;
 
 @WebMvcTest(HealthController.class)
-@Import({SecurityConfig.class, HealthControllerTest.FixedClockConfig.class})
+@Import({SecurityConfig.class, JwtConfig.class, JwtUserAuthenticationConverter.class, HealthControllerTest.FixedClockConfig.class})
 class HealthControllerTest {
 
     private static final Instant FIXED = Instant.parse("2026-10-17T03:00:00Z");

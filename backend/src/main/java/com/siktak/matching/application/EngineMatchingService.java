@@ -21,7 +21,6 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,7 +81,6 @@ import com.siktak.venue.domain.assign.TableToAssign;
 import com.siktak.venue.domain.assign.VenueAssignment;
 import com.siktak.venue.domain.assign.VenueAssignmentResult;
 
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -114,8 +112,6 @@ public class EngineMatchingService {
     private final VenueAssignmentService venueAssignmentService;
     private final ExceptionCaseService exceptionCaseService;
     private final ScheduledJobRegistry jobRegistry;
-    private final NamedParameterJdbcTemplate jdbc;
-    private final EntityManager entityManager;
     private final Clock clock;
 
     private final MatchingEngine engine = new MatchingEngine();
@@ -418,20 +414,9 @@ public class EngineMatchingService {
         return new TableToAssign(table.getId(), table.getMemberCount(), prices);
     }
 
-    /**
-     * [임시] 참가자 노출 문구(matching.md 7-2)를 {@code applications.match_fail_reason}에 쓴다.
-     * {@code Application}(V1 영역)에 쓰기 메서드가 없어 상태 변경을 모두 flush한 뒤 이 컬럼만 SQL로 갱신한다.
-     * V1이 도메인 메서드를 추가하면 그걸로 바꾼다 (v2-to-pm.md 요청).
-     */
+    /** 참가자 노출 문구(matching.md 7-2)를 {@code applications.match_fail_reason}에 쓴다. */
     private void writeFailReasons(Context ctx) {
-        if (ctx.failReasons.isEmpty()) {
-            return;
-        }
-        entityManager.flush();
-        for (Map.Entry<Long, String> e : ctx.failReasons.entrySet()) {
-            jdbc.update("update applications set match_fail_reason = :reason where id = :id",
-                    Map.of("reason", e.getValue(), "id", e.getKey()));
-        }
+        ctx.failReasons.forEach((applicationId, reason) -> ctx.app(applicationId).recordMatchFailReason(reason));
     }
 
     private static final class Context {

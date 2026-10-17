@@ -4,7 +4,6 @@ import type {
   ApplicationItem,
   ChatMessageItem,
   DemoStatus,
-  DevUser,
   FeedbackItem,
   MatchRun,
   MyTable,
@@ -13,12 +12,16 @@ import type {
   ResolutionChoice,
   Slot,
 } from './types'
+import type { Session, SessionUser } from './session'
 
 const get = async <T,>(url: string) => (await apiClient.get<T>(url)).data
 const post = async <T,>(url: string, body?: unknown) => (await apiClient.post<T>(url, body)).data
 
 export const api = {
-  devUsers: () => get<DevUser[]>('/api/v1/dev/users'),
+  // 인증
+  login: (loginId: string, password: string) => post<Session>('/api/v1/auth/login', { loginId, password }),
+  me: () => get<SessionUser>('/api/v1/auth/me'),
+
   regions: () => get<Region[]>('/api/v1/regions'),
 
   // 참가자

@@ -10,12 +10,21 @@
 > - 다음:
 > ```
 
+## 2026-10-17 17:40 (3.1)
+- 완료: 3.1 4.4 통합·배포 검증 + 로그인·권한 — ACC-01(테스트 계정 로그인), PRD 16장(운영자 권한)
+  - `feat/matching-engine` main 머지(`7a0c399`), 식당·콘텐츠 SeedContributor, `Application.recordMatchFailReason`
+  - JWT 로그인(`6fc1d58`): `/api/v1/auth/login`·`/me`, X-User-Id·dev/users 제거, admin API OPERATOR 전용, `/login` + 테스트 계정 버튼
+  - 검증: 테스트 124건(DB 포함) 통과, 배포 환경에서 401·403·200·CORS, 시드 초기화 → J1 → J2 결과가 demo-scenario 4장과 일치
+- 변경: decisions.md [CC] 4건(인증 방식, JWT 실제 시각, 테스트 계정 하드코딩, DB 테스트 격리). V2 테스트 파일 격리 한 줄 수정
+- 이슈: 브라우저 버튼 클릭은 사용자 확인 필요. 머지 직후 DB 테스트 2건이 낡은 기대값·격리 부족으로 실패 → 수정
+- 다음: PM 다음 지시 (3.2 프로필·신청)
+
 ## 2026-10-17 17:05 (V2, `feat/matching-engine`) 6.1 매칭 실패 해결
 - 완료: STA-04~06, PAY-02·03 — main(2.4) 머지 후 일정 이동(M7)·이용권 보관(M8)·자동 환불(P6~P12)·미응답 보관(M8a)·중복 환불 방지, 참가자 선택 API·화면, 운영자 환불 재처리·수동 완료 API
-  - 검증: 전체 `./gradlew test` 123건 통과(DB 포함, Neon dev `v2work`), 프론트 build·lint 통과
+  - 검증: main(3.1) 머지 후 전체 `./gradlew test` 128건 통과(DB 포함, public), 프론트 build·lint 통과
 - 변경: P7b 전이 추가(사용자 확인). decisions.md [CC] 8건. V1 영역 최소 수정(`Transition`, `Application.transferOf`, 테스트 기대값 2건)
-- 이슈: 커밋·push 사용자 승인 대기. V5가 V1의 V4보다 먼저 들어감(배포 순서 주의). `v2work`에 예전 데모 시드가 남아 있음(테스트는 격리함). DB 테스트 한 번에 5~9분
-- 다음: PM 검토 → 커밋·push → main 머지 지시 대기
+- 이슈: PM 확인 5건 모두 승인(17:55). V5 유지(V4 비움). `v2work` 스키마 삭제. DB 테스트 한 번에 5~9분
+- 다음: 기능별 커밋 → main(3.1) 머지 → main 머지·push 완료. 다음 지시 5.2
 
 ## 2026-10-17 16:13 (V2, `feat/matching-engine`) 4.4 매칭 운영 연결
 - 완료: MAT-07·08·10·11·12·13, INF-02, STA-03·04 — main 머지(`181f466`) 후 기능별 커밋·push

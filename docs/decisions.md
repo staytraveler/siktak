@@ -59,7 +59,7 @@
 - 2026-10-17 [CC] 시간 기반 작업 실행기: `ScheduledJobHandler`(jobType·loadPending·execute) 빈을 추가하면 자동 연결. 틱은 메모리 목록만 비교, 도래 작업만 ShedLock(`{jobType}:{targetId}`) 후 실행, 실패 시 1분 뒤 재시도 3회 후 목록 제외(로그). 예외 큐(`exception_cases`) 연결은 V2 exception 패키지 이후 — 2.4 지시서 2장
 - 2026-10-17 [CC] ShedLock `JdbcTemplateLockProvider`에 앱의 JPA 트랜잭션 매니저를 지정 — 미지정 시 ShedLock 자체 `DataSourceTransactionManager`가 바깥 JPA 트랜잭션의 커넥션을 커밋해버림(테스트 롤백 실패로 발견). 운영 경로(틱·데모 버튼)는 바깥 트랜잭션이 없어 영향 없었음
 - 2026-10-17 [CC] ShedLock 락 시각은 ShedLock 자체 시계(실제 시각, DB 시간 사용) — 데모 offset과 무관한 인프라 시각이므로 Clock 빈 규칙의 예외
-- 2026-10-17 [CC] demo-v1 시드: 신청·결제는 실제 서비스(`ApplicationService`)로 만들어 상태 이력이 함께 남는다. 멤버십 사용자(user03·07·21·29)는 3.4 전까지 1회권 결제 완료. 차단 관계(user05→user06, REPORT)는 `user_blocks` 테이블(V2 V3)이 있을 때만 삽입. 표에 없는 값(user23~29·demo01 MBTI·관심사·성향, 전원 직업·가격대·대화 스타일)은 [임의] — demo-scenario 8장 허용
+- 2026-10-17 [CC] demo-v1 시드: 신청·결제는 실제 서비스(`ApplicationService`)로 만들어 상태 이력이 함께 남는다. 멤버십 사용자(user03·07·21·29)는 3.4 전까지 1회권 결제 완료. 차단 관계(user05→user06, REPORT)는 `user_blocks`(V3)에 삽입 (3.1에서 테이블 존재 검사 제거). 표에 없는 값(user23~29·demo01 MBTI·관심사·성향, 전원 직업·가격대·대화 스타일)은 [임의] — demo-scenario 8장 허용
 - 2026-10-17 [CC] 시드 확장 지점 `SeedContributor`(order·contribute(SeedContext)) — V2가 식당·수용량·콘텐츠 시드를 붙인다. `SeedContext`로 회차 코드(S1~S5)·로그인 ID·지역명 → ID 조회
 - 2026-10-17 [CC] test 프로필은 `siktak.scheduler.enabled=false`·`siktak.demo.auto-seed=false` — 테스트가 실행기를 직접 만들어 제어. Neon dev에 V2 전용 스키마(`v2work`)가 있으므로 테스트의 information_schema 조회는 `current_schema()`로 한정
 - 2026-10-17 [CC] Hikari `minimum-idle=0`, `idle-timeout=60s`, `keepalive-time=0`, `connection-timeout=5s` — 놀고 있는 커넥션이 Neon을 깨워두지 않게, DB 재기동·장애 시 요청이 30초씩 묶이지 않게
@@ -71,3 +71,7 @@
 - 2026-10-17 [CC] 6.1 운영자 재처리(P11)는 PG 1회 시도, 실패 시 다시 P10(예외는 열린 채). 수동 완료(P12)는 사유 필수, `payments.tx_status`는 PG 사실대로 `CANCEL_FAILED` 유지
 - 2026-10-17 [CC] 6.1 1회권 크레딧은 `user_passes(SINGLE_CREDIT, source_application_id)`, V5 부분 유니크로 신청당 1개. 크레딧으로 낸 신청의 "크레딧 복원"은 새 크레딧 발급으로 처리. 환불 선택은 1회권 결제(`REFUND_AVAILABLE`)만
 - 2026-10-17 [CC] 모의 결제 취소 실패 주입 `siktak.payment.mock.fail-cancel`(환경변수 `SIKTAK_PAYMENT_MOCK_FAIL_CANCEL`) — 환불 실패·예외 처리함 시연용
+- 2026-10-17 [CC] 3.1 인증: Spring `oauth2-resource-server`(Nimbus) HS256 JWT. Access 토큰만(24시간, Refresh 없음), sub = users.id. 역할·계정 상태는 요청마다 DB에서 다시 읽어 BANNED·삭제 계정은 토큰이 유효해도 401. 로그인 시 BANNED는 403 `ACCOUNT_BANNED`, RESTRICTED는 로그인 허용(매칭만 제한). `JWT_SECRET` 미설정 시 로컬·테스트는 기동마다 임의 키, prod는 필수(32바이트 이상)
+- 2026-10-17 [CC] JWT 발급·만료 판단은 데모 시계가 아니라 실제 시각 — 데모 도구로 시계를 며칠 옮겨도 로그인이 풀리지 않게. Clock 빈 규칙의 예외(ShedLock 락 시각과 같은 인프라 시각)
+- 2026-10-17 [CC] 테스트 계정 버튼 목록(admin·demo01·user01·user14·user23)과 비밀번호는 프론트에 하드코딩 — demo-scenario 6장에 공개된 테스트 전용 값. 목록 API는 만들지 않음. 실서비스 전환 시 제거
+- 2026-10-17 [CC] DB 통합 테스트는 public 스키마에 커밋된 데모 시드와 함께 돈다 — 엔진 테스트는 시작 시 기존 OPEN·CLOSED 회차를 MATCHED로 바꿔(테스트 트랜잭션 롤백) "도래 회차 일괄 실행" 대상에서 뺀다

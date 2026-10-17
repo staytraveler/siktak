@@ -76,6 +76,10 @@ class DemoSeedSchedulerIntegrationTest {
                 .startsWith("$2");
         assertThat(count("profiles WHERE price_range IS NOT NULL")).isEqualTo(30);
         assertThat(clockService.offset()).isZero();
+        // 확장 시드: 차단(3-1)·식당 4곳(2장)·대화 콘텐츠 28개(7장)
+        assertThat(count("user_blocks")).isEqualTo(1);
+        assertThat(count("venues")).isEqualTo(4);
+        assertThat(count("conversation_contents")).isEqualTo(28);
 
         // --- 기동: 5개 회차의 MATCH_RUN이 메모리에 적재되고, 아직 도래 전이라 실행 없음
         ScheduledJobRunner runner = newRunner();
@@ -89,7 +93,8 @@ class DemoSeedSchedulerIntegrationTest {
         entityManager.flush();
 
         assertThat(executed).isEqualTo(2);
-        assertThat(count("match_runs")).isEqualTo(1); // 엔진 v2(4.4): 같은 시각 도래한 S1·S2는 실행 1건으로 묶는다 (S2 작업은 기존 실행을 돌려줌)
+        // v2 엔진은 도래한 S1·S2를 실행 1건으로 묶고, 두 번째 작업은 같은 실행을 돌려준다 (4.4)
+        assertThat(count("match_runs")).isEqualTo(1);
         assertThat(count("dining_tables WHERE event_slot_id = " + seed.slot("S1"))).isPositive();
         assertThat(count("dining_tables WHERE event_slot_id = " + seed.slot("S2"))).isPositive();
         assertThat(count("dining_tables WHERE event_slot_id = " + seed.slot("S3"))).isZero();

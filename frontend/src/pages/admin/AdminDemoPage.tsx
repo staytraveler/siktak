@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
 import type { DemoStatus } from '../../api/types'
-import UserPicker from '../../components/UserPicker'
+import SessionBar from '../../components/SessionBar'
 import { formatDateTime } from '../../lib/format'
 
 // 데모 도구 (/admin/demo, docs/demo-scenario.md 1장). 시계를 앞당기면 같은 스케줄러 코드가 도래한 작업을 바로 실행한다.
@@ -33,7 +33,7 @@ export default function AdminDemoPage() {
           </Link>
           <h1 className="text-2xl font-bold">데모 도구</h1>
         </div>
-        <UserPicker area="admin" />
+        <SessionBar />
       </header>
 
       <section className="mt-4 grid gap-3 md:grid-cols-3">
