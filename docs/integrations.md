@@ -12,9 +12,9 @@
 
 | 인프라 | 용도 | 상태 |
 |---|---|---|
-| Neon | PostgreSQL (production: 운영, dev: 로컬 개발), 쓸 때만 깨움 | 설정 중 |
-| Render | 백엔드 (Docker) | 설정 중 |
-| Vercel | 프론트엔드 | 설정 중 |
+| Neon | PostgreSQL (production: 운영, dev: 로컬 개발), 쓸 때만 깨움 | 운영 중 |
+| Render | 백엔드 (Docker) `https://siktak.onrender.com` | 운영 중 (Free + 외부 핑) |
+| Vercel | 프론트엔드 `https://siktak-rho.vercel.app` | 운영 중 |
 | GitHub Actions | 테스트 (배포는 하지 않음) | `.github/workflows/ci.yml` |
 
 ---
@@ -74,7 +74,9 @@ Render 서버는 상시 가동하지만 **Neon DB는 실제 작업이 있을 때
 
 ## 2. Render (백엔드)
 
-- 서비스: Web Service, Runtime **Docker**, Root Directory `backend`, Region **Singapore**, Instance **Starter 이상**(Free 금지)
+- 서비스: `https://siktak.onrender.com` — Web Service, Runtime **Docker**, Root Directory `backend`, Region **Singapore**
+- 인스턴스: **Free** (2026-10-17 사용자 결정). Free는 15분 무요청 시 잠들므로 **cron-job.org가 10분마다 `/api/v1/health`를 호출**해 깨워 둔다. 이 경로는 DB를 조회하지 않아 Neon 절전에는 영향이 없다. 잠들었다 깨면 메모리 일정(시간 기반 작업 실행기)은 기동 시 DB에서 다시 적재하고 지난 작업은 catch-up 실행한다
+  - CLAUDE.md 4장의 "Starter 이상(Free 금지)"와 다르다 → PM 확인 필요
 - 배포: `main` 푸시 시 자동 배포 (Auto-Deploy On). Actions에서 배포하지 않는다.
 - Health Check Path: `/api/v1/health` (DB를 조회하지 않는 liveness — Neon을 깨우지 않는다)
   - DB 상태는 `/api/v1/health/db`로 확인한다. DB가 내려가도 HTTP 200 + `db: "DOWN"`이라 DB 장애가 인스턴스 재시작 루프로 번지지 않는다.
@@ -85,7 +87,7 @@ Render 서버는 상시 가동하지만 **Neon DB는 실제 작업이 있을 때
 
 ## 3. Vercel (프론트엔드)
 
-- 프로젝트: GitHub `siktak` 레포 import, Root Directory `frontend`, Framework Vite
+- 프로젝트: `https://siktak-rho.vercel.app` — GitHub `siktak` 레포 import, Root Directory `frontend`, Framework Vite
 - 배포: `main` 푸시 시 자동 배포
 - SPA 라우팅: `frontend/vercel.json`의 rewrite로 모든 경로를 `index.html`로 보낸다 (`/admin` 새로고침 404 방지)
 - 환경변수: `VITE_API_BASE_URL` = Render 서비스 URL. **빌드 시점에 주입되므로 값을 바꾸면 재배포해야 한다.**
