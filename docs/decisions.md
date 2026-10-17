@@ -48,4 +48,11 @@
 - 2026-10-17 [CC] V2 마이그레이션: `dining_tables.venue_id` FK는 venues 생성 시(V3 이후) 추가, `feedbacks.rejoin_intent`·`recommend_score`는 DB에서 nullable(FDB-03 입력은 7.x에서 필수화), 모든 테이블에 created_at·updated_at(status_histories 포함) — ERD 공통 규칙
 - 2026-10-17 [CC] `Profile` JPA 엔티티는 2.3에서 만들지 않고 시드는 SQL로 넣음 — V2가 `profile.domain`에 선택지 enum을 만들고 있어 충돌 방지. 3.x 프로필 작업에서 추가
 - 2026-10-17 [CC] [임시] 개발용 시드 러너(`DevSeedRunner`, 지역 3·운영자 1·참가자 6·회차 1, 없을 때만 삽입)를 기본 켬(`SIKTAK_DEV_SEED_ENABLED`, 배포 환경 포함) — 배포 환경에서도 2.3 흐름 확인. 2.4 정식 시드로 대체
+- 2026-10-17 [CC] 데모 시계 `DemoClock` = 실제 시각 + offset(메모리). offset은 바꿀 때만 `settings.demo.clock-offset`에 저장, 기동 시 1회 적재. **앞으로만 이동**(과거로 되돌리면 이미 실행된 작업과 어긋남 — 처음으로는 시드 초기화) — 2.4 지시서 1장, DB 절전 원칙
+- 2026-10-17 [CC] 시간 기반 작업 실행기: `ScheduledJobHandler`(jobType·loadPending·execute) 빈을 추가하면 자동 연결. 틱은 메모리 목록만 비교, 도래 작업만 ShedLock(`{jobType}:{targetId}`) 후 실행, 실패 시 1분 뒤 재시도 3회 후 목록 제외(로그). 예외 큐(`exception_cases`) 연결은 V2 exception 패키지 이후 — 2.4 지시서 2장
+- 2026-10-17 [CC] ShedLock `JdbcTemplateLockProvider`에 앱의 JPA 트랜잭션 매니저를 지정 — 미지정 시 ShedLock 자체 `DataSourceTransactionManager`가 바깥 JPA 트랜잭션의 커넥션을 커밋해버림(테스트 롤백 실패로 발견). 운영 경로(틱·데모 버튼)는 바깥 트랜잭션이 없어 영향 없었음
+- 2026-10-17 [CC] ShedLock 락 시각은 ShedLock 자체 시계(실제 시각, DB 시간 사용) — 데모 offset과 무관한 인프라 시각이므로 Clock 빈 규칙의 예외
+- 2026-10-17 [CC] demo-v1 시드: 신청·결제는 실제 서비스(`ApplicationService`)로 만들어 상태 이력이 함께 남는다. 멤버십 사용자(user03·07·21·29)는 3.4 전까지 1회권 결제 완료. 차단 관계(user05→user06, REPORT)는 `user_blocks` 테이블(V2 V3)이 있을 때만 삽입. 표에 없는 값(user23~29·demo01 MBTI·관심사·성향, 전원 직업·가격대·대화 스타일)은 [임의] — demo-scenario 8장 허용
+- 2026-10-17 [CC] 시드 확장 지점 `SeedContributor`(order·contribute(SeedContext)) — V2가 식당·수용량·콘텐츠 시드를 붙인다. `SeedContext`로 회차 코드(S1~S5)·로그인 ID·지역명 → ID 조회
+- 2026-10-17 [CC] test 프로필은 `siktak.scheduler.enabled=false`·`siktak.demo.auto-seed=false` — 테스트가 실행기를 직접 만들어 제어. Neon dev에 V2 전용 스키마(`v2work`)가 있으므로 테스트의 information_schema 조회는 `current_schema()`로 한정
 - 2026-10-17 [CC] Hikari `minimum-idle=0`, `idle-timeout=60s`, `keepalive-time=0`, `connection-timeout=5s` — 놀고 있는 커넥션이 Neon을 깨워두지 않게, DB 재기동·장애 시 요청이 30초씩 묶이지 않게
