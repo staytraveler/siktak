@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,10 +62,22 @@ public class MatchingService {
     private final MatchPlacementLogRepository placementLogRepository;
     private final StatusTransitionService transitionService;
     private final ChatService chatService;
+    private final EngineMatchingService engineMatchingService;
     private final Clock clock;
 
+    /** {@code v2}(기본): 매칭 엔진, {@code simple}: 2.3 가짜 순차 매칭 (데모 직전 비상용으로 남겨둔다). */
+    @Value("${siktak.matching.engine:v2}")
+    private String engineMode;
+
+    /**
+     * 회차 매칭 실행. 스케줄러와 운영자 버튼이 모두 이 경로로 들어온다.
+     * v2는 매칭 시각이 도래한 회차를 함께 실행하고, 이미 매칭된 회차면 그 실행을 돌려준다.
+     */
     @Transactional
     public MatchRun runForSlot(Long slotId, Long operatorId) {
+        if (!"simple".equals(engineMode)) {
+            return engineMatchingService.runForSlot(slotId, operatorId);
+        }
         EventSlot slot = eventSlotRepository.findById(slotId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "회차를 찾을 수 없습니다."));
         String runKey = "slot-" + slotId + ":" + tableMatcher.algorithmVersion();

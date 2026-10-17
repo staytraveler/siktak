@@ -47,7 +47,7 @@ import com.siktak.user.infra.UserRepository;
  */
 @Tag("db")
 @EnabledIfEnvironmentVariable(named = "TEST_DB_URL", matches = ".+")
-@SpringBootTest
+@SpringBootTest(properties = "siktak.matching.engine=simple") // 2.3 가짜 순차 매칭 흐름 검증 (v2 엔진은 EngineMatchingIntegrationTest)
 @ActiveProfiles("test")
 @Transactional
 class FlowSkeletonIntegrationTest {

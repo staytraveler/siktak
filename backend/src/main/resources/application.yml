@@ -50,3 +50,6 @@ siktak:
   scheduler:
     enabled: ${SIKTAK_SCHEDULER_ENABLED:true}
     tick: PT1M
+  matching:
+    # v2: 매칭 엔진(matching.domain.engine) / simple: 2.3 가짜 순차 매칭 (데모 직전 비상 전환용)
+    engine: ${SIKTAK_MATCHING_ENGINE:v2}
