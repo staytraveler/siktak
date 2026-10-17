@@ -94,3 +94,21 @@ export interface DemoStatus {
   jumps: { code: string; label: string; at: string; reached: boolean }[]
   upcomingJobs: { jobType: string; targetId: number; dueAt: string }[]
 }
+
+// 매칭 실패 후 선택 (6.1, GET/POST /api/v1/me/applications/{id}/resolution)
+export type ResolutionChoice = 'TRANSFER' | 'KEEP' | 'REFUND'
+
+export interface Resolution {
+  applicationId: number
+  matchStatus: string | null
+  paymentStatus: string | null
+  matchFailReason: string | null
+  resolutionStatus: 'OFFERED' | 'RESOLVED' | 'AUTO_KEPT'
+  respondBy: string
+  choice: ResolutionChoice | null
+  chosenSlotId: number | null
+  newApplicationId: number | null
+  respondedAt: string | null
+  offeredSlots: { slot: Slot; reasonCode: string; reason: string; available: boolean }[]
+  choices: { choice: ResolutionChoice; available: boolean; description: string }[]
+}

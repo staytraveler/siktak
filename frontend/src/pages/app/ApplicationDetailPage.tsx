@@ -3,10 +3,10 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
-import type { ApplicationItem } from '../../api/types'
+import type { ApplicationItem, ResolutionChoice } from '../../api/types'
 import StatusBadges from '../../components/StatusBadges'
 import UserPicker from '../../components/UserPicker'
-import { formatDateTime } from '../../lib/format'
+import { formatDateTime, PAYMENT_STATUS } from '../../lib/format'
 
 // 신청 상세 (/app/applications/:id): 상태 → 결제 → 확정 테이블·단체방 → 피드백
 export default function ApplicationDetailPage() {
@@ -72,6 +72,9 @@ function Detail({ application }: { application: ApplicationItem }) {
           </>
         )}
       </section>
+      {RESOLUTION_STATUSES.includes(application.matchStatus ?? '') && (
+        <ResolutionSection applicationId={application.id} />
+      )}
       {confirmed && <TableSection applicationId={application.id} />}
     </>
   )
@@ -204,6 +207,102 @@ function FeedbackSection({ applicationId }: { applicationId: number }) {
       >
         피드백 보내기
       </button>
+    </section>
+  )
+}
+
+// 매칭 실패 후 선택 (6.1, STA-04~06): 추천 일정 이동 · 이용권 보관 · 환불. 기능만, 디자인 없음
+const RESOLUTION_STATUSES = ['ALTERNATIVE_OFFERED', 'NO_MATCH', 'TRANSFERRED']
+
+const CHOICE_LABEL: Record<ResolutionChoice, string> = {
+  TRANSFER: '추천 일정으로 이동',
+  KEEP: '이용권 보관',
+  REFUND: '환불',
+}
+
+function ResolutionSection({ applicationId }: { applicationId: number }) {
+  const queryClient = useQueryClient()
+  const resolution = useQuery({
+    queryKey: ['resolution', applicationId],
+    queryFn: () => api.resolution(applicationId),
+    retry: false,
+  })
+  const choose = useMutation({
+    mutationFn: ({ choice, slotId }: { choice: ResolutionChoice; slotId?: number }) =>
+      api.chooseResolution(applicationId, choice, slotId),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['resolution', applicationId], data)
+      queryClient.invalidateQueries({ queryKey: ['my-applications'] })
+    },
+  })
+  const r = resolution.data
+  if (!r) return null
+  const can = (c: ResolutionChoice) => r.choices.find((x) => x.choice === c)
+  const transfer = can('TRANSFER')
+  const keep = can('KEEP')
+  const refund = can('REFUND')
+
+  return (
+    <section className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+      <h2 className="font-semibold text-amber-900">이번 일정은 매칭되지 않았어요</h2>
+      {r.matchFailReason && <p className="mt-1 text-amber-900">{r.matchFailReason}</p>}
+
+      {r.resolutionStatus === 'OFFERED' ? (
+        <>
+          <p className="mt-2 text-xs text-gray-600">
+            {formatDateTime(r.respondBy)}까지 고르지 않으면 이용권으로 보관돼요.
+          </p>
+          <h3 className="mt-3 font-semibold">추천 일정</h3>
+          {r.offeredSlots.length === 0 && <p className="mt-1 text-gray-600">추천할 수 있는 일정이 없어요.</p>}
+          <ul className="mt-1 space-y-2">
+            {r.offeredSlots.map((o) => (
+              <li key={o.slot.id}>
+                <button
+                  type="button"
+                  disabled={!o.available || !transfer?.available || choose.isPending}
+                  onClick={() => choose.mutate({ choice: 'TRANSFER', slotId: o.slot.id })}
+                  className="w-full rounded-lg border border-amber-800 bg-white p-3 text-left disabled:border-gray-300 disabled:text-gray-400"
+                >
+                  {o.slot.regionName} {formatDateTime(o.slot.startsAt)}
+                  <span className="ml-1 text-xs text-gray-500">({o.reason})</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {transfer && <p className="mt-1 text-xs text-gray-500">{transfer.description}</p>}
+          {[keep, refund].map(
+            (c) =>
+              c && (
+                <div key={c.choice} className="mt-3">
+                  <button
+                    type="button"
+                    disabled={!c.available || choose.isPending}
+                    onClick={() => choose.mutate({ choice: c.choice })}
+                    className="w-full rounded-lg bg-amber-800 py-3 font-semibold text-white disabled:bg-gray-300"
+                  >
+                    {CHOICE_LABEL[c.choice]}
+                  </button>
+                  <p className="mt-1 text-xs text-gray-500">{c.description}</p>
+                </div>
+              ),
+          )}
+          {choose.isError && <p className="mt-2 text-red-700">{errorMessage(choose.error)}</p>}
+        </>
+      ) : (
+        <p className="mt-2 text-gray-800">
+          {r.resolutionStatus === 'AUTO_KEPT'
+            ? '기한까지 선택하지 않아 이용권으로 보관했어요.'
+            : `${CHOICE_LABEL[r.choice!]}을 선택했어요.`}
+          {r.choice === 'TRANSFER' && r.newApplicationId && (
+            <Link to={`/app/applications/${r.newApplicationId}`} className="ml-1 underline">
+              새 신청 보기
+            </Link>
+          )}
+          {r.choice === 'REFUND' && r.paymentStatus && (
+            <span className="ml-1">({PAYMENT_STATUS[r.paymentStatus] ?? r.paymentStatus})</span>
+          )}
+        </p>
+      )}
     </section>
   )
 }

@@ -9,6 +9,8 @@ import type {
   MatchRun,
   MyTable,
   Region,
+  Resolution,
+  ResolutionChoice,
   Slot,
 } from './types'
 
@@ -26,6 +28,9 @@ export const api = {
     post<ApplicationItem>('/api/v1/applications', { slotIds, passType: 'SINGLE' }),
   mockApprove: (applicationId: number) =>
     post<ApplicationItem>(`/api/v1/applications/${applicationId}/payments/mock-approve`),
+  resolution: (applicationId: number) => get<Resolution>(`/api/v1/me/applications/${applicationId}/resolution`),
+  chooseResolution: (applicationId: number, choice: ResolutionChoice, slotId?: number) =>
+    post<Resolution>(`/api/v1/me/applications/${applicationId}/resolution`, { choice, slotId }),
   myTable: (applicationId: number) => get<MyTable>(`/api/v1/me/applications/${applicationId}/table`),
   chatMessages: (chatRoomId: number) => get<ChatMessageItem[]>(`/api/v1/chat-rooms/${chatRoomId}/messages`),
   myFeedbacks: () => get<FeedbackItem[]>('/api/v1/me/feedbacks'),
