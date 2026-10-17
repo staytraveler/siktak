@@ -39,6 +39,8 @@ import com.siktak.chat.domain.ChatRoom;
 import com.siktak.common.config.ClockConfig;
 import com.siktak.common.error.BusinessException;
 import com.siktak.common.error.ErrorCode;
+import com.siktak.common.schedule.ScheduledJob;
+import com.siktak.common.schedule.ScheduledJobRegistry;
 import com.siktak.exception.application.ExceptionCaseService;
 import com.siktak.exception.domain.CaseType;
 import com.siktak.matching.domain.DiningTable;
@@ -111,6 +113,7 @@ public class EngineMatchingService {
     private final ChatService chatService;
     private final VenueAssignmentService venueAssignmentService;
     private final ExceptionCaseService exceptionCaseService;
+    private final ScheduledJobRegistry jobRegistry;
     private final NamedParameterJdbcTemplate jdbc;
     private final EntityManager entityManager;
     private final Clock clock;
@@ -369,7 +372,9 @@ public class EngineMatchingService {
             // respond_by = 원래 1순위 회차 행사 시작 시각 (미응답 시 보관, D6)
             Instant respondBy = allSlots.stream().filter(s -> !chosen.isEmpty() && s.getId().equals(chosen.get(0)))
                     .map(EventSlot::getStartsAt).findFirst().orElse(ctx.now);
-            resolutionRepository.save(MatchResolution.offer(a.getId(), offered, respondBy));
+            MatchResolution resolution = resolutionRepository.save(MatchResolution.offer(a.getId(), offered, respondBy));
+            // 미응답 시 보관 처리 (M8a) — 커밋 뒤 작업 실행기에 등록
+            jobRegistry.schedule(new ScheduledJob(ResolutionService.TIMEOUT_JOB, resolution.getId(), respondBy));
         }
     }
 

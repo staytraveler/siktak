@@ -161,7 +161,7 @@ class StatusTransitionServiceTest {
     @Test
     void 전이표는_states_md의_전이를_모두_갖는다() {
         assertThat(Transition.of(StatusAxis.APPLICATION)).hasSize(5);
-        assertThat(Transition.of(StatusAxis.PAYMENT)).hasSize(14);
+        assertThat(Transition.of(StatusAxis.PAYMENT)).hasSize(15); // P7b 포함 (6.1)
         assertThat(Transition.of(StatusAxis.MATCH)).hasSize(14);
         assertThat(Transition.of(StatusAxis.ATTENDANCE)).hasSize(5);
         assertThat(Transition.M12.getToStatuses())

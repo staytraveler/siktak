@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 매칭 실패 후 참가자의 선택 대기 (erd.md match_resolutions, PRD STA-03·04, states.md M6~M9).
- * 신청 하나에 하나만 생긴다. 선택 처리(이동·보관·환불)는 6.x에서.
+ * 신청 하나에 하나만 생긴다. 선택 처리는 ResolutionService (6.1).
  */
 @Getter
 @Entity
@@ -69,5 +69,28 @@ public class MatchResolution extends BaseTimeEntity {
         r.resolutionStatus = ResolutionStatus.OFFERED;
         r.respondBy = respondBy;
         return r;
+    }
+
+    public boolean isOffered() {
+        return resolutionStatus == ResolutionStatus.OFFERED;
+    }
+
+    public ResolutionChoice getChoiceValue() {
+        return choice == null ? null : ResolutionChoice.valueOf(choice);
+    }
+
+    /** 참가자가 선택했다. */
+    public void resolve(ResolutionChoice chosen, Long chosenSlotId, Long newApplicationId, Instant at) {
+        this.choice = chosen.name();
+        this.chosenSlotId = chosenSlotId;
+        this.newApplicationId = newApplicationId;
+        this.resolutionStatus = ResolutionStatus.RESOLVED;
+        this.respondedAt = at;
+    }
+
+    /** 응답 기한까지 미응답이라 보관 처리했다 (M8a, D6). responded_at은 비워 둔다. */
+    public void autoKeep() {
+        this.choice = ResolutionChoice.KEEP.name();
+        this.resolutionStatus = ResolutionStatus.AUTO_KEPT;
     }
 }

@@ -38,6 +38,8 @@ public enum Transition {
     P5(StatusAxis.PAYMENT, from(PaymentStatus.PAID), PaymentStatus.REFUND_AVAILABLE, SYSTEM),
     P6(StatusAxis.PAYMENT, from(PaymentStatus.REFUND_AVAILABLE), PaymentStatus.REFUND_REQUESTED, PARTICIPANT),
     P7(StatusAxis.PAYMENT, from(PaymentStatus.REFUND_AVAILABLE), PaymentStatus.PAID, PARTICIPANT),
+    /** 대체 일정 미응답 자동 보관(M8a)에 연쇄 (states.md P7b, 6.1 사용자 확인) */
+    P7b(StatusAxis.PAYMENT, from(PaymentStatus.REFUND_AVAILABLE), PaymentStatus.PAID, SCHEDULER),
     P7a(StatusAxis.PAYMENT, from(PaymentStatus.PAID), PaymentStatus.REFUND_REQUESTED, PARTICIPANT),
     P8(StatusAxis.PAYMENT, from(PaymentStatus.REFUND_REQUESTED), PaymentStatus.REFUND_PROCESSING, SYSTEM),
     P9(StatusAxis.PAYMENT, from(PaymentStatus.REFUND_PROCESSING), PaymentStatus.REFUNDED, PAYMENT_GATEWAY),

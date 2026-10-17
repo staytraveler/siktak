@@ -99,6 +99,19 @@ public class Application extends BaseTimeEntity {
         return application;
     }
 
+    /**
+     * 일정 이동(M7, states.md D3)으로 생기는 새 신청. 원래 신청의 결제·이용권을 그대로 참조하고 새 결제를 만들지 않는다.
+     * 상태는 비어 있으며, 호출 측이 A1·A2·P1a·M1을 적용한다.
+     */
+    public static Application transferOf(Application original, Long slotId) {
+        Application application = newApplication(original.userId, original.passType);
+        application.paymentId = original.paymentId;
+        application.userPassId = original.userPassId;
+        application.transferredFromId = original.id;
+        application.chooseSlots(List.of(slotId));
+        return application;
+    }
+
     /** 회차 후보를 선택 순서대로 추가한다 (priority 1이 최우선, matching.md MD7). */
     public void chooseSlots(List<Long> slotIdsInPriorityOrder) {
         slotChoices.clear();

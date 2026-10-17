@@ -105,6 +105,7 @@ stateDiagram-v2
 | P5 | `PAID` | `REFUND_AVAILABLE` | SYSTEM | 매칭 실패(M6) | 1회권 결제 건만 | 대체 일정·보관·환불 선택지 제공 |
 | P6 | `REFUND_AVAILABLE` | `REFUND_REQUESTED` | PARTICIPANT | 환불 선택 (STA-05) | — | 즉시 P8 |
 | P7 | `REFUND_AVAILABLE` | `PAID` | PARTICIPANT | 일정 이동 또는 이용권 보관 선택 | — | M7 또는 M8 |
+| P7b | `REFUND_AVAILABLE` | `PAID` | SCHEDULER | 대체 일정 미응답 자동 보관 (M8a) | 응답 기한 `respond_by` 경과 | 1회권 크레딧 발급 (2026-10-17 6.1 사용자 확인) |
 | P7a | `PAID` | `REFUND_REQUESTED` | PARTICIPANT | 매칭 확정 전 자발적 취소 (A4) | 1회권 결제 건, 행사 2일 전까지 | 즉시 P8 |
 | P8 | `REFUND_REQUESTED` | `REFUND_PROCESSING` | SYSTEM | 환불 처리 시작 | 환불 멱등 키 발급 | PG 취소 API 호출 |
 | P9 | `REFUND_PROCESSING` | `REFUNDED` | PAYMENT_GATEWAY | 취소 승인 | — | 환불 완료 알림 |
@@ -127,7 +128,7 @@ stateDiagram-v2
     PENDING --> FAILED: 거절
     FAILED --> PENDING: 재시도
     PAID --> REFUND_AVAILABLE: 매칭 실패(1회권)
-    REFUND_AVAILABLE --> PAID: 이동/보관 선택
+    REFUND_AVAILABLE --> PAID: 이동/보관 선택 · 미응답 보관(P7b)
     REFUND_AVAILABLE --> REFUND_REQUESTED: 환불 선택
     PAID --> REFUND_REQUESTED: 확정 전 자발 취소
     REFUND_REQUESTED --> REFUND_PROCESSING
