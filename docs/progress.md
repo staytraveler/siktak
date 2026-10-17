@@ -10,6 +10,15 @@
 > - 다음:
 > ```
 
+## 2026-10-17 17:40 (3.1)
+- 완료: 3.1 4.4 통합·배포 검증 + 로그인·권한 — ACC-01(테스트 계정 로그인), PRD 16장(운영자 권한)
+  - `feat/matching-engine` main 머지(`7a0c399`), 식당·콘텐츠 SeedContributor, `Application.recordMatchFailReason`
+  - JWT 로그인(`6fc1d58`): `/api/v1/auth/login`·`/me`, X-User-Id·dev/users 제거, admin API OPERATOR 전용, `/login` + 테스트 계정 버튼
+  - 검증: 테스트 124건(DB 포함) 통과, 배포 환경에서 401·403·200·CORS, 시드 초기화 → J1 → J2 결과가 demo-scenario 4장과 일치
+- 변경: decisions.md [CC] 4건(인증 방식, JWT 실제 시각, 테스트 계정 하드코딩, DB 테스트 격리). V2 테스트 파일 격리 한 줄 수정
+- 이슈: 브라우저 버튼 클릭은 사용자 확인 필요. 머지 직후 DB 테스트 2건이 낡은 기대값·격리 부족으로 실패 → 수정
+- 다음: PM 다음 지시 (3.2 프로필·신청)
+
 ## 2026-10-17 16:13 (2.4)
 - 완료: 2.4 데모 시계·시간 기반 작업 실행기·demo-v1 시드·/admin/demo — PRD 18장 시연 전반, MAT-01(시각 기반 자동 실행)
   - V2 4.1·4.2 main 머지, 2.2 URL 반영·완료 보고
