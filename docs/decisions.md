@@ -35,3 +35,17 @@
 - 2026-10-17 [CC] 로컬 개발 DB는 Neon 개발 브랜치를 사용(로컬 Postgres·Docker 미사용) — 개발 PC에 Docker·Postgres가 없고, CLAUDE.md의 운영/개발 브랜치 분리 방침과 일치. DB가 필요한 통합 테스트 방식은 첫 DB 기능 작업 때 결정
 - 2026-10-17 [CC] Gradle 빌드 스크립트는 Groovy DSL — Spring Initializr 기본값, 참고 자료가 가장 많음
 - 2026-10-17 [CC] Spring Boot 4.1.1 사용 — 세팅 시점 start.spring.io 최신 안정판
+- 2026-10-17 [기획] DB 통합 테스트: CI는 GitHub Actions Postgres 서비스 컨테이너, 로컬은 Neon dev 브랜치, @Tag("db")로 구분 — 로컬 Docker 없음, Testcontainers 대신 CI 기본 기능 사용
+- 2026-10-17 [기획] Neon은 scale-to-zero 유지. 헬스체크 DB 분리, 스케줄러는 메모리 일정 기반으로 DB 폴링 금지, 커넥션 풀 최소 유지 0 — 무료 사용량 절약, Neon 재기동 1초 내외로 지장 없음
+- 2026-10-17 [기획] Neon 접속: DB_URL은 직접 연결(non-pooled) 주소, 운영 브랜치 이름은 `production` — Flyway 안정성, Neon 기본 브랜치명
+- 2026-10-17 [CC] 헬스체크 분리: `/api/v1/health`는 DB 미조회 liveness(Render Health Check Path), `/api/v1/health/db`는 `SELECT 1` 결과를 DB 장애에도 HTTP 200 + `db:"DOWN"`으로 반환 — Neon 절전 유지, DB 장애가 재시작 루프로 번지지 않게
+- 2026-10-17 [CC] [임시] 인증은 요청 헤더 `X-User-Id`로 사용자를 식별(비밀번호 없음), `/api/v1/dev/users`로 테스트 계정 목록 제공 — 2.3 워킹 스켈레톤용. 3.1에서 JWT(Authorization 헤더)로 교체하고 dev API 제거
+- 2026-10-17 [CC] 상태 전이표는 `Transition` enum 하나로 states.md 전체(A1~A5, P1~P12·P1a·P7a, M1~M12·M4a·M8a, T1~T5)를 정의. 전이 주체가 표와 다르면 거부, 이미 목표 상태면 상태는 그대로 두고 `[no-op]` 사유로 이력만 기록 — states.md 0장 3·5항
+- 2026-10-17 [CC] [임시] 2.3 매칭은 운영자 버튼으로 실행하지만 M2 이력의 actor_type은 표대로 `SCHEDULER`, 누른 운영자는 actor_id와 reason에 남김 — 스케줄러(2.4·4.5) 도입 전 대체 트리거
+- 2026-10-17 [CC] [임시] `SimpleSequentialMatcher`는 미배치자의 상태를 바꾸지 않고 WAITING으로 둔다(match_runs.summary에만 기록) — 재배치·대안 제시(M4~M6)는 4.x·6.x
+- 2026-10-17 [CC] [임시] 피드백은 참석 체크인 없이 매칭 CONFIRMED 신청이면 제출 가능 — 참석(T1·T2)은 7.x
+- 2026-10-17 [CC] 매칭기는 `TableMatcher` 인터페이스 뒤에 둔다. 매칭 run_key = `slot-{회차ID}:{알고리즘 버전}`로 같은 회차·같은 엔진은 한 번만 실행 — V2 엔진 교체 시 버전이 달라지므로 새 실행이 가능
+- 2026-10-17 [CC] V2 마이그레이션: `dining_tables.venue_id` FK는 venues 생성 시(V3 이후) 추가, `feedbacks.rejoin_intent`·`recommend_score`는 DB에서 nullable(FDB-03 입력은 7.x에서 필수화), 모든 테이블에 created_at·updated_at(status_histories 포함) — ERD 공통 규칙
+- 2026-10-17 [CC] `Profile` JPA 엔티티는 2.3에서 만들지 않고 시드는 SQL로 넣음 — V2가 `profile.domain`에 선택지 enum을 만들고 있어 충돌 방지. 3.x 프로필 작업에서 추가
+- 2026-10-17 [CC] [임시] 개발용 시드 러너(`DevSeedRunner`, 지역 3·운영자 1·참가자 6·회차 1, 없을 때만 삽입)를 기본 켬(`SIKTAK_DEV_SEED_ENABLED`, 배포 환경 포함) — 배포 환경에서도 2.3 흐름 확인. 2.4 정식 시드로 대체
+- 2026-10-17 [CC] Hikari `minimum-idle=0`, `idle-timeout=60s`, `keepalive-time=0`, `connection-timeout=5s` — 놀고 있는 커넥션이 Neon을 깨워두지 않게, DB 재기동·장애 시 요청이 30초씩 묶이지 않게

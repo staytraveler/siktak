@@ -1,0 +1,45 @@
+export function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return '-'
+  return new Date(iso).toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: 'numeric',
+    day: 'numeric',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+// 상태 라벨 (PRD 12장). 신청·결제·매칭을 따로 보여준다.
+export const APPLICATION_STATUS: Record<string, string> = {
+  DRAFT: '작성 중',
+  SUBMITTED: '신청 완료',
+  CANCELED: '신청 취소',
+}
+
+export const PAYMENT_STATUS: Record<string, string> = {
+  PENDING: '결제 대기',
+  PAID: '결제 완료',
+  FAILED: '결제 실패',
+  REFUND_AVAILABLE: '환불 선택 가능',
+  REFUND_REQUESTED: '환불 요청',
+  REFUND_PROCESSING: '환불 처리 중',
+  REFUNDED: '환불 완료',
+  REFUND_FAILED: '환불 실패',
+}
+
+export const MATCH_STATUS: Record<string, string> = {
+  WAITING: '매칭 대기',
+  MATCHING: '매칭 중',
+  REALLOCATING: '재배치 중',
+  CONFIRMED: '매칭 확정',
+  ALTERNATIVE_OFFERED: '대체 일정 선택 대기',
+  TRANSFERRED: '일정 이동 완료',
+  NO_MATCH: '매칭 종료',
+  EXCEPTION: '확인 중',
+}
+
+export function label(map: Record<string, string>, value: string | null | undefined): string {
+  if (!value) return '-'
+  return map[value] ?? value
+}

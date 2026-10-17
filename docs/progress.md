@@ -22,6 +22,18 @@
 - 이슈: 가격대 코드 값이 정의되지 않음(문자열 일치로 비교) — 4.2 완료 보고 "PM 확인 필요"
 - 다음: PM 검토 → V1 흐름(2.3)에 연결
 
+## 2026-10-17 14:07 (2.3)
+- 완료: 2.3 워킹 스켈레톤 — APP-01~03, PAY-01(모의), STA-01, MAT-01(가짜, 버튼 실행), INF-04(단체방+시스템 메시지), FDB-02
+  - 공통 에러 응답·`@RestControllerAdvice`(401·403 포함), 임시 `X-User-Id` 인증, Clock 기반 감사 시각
+  - Flyway V2: ERD 18개 테이블·제약·부분 유니크
+  - 상태 전이표(`Transition`) + `StatusTransitionService` + status_histories, 사용 전이 A1·A2·P1·P2·M1·M2·M3
+  - `TableMatcher` 포트 + `SimpleSequentialMatcher`, run_key 멱등, 단체방·시스템 메시지 멱등, 피드백 1회
+  - 프론트 `/app`, `/app/applications/:id`, `/admin`, `/admin/slots`
+  - 검증: 테스트 30건 통과(DB 통합 2건 Neon dev), 로컬 API 흐름 수동 확인, 2.2 DB 테스트도 Neon dev에서 통과
+- 변경: decisions.md [CC] 9건(임시 인증, 전이 no-op·주체 검사, M2 주체, 미배치 WAITING 유지, 피드백 조건, run_key, V2 스키마 세부, Profile 엔티티 보류, 시드 러너)
+- 이슈: 브라우저 클릭 검증은 사용자 확인 필요. 배포 환경 확인은 Render·Vercel 연결 대기. Windows 셸 curl은 한글 본문을 UTF-8로 안 보내 테스트 시 주의(서버 문제 아님)
+- 다음: 2.2 마무리(URL 반영·CORS·완료 조건) → 다음 지시서
+
 ## 2026-10-17 13:56 (V2, `feat/matching-engine`)
 - 완료: 4.1 매칭 엔진 코어 — MAT-02~12. `com.siktak.matching.domain.engine`(순수 함수, H1~H7, S1~S6, 절차 5-1~5-8, 사유 코드 7-2), 선택지 enum `com.siktak.profile.domain`
   - 테스트 41개: E1~E19·E23·E24 엣지 케이스 24개, 점수 단위 10개, 시드 J1 시나리오 7개. 전체 `./gradlew test` 43개 통과
@@ -29,6 +41,14 @@
 - 변경: 명세 변경 없음. `[해석]` 9건은 4.1 완료 보고 "PM 확인 필요"에 정리. 구현 결정 3건 decisions.md [CC]
 - 이슈: 커밋·push는 사용자 승인 대기 (전역 규칙: 커밋·푸시는 사용자가 말할 때만)
 - 다음: PM 검토 → 4.4(MatchRun 기록·상태 전이)에서 엔진 연결
+
+## 2026-10-17 13:45 (2.2 중간)
+- 완료: 2.2 배포 파이프라인 코드·문서(B1~B6), 병렬 작업 준비(4.1 지시서 커밋, `../siktak-matching` worktree, gradle.properties)
+  - 헬스체크 분리 `/api/v1/health`(liveness) · `/api/v1/health/db`, Hikari 절전 설정, Dockerfile, `vercel.json`, CI 워크플로, `DatabaseMigrationTest`(@Tag db)
+  - 검증: 로컬 백엔드 테스트 4건 통과(DB 1건 skip), 프론트 build·lint 통과, `main` push `2743a33`
+- 변경: PM 13:40 "DB 절전 원칙" 반영 — 헬스체크 DB 분리, 커넥션 풀 최소 0. 스케줄러 메모리 일정 방식은 원칙만 문서화(integrations.md), 구현은 2.4·4.5·5.x
+- 이슈: 로컬 Docker 없어 `docker build` 미검증, GitHub Actions 결과는 레포 비공개·`gh` 없음으로 미확인
+- 다음: 사용자 Neon `.env`·Render·Vercel 설정 → URL 반영·CORS → 2.2 완료 조건 확인
 
 ## 2026-10-17 13:30
 - 완료: 레포·프로젝트 초기 세팅 (기능 구현·배포 없음)

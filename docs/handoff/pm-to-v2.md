@@ -1,21 +1,14 @@
 # PM → V2
 
-> 작성: 2026-10-17 13:40 · PM클로드
+> 작성: 2026-10-17 14:25 · PM클로드
 
-처음이라면: 나는 기획 세션의 PM클로드야. 너는 **V2**, 매칭 엔진 전담 개발 세션이야. 메인 개발 세션(V1)은 원래 폴더 `C:\Users\Admin\Desktop\siktak` 에서 배포 작업 중이고, 너는 git worktree `C:\Users\Admin\Desktop\siktak-matching` (브랜치 `feat/matching-engine`)에서 일한다.
+## 4.2 검토: 승인 👍
+### PM 확인 필요 답변
+1. 가격대 코드 확정: `UNDER_20K`, `20K_40K`, `OVER_40K` (matching.md 4장에 추가). 식당·프로필 공통.
+2. 예약명: 처음 배정 때 저장한 값을 재사용한다. 4.4에서 그렇게 구현.
+3~5. 전부 네 판단대로 확정. 시드 콘텐츠 문구는 통합 검증 때 화면으로 같이 볼게.
 
-## 먼저 읽을 것
-1. 네 폴더의 `CLAUDE.md` (특히 7장 매칭 엔진 규칙, 11장 세션 규칙. 11장의 "V클로드"는 너에게도 적용되고, 네 채널 파일만 다르다)
-2. `docs/domain/matching.md` 전체, `docs/domain/states.md` 4장, `docs/demo-scenario.md` 3·4장
-3. 작업지시서: **`C:\Users\Admin\Desktop\siktak\docs\tasks\4.1-matching-engine-core.md`** (원래 폴더에 있다. 네 worktree에는 아직 없을 수 있음)
-
-## 소통 채널 (원래 폴더의 파일을 절대경로로 사용)
-- PM → V2: `C:\Users\Admin\Desktop\siktak\docs\handoff\pm-to-v2.md` (이 파일)
-- V2 → PM: `C:\Users\Admin\Desktop\siktak\docs\handoff\v2-to-pm.md` (작업 완료·질문 시 덮어쓰기)
-- 사용자는 "PM 확인" / "V2 완료" 신호만 전달한다. 이 두 파일은 **원래 폴더에서 V1이 커밋**하니, 너는 이 파일들을 네 브랜치에 커밋하지 마.
-
-## 할 일
-- 4.1 지시서대로 매칭 엔진 코어와 테스트를 구현해. 범위 안에서는 확인 없이 진행하고, 명세와 충돌하거나 해석이 갈리는 곳만 `v2-to-pm.md`로 물어봐.
-- 계획은 사용자에게 짧게 보여주고 바로 시작해도 된다.
-- 노트북 성능이 넉넉하지 않다. 테스트는 매칭 엔진 테스트만 골라 돌리고(`./gradlew test --tests 'com.siktak.matching.*'`), 전체 테스트는 마지막에 한 번만 돌려.
-- 끝나면 지시서 완료 보고를 채우고(네 worktree의 지시서 사본이 아니라 원래 폴더 파일에), `v2-to-pm.md`를 쓰고, 사용자에게 "PM에게 전달해주세요"라고 알려줘.
+## 다음 작업 (바로 시작)
+**`C:\Users\Admin\Desktop\siktak\docs\tasks\4.4-matching-pipeline.md`** — 네 엔진을 실제 DB·상태 전이·식당 배정·예외 큐에 연결. **0번(main 머지, 영역·마이그레이션 번호 규칙)부터 꼭 읽어.**
+- 블레이버스 태스크가 바뀔 때마다 `v2-to-pm.md` 맨 위 "작성" 줄에 지금 하는 태스크 이름을 적어줘.
+- 끝나면 완료 보고·`v2-to-pm.md` 쓰고 "PM에게 전달해주세요".

@@ -1,0 +1,87 @@
+// API 응답 타입. OpenAPI 타입 생성(src/api/generated/) 도입 전까지 수동 정의한다.
+
+export interface DevUser {
+  id: number
+  loginId: string
+  name: string
+  role: 'PARTICIPANT' | 'OPERATOR'
+}
+
+export interface Region {
+  id: number
+  name: string
+}
+
+export interface Slot {
+  id: number
+  regionId: number
+  regionName: string
+  startsAt: string
+  endsAt: string
+  capacity: number
+  applyDeadlineAt: string
+  matchRunAt: string
+  slotStatus: string
+}
+
+export interface ApplicationItem {
+  id: number
+  passType: string
+  applicationStatus: string
+  paymentStatus: string | null
+  matchStatus: string | null
+  assignedSlotId: number | null
+  paymentDueAt: string | null
+  submittedAt: string | null
+  matchFailReason: string | null
+  slotChoices: { priority: number; slot: Slot | null }[]
+}
+
+export interface MyTable {
+  tableId: number
+  slotId: number
+  memberCount: number
+  confirmedAt: string
+  chatRoomId: number | null
+  reasons: string[]
+}
+
+export interface ChatMessageItem {
+  id: number
+  senderType: 'USER' | 'SYSTEM'
+  senderId: number | null
+  messageType: string
+  body: string
+  createdAt: string
+}
+
+export interface FeedbackItem {
+  id: number
+  applicationId: number
+  tableRating: number
+  conversationRating: number
+  venueRating: number
+  comment: string | null
+  submittedAt: string
+}
+
+export interface MatchRun {
+  id: number
+  runKey: string
+  algorithmVersion: string
+  runStatus: string
+  candidateCount: number
+  summary: Record<string, unknown>
+  startedAt: string
+  finishedAt: string | null
+}
+
+export interface AdminTable {
+  id: number
+  tableStatus: string
+  memberCount: number
+  confirmedAt: string
+  chatRoomId: number | null
+  summary: Record<string, unknown>
+  members: { applicationId: number; userId: number; name: string | null }[]
+}
