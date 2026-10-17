@@ -85,3 +85,12 @@ export interface AdminTable {
   summary: Record<string, unknown>
   members: { applicationId: number; userId: number; name: string | null }[]
 }
+
+export interface DemoStatus {
+  now: string
+  offsetSeconds: number
+  t0: string | null
+  seedVersion: string | null
+  jumps: { code: string; label: string; at: string; reached: boolean }[]
+  upcomingJobs: { jobType: string; targetId: number; dueAt: string }[]
+}

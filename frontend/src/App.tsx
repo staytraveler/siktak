@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
+import AdminDemoPage from './pages/admin/AdminDemoPage'
 import AdminHomePage from './pages/admin/AdminHomePage'
 import AdminSlotsPage from './pages/admin/AdminSlotsPage'
 import ApplicationDetailPage from './pages/app/ApplicationDetailPage'
@@ -10,6 +11,7 @@ const router = createBrowserRouter([
   { path: '/app/applications/:id', element: <ApplicationDetailPage /> },
   { path: '/admin', element: <AdminHomePage /> },
   { path: '/admin/slots', element: <AdminSlotsPage /> },
+  { path: '/admin/demo', element: <AdminDemoPage /> },
 ])
 
 export default function App() {

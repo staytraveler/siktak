@@ -3,6 +3,7 @@ import type {
   AdminTable,
   ApplicationItem,
   ChatMessageItem,
+  DemoStatus,
   DevUser,
   FeedbackItem,
   MatchRun,
@@ -48,4 +49,10 @@ export const api = {
   }) => post<Slot>('/api/v1/admin/slots', body),
   runMatching: (slotId: number) => post<MatchRun>(`/api/v1/admin/slots/${slotId}/run-matching`),
   slotTables: (slotId: number) => get<AdminTable[]>(`/api/v1/admin/slots/${slotId}/tables`),
+
+  // 데모 도구
+  demoStatus: () => get<DemoStatus>('/api/v1/admin/demo'),
+  demoReset: () => post<DemoStatus>('/api/v1/admin/demo/reset'),
+  demoJump: (code: string) => post<DemoStatus>(`/api/v1/admin/demo/jump/${code}`),
+  demoAdvance: (minutes: number) => post<DemoStatus>(`/api/v1/admin/demo/advance?minutes=${minutes}`),
 }
