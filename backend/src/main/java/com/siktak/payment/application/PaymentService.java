@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.siktak.common.error.BusinessException;
@@ -38,8 +39,7 @@ public class PaymentService {
     /** 결제를 승인한다. 이미 승인된 거래면 PG를 다시 호출하지 않는다 (멱등). 승인되면 true. */
     @Transactional
     public boolean approve(Long paymentId) {
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "결제 정보를 찾을 수 없습니다."));
+        Payment payment = get(paymentId);
         if (payment.getTxStatus() == TxStatus.APPROVED) {
             return true;
         }
@@ -50,5 +50,49 @@ public class PaymentService {
         }
         payment.fail(result.error());
         return false;
+    }
+
+    /** 환불 멱등 키를 발급한다 (states.md P8). 이미 있으면 같은 키. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public String issueRefundKey(Long paymentId) {
+        return get(paymentId).issueRefundKey();
+    }
+
+    /**
+     * 결제를 취소(환불)한다. 결제 행을 잠그고 처리하므로 같은 결제를 동시에 취소해도 PG는 한 번만 불린다.
+     * 이미 취소된 거래면 PG를 다시 부르지 않는다 (멱등). 실패하면 재시도 횟수를 올린다.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public CancelOutcome cancel(Long paymentId) {
+        Payment payment = paymentRepository.findForUpdate(paymentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "결제 정보를 찾을 수 없습니다."));
+        if (payment.isCanceled()) {
+            return new CancelOutcome(true, payment.getRetryCount(), null);
+        }
+        String refundKey = payment.issueRefundKey();
+        PaymentGateway.CancelResult result = paymentGateway.cancel(payment.getProviderPaymentKey(),
+                payment.getAmount(), refundKey);
+        if (result.canceled()) {
+            payment.markCanceled(Instant.now(clock));
+            return new CancelOutcome(true, payment.getRetryCount(), null);
+        }
+        payment.recordCancelFailure(result.error());
+        return new CancelOutcome(false, payment.getRetryCount(), result.error());
+    }
+
+    /** 자동 재시도까지 실패한 거래로 표시한다 (states.md P10). */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void markCancelFailed(Long paymentId) {
+        get(paymentId).markCancelFailed();
+    }
+
+    @Transactional(readOnly = true)
+    public Payment get(Long paymentId) {
+        return paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "결제 정보를 찾을 수 없습니다."));
+    }
+
+    /** @param failureCount 지금까지 실패한 취소 시도 수 (payments.retry_count) */
+    public record CancelOutcome(boolean canceled, int failureCount, String error) {
     }
 }

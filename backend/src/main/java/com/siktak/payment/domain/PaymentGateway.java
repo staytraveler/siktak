@@ -10,6 +10,11 @@ public interface PaymentGateway {
 
     ApprovalResult approve(String orderId, long amount);
 
+    /**
+     * 결제를 취소(환불)한다. 같은 {@code idempotencyKey}로 다시 호출하면 PG는 취소를 한 번만 한다 (states.md P8).
+     */
+    CancelResult cancel(String providerPaymentKey, long amount, String idempotencyKey);
+
     record ApprovalResult(boolean approved, String providerPaymentKey, String error) {
 
         public static ApprovalResult success(String providerPaymentKey) {
@@ -18,6 +23,17 @@ public interface PaymentGateway {
 
         public static ApprovalResult failure(String error) {
             return new ApprovalResult(false, null, error);
+        }
+    }
+
+    record CancelResult(boolean canceled, String error) {
+
+        public static CancelResult success() {
+            return new CancelResult(true, null);
+        }
+
+        public static CancelResult failure(String error) {
+            return new CancelResult(false, error);
         }
     }
 }

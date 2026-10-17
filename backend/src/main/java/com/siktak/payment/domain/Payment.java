@@ -88,4 +88,33 @@ public class Payment extends BaseTimeEntity {
         this.txStatus = TxStatus.FAILED;
         this.lastError = error;
     }
+
+    /** 환불 멱등 키를 발급한다 (states.md P8). 결제 1건에 환불은 1번이므로 이미 있으면 그대로 둔다. */
+    public String issueRefundKey() {
+        if (refundKey == null) {
+            refundKey = "refund-pay-" + id;
+        }
+        return refundKey;
+    }
+
+    public boolean isCanceled() {
+        return txStatus == TxStatus.CANCELED;
+    }
+
+    public void markCanceled(Instant at) {
+        this.txStatus = TxStatus.CANCELED;
+        this.canceledAt = at;
+        this.lastError = null;
+    }
+
+    /** 취소 시도가 실패했다. 재시도 횟수를 하나 올린다. */
+    public void recordCancelFailure(String error) {
+        this.retryCount++;
+        this.lastError = error;
+    }
+
+    /** 자동 재시도까지 모두 실패했다 (states.md P10). */
+    public void markCancelFailed() {
+        this.txStatus = TxStatus.CANCEL_FAILED;
+    }
 }
