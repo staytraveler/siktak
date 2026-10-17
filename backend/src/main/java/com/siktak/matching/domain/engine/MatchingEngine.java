@@ -14,4 +14,9 @@ public final class MatchingEngine {
     public MatchingResult run(MatchingInput input) {
         return new MatchingRun(input).execute();
     }
+
+    /** 확정 후 취소로 인원이 줄어든 테이블 처리 (matching.md 6장, E21·E22). */
+    public CancelReallocationResult reallocateAfterCancel(CancelReallocationInput input) {
+        return CancelReallocation.run(input);
+    }
 }

@@ -10,6 +10,18 @@
 > - 다음:
 > ```
 
+## 2026-10-17 (V2, `feat/matching-engine`) 4.2 순수 도메인 로직
+- 완료: DB 없는 계산부 4개, 기능별 커밋·push
+  - INF-02 식당 자동 배정 `com.siktak.venue.domain.assign` (`e1a8574`)
+  - CON-01·02 대화 주제 선택 `com.siktak.content.domain` + 시드 `seed/conversation-contents.json` 28개 (`9ea8257`)
+  - STA-04·05 대체 일정 추천 `com.siktak.matching.domain.alternative` (`9646e7d`)
+  - matching.md 6장 확정 후 취소 재배치 `MatchingEngine.reallocateAfterCancel` (E21·E22) (`4e4923e`)
+  - 4.1 PM 확정 반영: `[해석]` 주석 → matching.md 11장 I번호, 신규 사유 코드 문구, demo-scenario 3-3 성향 열 (`fc63359`에 포함)
+  - 테스트: 4.2 신규 29개, 전체 `./gradlew test` 72개 통과
+- 변경: 명세 변경 없음. 회차 상태는 V1의 `SlotStatus`와 겹치지 않게 `open` boolean으로 받는다
+- 이슈: 가격대 코드 값이 정의되지 않음(문자열 일치로 비교) — 4.2 완료 보고 "PM 확인 필요"
+- 다음: PM 검토 → V1 흐름(2.3)에 연결
+
 ## 2026-10-17 14:07 (2.3)
 - 완료: 2.3 워킹 스켈레톤 — APP-01~03, PAY-01(모의), STA-01, MAT-01(가짜, 버튼 실행), INF-04(단체방+시스템 메시지), FDB-02
   - 공통 에러 응답·`@RestControllerAdvice`(401·403 포함), 임시 `X-User-Id` 인증, Clock 기반 감사 시각
