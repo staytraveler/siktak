@@ -96,16 +96,16 @@
 
 ### 3-3. 1회차 S2 홍대/합정 그룹 (출생연도 1990~1993, 6명)
 
-| ID | 이름 | 성별 | 출생 | MBTI | 관심사 | 선택 회차 | 이용권 |
-|---|---|---|---|---|---|---|---|
-| user17 | 수빈 | F | 1991 | ESFJ | FOOD, TRAVEL, PET | S2 | 1회권 |
-| user18 | 재원 | M | 1990 | INTJ | CAREER, READING, SPORTS | S2 | 1회권 |
-| user19 | 예린 | F | 1993 | ENFP | MUSIC, MOVIE, FOOD | S2 | 1회권 |
-| user20 | 동현 | M | 1992 | ISFP | GAME, MUSIC, TRAVEL | S2 | 1회권 |
-| user21 | 채원 | F | 1992 | ESTJ | EXHIBITION, CAREER, FOOD | S2 | 멤버십 1M |
-| user22 | 승민 | M | 1991 | ENTP | SPORTS, TRAVEL, MOVIE | S2 | 1회권 |
+| ID | 이름 | 성별 | 출생 | MBTI | 관심사 | 본인 성향 | 희망 성향 | 선택 회차 | 이용권 |
+|---|---|---|---|---|---|---|---|---|---|
+| user17 | 수빈 | F | 1991 | ESFJ | FOOD, TRAVEL, PET | EMPATHETIC, HUMOROUS | LISTENER | S2 | 1회권 |
+| user18 | 재원 | M | 1990 | INTJ | CAREER, READING, SPORTS | PLANNER, LISTENER | HUMOROUS | S2 | 1회권 |
+| user19 | 예린 | F | 1993 | ENFP | MUSIC, MOVIE, FOOD | HUMOROUS, CURIOUS | EMPATHETIC | S2 | 1회권 |
+| user20 | 동현 | M | 1992 | ISFP | GAME, MUSIC, TRAVEL | LISTENER | CURIOUS | S2 | 1회권 |
+| user21 | 채원 | F | 1992 | ESTJ | EXHIBITION, CAREER, FOOD | PLANNER, EMPATHETIC | HUMOROUS | S2 | 멤버십 1M |
+| user22 | 승민 | M | 1991 | ENTP | SPORTS, TRAVEL, MOVIE | ADVENTUROUS, HUMOROUS | PLANNER | S2 | 1회권 |
 
-전원 결제 `PAID`. 성향: 본인 `EMPATHETIC`·`HUMOROUS` 등 다양하게 (시드 스크립트에서 고정값 지정).
+전원 결제 `PAID`. 성향 값은 매칭 엔진 시드 테스트(`DemoSeed`)와 같은 정본이다 (PM 확정 2026-10-17).
 
 ### 3-4. S3 실패 그룹 · S5 대체 일정 그룹 · 2회차 신규
 

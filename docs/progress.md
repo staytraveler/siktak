@@ -22,6 +22,14 @@
 - 이슈: 브라우저 클릭 검증은 사용자 확인 필요. 배포 환경 확인은 Render·Vercel 연결 대기. Windows 셸 curl은 한글 본문을 UTF-8로 안 보내 테스트 시 주의(서버 문제 아님)
 - 다음: 2.2 마무리(URL 반영·CORS·완료 조건) → 다음 지시서
 
+## 2026-10-17 13:56 (V2, `feat/matching-engine`)
+- 완료: 4.1 매칭 엔진 코어 — MAT-02~12. `com.siktak.matching.domain.engine`(순수 함수, H1~H7, S1~S6, 절차 5-1~5-8, 사유 코드 7-2), 선택지 enum `com.siktak.profile.domain`
+  - 테스트 41개: E1~E19·E23·E24 엣지 케이스 24개, 점수 단위 10개, 시드 J1 시나리오 7개. 전체 `./gradlew test` 43개 통과
+  - 시드 J1 결과가 demo-scenario.md 4장과 일치 (S2 6인, user15 → S1 2단계 재배치, user14 DEFERRED, user16 제외, S1 5·5·4, user05/06 분리)
+- 변경: 명세 변경 없음. `[해석]` 9건은 4.1 완료 보고 "PM 확인 필요"에 정리. 구현 결정 3건 decisions.md [CC]
+- 이슈: 커밋·push는 사용자 승인 대기 (전역 규칙: 커밋·푸시는 사용자가 말할 때만)
+- 다음: PM 검토 → 4.4(MatchRun 기록·상태 전이)에서 엔진 연결
+
 ## 2026-10-17 13:45 (2.2 중간)
 - 완료: 2.2 배포 파이프라인 코드·문서(B1~B6), 병렬 작업 준비(4.1 지시서 커밋, `../siktak-matching` worktree, gradle.properties)
   - 헬스체크 분리 `/api/v1/health`(liveness) · `/api/v1/health/db`, Hikari 절전 설정, Dockerfile, `vercel.json`, CI 워크플로, `DatabaseMigrationTest`(@Tag db)
