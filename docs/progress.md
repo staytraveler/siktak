@@ -10,6 +10,18 @@
 > - 다음:
 > ```
 
+## 2026-10-17 (V2, `feat/matching-engine`) 4.2 순수 도메인 로직
+- 완료: DB 없는 계산부 4개, 기능별 커밋·push
+  - INF-02 식당 자동 배정 `com.siktak.venue.domain.assign` (`e1a8574`)
+  - CON-01·02 대화 주제 선택 `com.siktak.content.domain` + 시드 `seed/conversation-contents.json` 28개 (`9ea8257`)
+  - STA-04·05 대체 일정 추천 `com.siktak.matching.domain.alternative` (`9646e7d`)
+  - matching.md 6장 확정 후 취소 재배치 `MatchingEngine.reallocateAfterCancel` (E21·E22) (`4e4923e`)
+  - 4.1 PM 확정 반영: `[해석]` 주석 → matching.md 11장 I번호, 신규 사유 코드 문구, demo-scenario 3-3 성향 열 (`fc63359`에 포함)
+  - 테스트: 4.2 신규 29개, 전체 `./gradlew test` 72개 통과
+- 변경: 명세 변경 없음. 회차 상태는 V1의 `SlotStatus`와 겹치지 않게 `open` boolean으로 받는다
+- 이슈: 가격대 코드 값이 정의되지 않음(문자열 일치로 비교) — 4.2 완료 보고 "PM 확인 필요"
+- 다음: PM 검토 → V1 흐름(2.3)에 연결
+
 ## 2026-10-17 13:56 (V2, `feat/matching-engine`)
 - 완료: 4.1 매칭 엔진 코어 — MAT-02~12. `com.siktak.matching.domain.engine`(순수 함수, H1~H7, S1~S6, 절차 5-1~5-8, 사유 코드 7-2), 선택지 enum `com.siktak.profile.domain`
   - 테스트 41개: E1~E19·E23·E24 엣지 케이스 24개, 점수 단위 10개, 시드 J1 시나리오 7개. 전체 `./gradlew test` 43개 통과
