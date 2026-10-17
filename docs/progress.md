@@ -10,6 +10,16 @@
 > - 다음:
 > ```
 
+## 2026-10-17 16:13 (V2, `feat/matching-engine`) 4.4 매칭 운영 연결
+- 완료: MAT-07·08·10·11·12·13, INF-02, STA-03·04 — main 머지(`181f466`) 후 기능별 커밋·push
+  - `d1d3b37` V3 스키마(식당·수용량·콘텐츠·대체 일정 해결·예외 큐·차단·사람별 선호·만남 이력, 배치 로그 컬럼), `exception` 패키지, 식당 배정 서비스
+  - `bd124c0` 엔진 v2 파이프라인(`EngineMatchingService`): 도래 회차 일괄 실행, 저장·상태 전이·대체 일정·단체방·식당 배정, `siktak.matching.engine=v2|simple`
+  - `c79688a` 조회 API(실행·배치 로그·테이블·예외·참가자 매칭 근거), 식당 재배정 API, `DemoVenueSeed`·`ConversationContentSeeder`
+  - 검증: DB 통합 테스트(Neon dev, 별도 스키마) J1·J2·시드 3건 통과 — demo-scenario 4장 J1·J2 결과와 일치, E20 재실행 중복 없음. 비DB 전체 테스트 통과
+- 변경: decisions.md [CC] 7건. ERD 대비 배치 로그 decision에 DEFERRED·EXCLUDED, from/to_slot_id·cause_code 추가
+- 이슈: `applications.match_fail_reason`은 쓰기 메서드가 없어 [임시] SQL로 갱신(V1에 도메인 메서드 요청). 시드 연결·프로필 가격대는 V1 시드에 요청
+- 다음: PM 검토 → main 머지 지시 대기
+
 ## 2026-10-17 (V2, `feat/matching-engine`) 4.2 순수 도메인 로직
 - 완료: DB 없는 계산부 4개, 기능별 커밋·push
   - INF-02 식당 자동 배정 `com.siktak.venue.domain.assign` (`e1a8574`)
