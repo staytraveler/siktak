@@ -1,0 +1,51 @@
+import { apiClient } from './client'
+import type {
+  AdminTable,
+  ApplicationItem,
+  ChatMessageItem,
+  DevUser,
+  FeedbackItem,
+  MatchRun,
+  MyTable,
+  Region,
+  Slot,
+} from './types'
+
+const get = async <T,>(url: string) => (await apiClient.get<T>(url)).data
+const post = async <T,>(url: string, body?: unknown) => (await apiClient.post<T>(url, body)).data
+
+export const api = {
+  devUsers: () => get<DevUser[]>('/api/v1/dev/users'),
+  regions: () => get<Region[]>('/api/v1/regions'),
+
+  // 참가자
+  openSlots: () => get<Slot[]>('/api/v1/slots'),
+  myApplications: () => get<ApplicationItem[]>('/api/v1/me/applications'),
+  submitApplication: (slotIds: number[]) =>
+    post<ApplicationItem>('/api/v1/applications', { slotIds, passType: 'SINGLE' }),
+  mockApprove: (applicationId: number) =>
+    post<ApplicationItem>(`/api/v1/applications/${applicationId}/payments/mock-approve`),
+  myTable: (applicationId: number) => get<MyTable>(`/api/v1/me/applications/${applicationId}/table`),
+  chatMessages: (chatRoomId: number) => get<ChatMessageItem[]>(`/api/v1/chat-rooms/${chatRoomId}/messages`),
+  myFeedbacks: () => get<FeedbackItem[]>('/api/v1/me/feedbacks'),
+  submitFeedback: (body: {
+    applicationId: number
+    tableRating: number
+    conversationRating: number
+    venueRating: number
+    comment?: string
+  }) => post<FeedbackItem>('/api/v1/feedbacks', body),
+
+  // 운영자
+  adminSlots: () => get<Slot[]>('/api/v1/admin/slots'),
+  createSlot: (body: {
+    regionId: number
+    startsAt: string
+    endsAt: string
+    capacity: number
+    applyDeadlineAt: string
+    matchRunAt: string
+  }) => post<Slot>('/api/v1/admin/slots', body),
+  runMatching: (slotId: number) => post<MatchRun>(`/api/v1/admin/slots/${slotId}/run-matching`),
+  slotTables: (slotId: number) => get<AdminTable[]>(`/api/v1/admin/slots/${slotId}/tables`),
+}
