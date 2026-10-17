@@ -7,6 +7,13 @@ spring:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    hikari:
+      # Neon은 쓸 때만 깨운다(decisions.md): 놀고 있는 커넥션이 DB를 붙잡지 않게 한다.
+      minimum-idle: 0
+      idle-timeout: 60000
+      keepalive-time: 0
+      # DB 장애·재기동 시 요청이 기본 30초씩 묶이지 않게 한다.
+      connection-timeout: 5000
   jpa:
     open-in-view: false
     hibernate:
