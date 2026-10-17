@@ -79,10 +79,14 @@ public class MatchingService {
                         && a.getPaymentStatus() == PaymentStatus.PAID)
                 .toList();
         Instant now = Instant.now(clock);
+        // operatorId가 null이면 스케줄러 자동 실행 (2.4 시간 기반 작업 실행기)
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("slotId", slotId);
+        params.put("trigger", operatorId == null ? "SCHEDULER" : "OPERATOR_BUTTON");
+        params.put("operatorId", operatorId);
         MatchRun run = matchRunRepository.save(MatchRun.start(runKey,
                 slot.getStartsAt().atZone(ZONE).toLocalDate(), tableMatcher.algorithmVersion(),
-                Map.of("slotId", slotId, "trigger", "OPERATOR_BUTTON", "operatorId", operatorId),
-                candidates.size(), now));
+                params, candidates.size(), now));
 
         TableMatcher.Result result = tableMatcher.match(candidates.stream()
                 .map(a -> new TableMatcher.Candidate(a.getId(), a.getUserId(), a.getSubmittedAt()))
@@ -91,7 +95,8 @@ public class MatchingService {
         Map<Long, Application> byId = candidates.stream()
                 .collect(Collectors.toMap(Application::getId, Function.identity()));
         TransitionContext scheduler = new TransitionContext(ActorType.SCHEDULER, operatorId,
-                "회차 매칭 실행 (2.3: 운영자 버튼이 스케줄러를 대신함)", run.getId());
+                operatorId == null ? "회차 매칭 마감 시각 도래 (자동 실행)" : "회차 매칭 실행 (운영자가 앞당겨 실행)",
+                run.getId());
         TransitionContext system = new TransitionContext(ActorType.SYSTEM, null, "필수 조건 충족, 자동 확정", run.getId());
 
         for (List<Long> group : result.groups()) {
