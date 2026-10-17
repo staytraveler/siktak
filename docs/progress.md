@@ -10,7 +10,19 @@
 > - 다음:
 > ```
 
-## 2026-10-17 14:30
+## 2026-10-17 14:07 (2.3)
+- 완료: 2.3 워킹 스켈레톤 — APP-01~03, PAY-01(모의), STA-01, MAT-01(가짜, 버튼 실행), INF-04(단체방+시스템 메시지), FDB-02
+  - 공통 에러 응답·`@RestControllerAdvice`(401·403 포함), 임시 `X-User-Id` 인증, Clock 기반 감사 시각
+  - Flyway V2: ERD 18개 테이블·제약·부분 유니크
+  - 상태 전이표(`Transition`) + `StatusTransitionService` + status_histories, 사용 전이 A1·A2·P1·P2·M1·M2·M3
+  - `TableMatcher` 포트 + `SimpleSequentialMatcher`, run_key 멱등, 단체방·시스템 메시지 멱등, 피드백 1회
+  - 프론트 `/app`, `/app/applications/:id`, `/admin`, `/admin/slots`
+  - 검증: 테스트 30건 통과(DB 통합 2건 Neon dev), 로컬 API 흐름 수동 확인, 2.2 DB 테스트도 Neon dev에서 통과
+- 변경: decisions.md [CC] 9건(임시 인증, 전이 no-op·주체 검사, M2 주체, 미배치 WAITING 유지, 피드백 조건, run_key, V2 스키마 세부, Profile 엔티티 보류, 시드 러너)
+- 이슈: 브라우저 클릭 검증은 사용자 확인 필요. 배포 환경 확인은 Render·Vercel 연결 대기. Windows 셸 curl은 한글 본문을 UTF-8로 안 보내 테스트 시 주의(서버 문제 아님)
+- 다음: 2.2 마무리(URL 반영·CORS·완료 조건) → 다음 지시서
+
+## 2026-10-17 13:45 (2.2 중간)
 - 완료: 2.2 배포 파이프라인 코드·문서(B1~B6), 병렬 작업 준비(4.1 지시서 커밋, `../siktak-matching` worktree, gradle.properties)
   - 헬스체크 분리 `/api/v1/health`(liveness) · `/api/v1/health/db`, Hikari 절전 설정, Dockerfile, `vercel.json`, CI 워크플로, `DatabaseMigrationTest`(@Tag db)
   - 검증: 로컬 백엔드 테스트 4건 통과(DB 1건 skip), 프론트 build·lint 통과, `main` push `2743a33`
