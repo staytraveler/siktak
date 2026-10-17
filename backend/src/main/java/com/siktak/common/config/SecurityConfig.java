@@ -9,6 +9,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -51,6 +53,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**").hasRole("OPERATOR")
                         .anyRequest().authenticated());
         return http.build();
+    }
+
+    /** 비밀번호 해시 (BCrypt). 시드 계정 저장에 쓰고 3.1 로그인에서 검증한다. */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
     /** 허용 오리진은 환경변수 CORS_ALLOWED_ORIGINS(쉼표 구분)로 지정한다. 운영에서는 Vercel 도메인만 둔다. */

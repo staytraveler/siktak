@@ -34,7 +34,7 @@ class DatabaseMigrationTest {
                 "SELECT count(*) FROM flyway_schema_history WHERE version = '1' AND success",
                 Integer.class);
         Integer shedlock = jdbcTemplate.queryForObject(
-                "SELECT count(*) FROM information_schema.tables WHERE table_name = 'shedlock'",
+                "SELECT count(*) FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = 'shedlock'",
                 Integer.class);
 
         assertThat(applied).isEqualTo(1);

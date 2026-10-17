@@ -50,7 +50,12 @@ public class User extends BaseTimeEntity {
     private AccountStatus accountStatus = AccountStatus.ACTIVE;
 
     public static User create(String loginId, UserRole role, String name, String phone) {
+        return create(loginId, role, name, phone, null);
+    }
+
+    public static User create(String loginId, UserRole role, String name, String phone, String passwordHash) {
         User user = new User();
+        user.passwordHash = passwordHash;
         user.loginId = loginId;
         user.role = role;
         user.name = name;
