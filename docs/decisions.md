@@ -63,3 +63,11 @@
 - 2026-10-17 [CC] 시드 확장 지점 `SeedContributor`(order·contribute(SeedContext)) — V2가 식당·수용량·콘텐츠 시드를 붙인다. `SeedContext`로 회차 코드(S1~S5)·로그인 ID·지역명 → ID 조회
 - 2026-10-17 [CC] test 프로필은 `siktak.scheduler.enabled=false`·`siktak.demo.auto-seed=false` — 테스트가 실행기를 직접 만들어 제어. Neon dev에 V2 전용 스키마(`v2work`)가 있으므로 테스트의 information_schema 조회는 `current_schema()`로 한정
 - 2026-10-17 [CC] Hikari `minimum-idle=0`, `idle-timeout=60s`, `keepalive-time=0`, `connection-timeout=5s` — 놀고 있는 커넥션이 Neon을 깨워두지 않게, DB 재기동·장애 시 요청이 30초씩 묶이지 않게
+- 2026-10-17 [CC] 6.1 결제 전이 P7b 추가: `REFUND_AVAILABLE → PAID`, 주체 SCHEDULER (미응답 자동 보관 M8a에 연쇄) — P7은 PARTICIPANT 전용이라 스케줄러가 쓸 수 없고, 그대로 두면 states.md 6장 불변 조건이 깨진다. 사용자 확인
+- 2026-10-17 [CC] 6.1 일정 이동(M7): 새 신청은 `Application.transferOf`로 만들고 A1·A2(PARTICIPANT) → P1a(SYSTEM, 기존 결제 공유) → M1. 이동할 회차는 추천 목록(`offered_slot_ids`) 안에서만, 모집 중이 아니거나 같은 회차에 진행 중 신청이 있으면 409
+- 2026-10-17 [CC] 6.1 응답 기한(`respond_by`)이 지나면 참가자 선택은 409, 미응답 작업(`RESOLUTION_TIMEOUT`, 대상 `match_resolutions.id`)이 보관 처리. 같은 선택 재요청은 no-op, 다른 선택은 409
+- 2026-10-17 [CC] 6.1 자동 환불: 환불 키 `refund-pay-{paymentId}`(결제당 1개), 결제 행 `SELECT ... FOR UPDATE` 뒤 PG 호출, 이미 취소된 거래면 PG 재호출 없음. 선택 트랜잭션 커밋 뒤 별도 트랜잭션으로 P8~P9. 동시 선택은 신청 낙관적 락으로 하나만 반영(나머지 409)
+- 2026-10-17 [CC] 6.1 `policy.refund-retry-max`(=`siktak.policy.refund-retry-max`, 기본 3)는 첫 시도 뒤 재시도 횟수 — PG를 최대 4번 부르고 실패하면 P10 + `ExceptionCase(REFUND_FAILED)`. 재시도는 작업 실행기 `REFUND_RETRY`(1분 뒤), 기동 시 `REFUND_PROCESSING` 신청은 즉시 catch-up
+- 2026-10-17 [CC] 6.1 운영자 재처리(P11)는 PG 1회 시도, 실패 시 다시 P10(예외는 열린 채). 수동 완료(P12)는 사유 필수, `payments.tx_status`는 PG 사실대로 `CANCEL_FAILED` 유지
+- 2026-10-17 [CC] 6.1 1회권 크레딧은 `user_passes(SINGLE_CREDIT, source_application_id)`, V5 부분 유니크로 신청당 1개. 크레딧으로 낸 신청의 "크레딧 복원"은 새 크레딧 발급으로 처리. 환불 선택은 1회권 결제(`REFUND_AVAILABLE`)만
+- 2026-10-17 [CC] 모의 결제 취소 실패 주입 `siktak.payment.mock.fail-cancel`(환경변수 `SIKTAK_PAYMENT_MOCK_FAIL_CANCEL`) — 환불 실패·예외 처리함 시연용

@@ -99,8 +99,8 @@ Render 서버는 상시 가동하지만 **Neon DB는 실제 작업이 있을 때
 - 포트: `PaymentGateway`
 - 설정: `siktak.payment.provider=mock`
 - 용도: 로컬 개발, 테스트, 데모 기본값. PRD PAY-01·PAY-03은 해커톤에서 모의 결제·모의 환불을 허용한다.
-- 동작: (구현 시 작성) 승인·거절·환불 성공·환불 실패를 재현하는 방법
-- 멱등성: (구현 시 작성) 멱등 키 처리 방식
+- 동작: 승인은 항상 성공(`mock_{orderId}`). 환불(`cancel`)은 기본 성공, `siktak.payment.mock.fail-cancel=true`(환경변수 `SIKTAK_PAYMENT_MOCK_FAIL_CANCEL=true`)면 항상 실패 → 1분 간격 재시도 3회 뒤 `REFUND_FAILED` + 예외 처리함 (6.1). 거절 재현은 아직 없음
+- 멱등성: 승인은 `orderId`, 환불은 `refund-pay-{paymentId}` 멱등 키. 같은 키로 이미 취소됐으면 다시 성공만 돌려준다. 서비스는 결제 행을 잠그고 이미 취소된 거래면 PG를 부르지 않는다
 
 ## 5. 토스페이먼츠 (테스트 모드)
 
