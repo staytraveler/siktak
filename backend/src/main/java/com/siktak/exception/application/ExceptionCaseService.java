@@ -49,6 +49,16 @@ public class ExceptionCaseService {
         return status == null ? repository.findAllByOrderByIdAsc() : repository.findByCaseStatusOrderByIdAsc(status);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<ExceptionCase> find(Long id) {
+        return repository.findById(id);
+    }
+
+    /** 자동 환불 실패 예외 키 (신청당 1개). */
+    public static String refundFailedKey(Long applicationId) {
+        return "REFUND_FAILED:application-" + applicationId;
+    }
+
     /** 식당 미배정 예외 키 (테이블당 1개). */
     public static String venueUnavailableKey(Long diningTableId) {
         return "VENUE_UNAVAILABLE:table-" + diningTableId;
