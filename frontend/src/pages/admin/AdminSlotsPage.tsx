@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
 import type { Slot } from '../../api/types'
-import UserPicker from '../../components/UserPicker'
+import SessionBar from '../../components/SessionBar'
 import { formatDateTime } from '../../lib/format'
 
 // 회차 관리 (/admin/slots): 생성 폼 + 목록 + [2.3] 매칭 실행 버튼(스케줄러 대체)
@@ -20,7 +20,7 @@ export default function AdminSlotsPage() {
           </Link>
           <h1 className="text-2xl font-bold">회차 관리</h1>
         </div>
-        <UserPicker area="admin" />
+        <SessionBar />
       </header>
       <CreateSlotForm />
       <section className="mt-6 space-y-3">

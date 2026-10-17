@@ -1,12 +1,5 @@
 // API 응답 타입. OpenAPI 타입 생성(src/api/generated/) 도입 전까지 수동 정의한다.
 
-export interface DevUser {
-  id: number
-  loginId: string
-  name: string
-  role: 'PARTICIPANT' | 'OPERATOR'
-}
-
 export interface Region {
   id: number
   name: string

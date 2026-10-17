@@ -13,6 +13,8 @@ public enum ErrorCode {
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다."),
+    ACCOUNT_BANNED(HttpStatus.FORBIDDEN, "이용이 정지된 계정입니다."),
     NOT_FOUND(HttpStatus.NOT_FOUND, "대상을 찾을 수 없습니다."),
     INVALID_STATE_TRANSITION(HttpStatus.CONFLICT, "현재 상태에서 할 수 없는 처리입니다."),
     CONFLICT(HttpStatus.CONFLICT, "요청이 현재 데이터와 충돌합니다."),
