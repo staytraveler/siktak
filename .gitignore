@@ -25,9 +25,7 @@ npm-debug.log*
 *.iml
 *.ipr
 *.iws
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+.vscode/
 .cursor/
 
 # OS
