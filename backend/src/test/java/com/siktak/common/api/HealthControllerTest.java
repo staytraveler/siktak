@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.siktak.common.config.SecurityConfig;
 import com.siktak.common.infra.DatabaseHealthChecker;
+import com.siktak.user.infra.UserRepository;
 
 @WebMvcTest(HealthController.class)
 @Import({SecurityConfig.class, HealthControllerTest.FixedClockConfig.class})
@@ -34,6 +35,9 @@ class HealthControllerTest {
 
     @MockitoBean
     private DatabaseHealthChecker databaseHealthChecker;
+
+    @MockitoBean
+    private UserRepository userRepository;
 
     @Test
     void liveness는_인증_없이_UP과_Clock_기준_시각을_반환하고_DB를_조회하지_않는다() throws Exception {
@@ -68,7 +72,8 @@ class HealthControllerTest {
     @Test
     void 공개_경로가_아니면_인증이_필요하다() throws Exception {
         mockMvc.perform(get("/api/v1/anything"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
     @TestConfiguration
