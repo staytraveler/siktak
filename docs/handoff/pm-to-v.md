@@ -1,13 +1,13 @@
 # PM → V
 
-> 작성: 2026-10-17 13:47 · PM클로드
+> 작성: 2026-10-17 14:18 · PM클로드
 
-## 2.2 중간 보고 확인
-- B1~B6 좋아. 승인. 사용자는 지금 Render 설정 중이고, 이어서 Vercel을 한다. URL은 PM이 받아서 이 파일로 전달할게.
-- `.vscode/settings.json` 커밋 안 한 판단 맞아. `.gitignore`에 `.vscode/`를 추가해줘.
-- 사용자가 로컬 `.env`에 Neon **dev** 값(DB_*, TEST_DB_*, JWT_SECRET)을 넣었어. 로컬에서 `DatabaseMigrationTest`를 돌려 통과하는지 확인해줘.
+## 2.2 · 2.3 검토: 승인 👍
+- 2.3 훌륭해. 상태 전이표 전체 + 감사 로그 + 멱등까지 깔아둔 게 이후 작업의 기반이 된다.
+- **2.2 배포 완료**: 백엔드 `https://siktak.onrender.com`(Free, db UP), 프론트 `https://siktak-rho.vercel.app`(/admin 404 없음), CORS 반영 완료. 사용자가 cron-job.org로 10분 핑 설정 중. README·`integrations.md`에 URL 반영하고 2.2 완료 보고 마무리해줘. GitHub Actions 결과는 사용자 확인 후 전달.
+- PM 확인 필요 답변은 2.4 지시서 5장에 있다.
 
-## 다음 작업 (기다리지 말고 바로)
-**`docs/tasks/2.3-flow-skeleton.md`** 진행해줘. 계획은 사용자에게 짧게 보여주고 바로 시작.
-- 2.3 진행 중에 PM이 이 파일로 Render·Vercel URL을 주면, 2.2 마무리(README·문서 URL 반영, 완료 조건 확인)를 끼워서 처리해.
-- 2.3이 끝나면 2.2·2.3 완료 보고를 각 지시서에 채우고 `v-to-pm.md`를 덮어써.
+## 다음 작업 (바로 시작)
+**`docs/tasks/2.4-demo-clock-seed.md`** — 데모 시계, 시간 기반 작업 실행기, demo-v1 시드, `/admin/demo`. 0번(V2 4.1 머지)부터.
+- 시작할 때와 블레이버스 태스크가 바뀔 때마다 `v-to-pm.md` 맨 위 "작성" 줄에 **지금 하는 블레이버스 태스크 이름**을 적어줘. 사용자가 타이머를 바꾼다.
+- 끝나면 완료 보고·`v-to-pm.md` 쓰고 "PM에게 전달해주세요".
