@@ -1,0 +1,15 @@
+# 운영(Render): 모든 접속 정보와 시크릿은 환경변수로만 받는다.
+server:
+  port: ${PORT:8080}
+
+siktak:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  jwt:
+    secret: ${JWT_SECRET}
+  payment:
+    provider: ${SIKTAK_PAYMENT_PROVIDER:mock}
+
+springdoc:
+  swagger-ui:
+    enabled: true
