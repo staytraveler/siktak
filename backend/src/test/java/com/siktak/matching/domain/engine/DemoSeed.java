@@ -30,11 +30,11 @@ import com.siktak.profile.domain.Mbti;
  *
  * <p>S2 그룹(user17~22)의 성향은 이 클래스의 값이 정본이다 (demo-scenario.md 3-3에 같은 값을 적었다).
  */
-final class DemoSeed {
+public final class DemoSeed {
 
-    static final long S1 = 1; // 성수, D
-    static final long S2 = 2; // 홍대/합정, D
-    static final long S3 = 3; // 성수, D+1 (J1 실행 대상 아님)
+    public static final long S1 = 1; // 성수, D
+    public static final long S2 = 2; // 홍대/합정, D
+    public static final long S3 = 3; // 성수, D+1 (J1 실행 대상 아님)
 
     static final long SEONGSU = 1;
     static final long HONGDAE = 2;
@@ -42,7 +42,7 @@ final class DemoSeed {
     private DemoSeed() {
     }
 
-    static MatchingInput j1Input() {
+    public static MatchingInput j1Input() {
         List<SlotInfo> slots = List.of(slot(S1, D, SEONGSU), slot(S2, D, HONGDAE));
         List<Candidate> candidates = List.of(
                 // 3-1. S1 성수 그룹

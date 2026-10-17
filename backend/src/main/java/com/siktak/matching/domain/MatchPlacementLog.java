@@ -50,6 +50,28 @@ public class MatchPlacementLog extends BaseTimeEntity {
     @Column(name = "reason_text", nullable = false)
     private String reasonText;
 
+    @Column(name = "from_slot_id")
+    private Long fromSlotId;
+
+    @Column(name = "to_slot_id")
+    private Long toSlotId;
+
+    /** 미배치가 된 원래 원인 (matching.md 11장 I8). */
+    @Column(name = "cause_code")
+    private String causeCode;
+
+    /** 엔진(v2) 배치 로그. 임시 테이블은 DB ID가 없어 확정 로그에만 {@code toTableId}가 있다. */
+    public static MatchPlacementLog fromEngine(Long matchRunId, Long applicationId, MatchDecision decision,
+            Long fromSlotId, Long toSlotId, Long toTableId, Integer reallocStep, String reasonCode, String causeCode,
+            String reasonText) {
+        MatchPlacementLog log = of(matchRunId, applicationId, decision, toTableId, reasonCode, reasonText);
+        log.fromSlotId = fromSlotId;
+        log.toSlotId = toSlotId;
+        log.reallocStep = reallocStep;
+        log.causeCode = causeCode;
+        return log;
+    }
+
     public static MatchPlacementLog of(Long matchRunId, Long applicationId, MatchDecision decision,
             Long toTableId, String reasonCode, String reasonText) {
         MatchPlacementLog log = new MatchPlacementLog();

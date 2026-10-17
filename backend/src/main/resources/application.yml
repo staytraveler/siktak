@@ -41,6 +41,9 @@ siktak:
     provider: mock
   notification:
     channel: in-app
+  matching:
+    # v2: 매칭 엔진(matching.domain.engine) / simple: 2.3 가짜 순차 매칭 (데모 직전 비상 전환용)
+    engine: ${SIKTAK_MATCHING_ENGINE:v2}
   # [2.3] 개발용 시드(지역·테스트 계정·회차 1개). 2.4 정식 시드·데모 도구로 대체한다.
   dev-seed:
     enabled: ${SIKTAK_DEV_SEED_ENABLED:true}

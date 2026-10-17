@@ -23,7 +23,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/** 매칭으로 만들어진 테이블 (erd.md dining_tables). 식당 배정(venue_id)은 5.x에서 채운다. */
+/** 매칭으로 만들어진 테이블 (erd.md dining_tables). 식당은 확정 직후 자동 배정한다 (4.4). */
 @Getter
 @Entity
 @Table(name = "dining_tables")
@@ -83,5 +83,33 @@ public class DiningTable extends BaseTimeEntity {
         table.summary = new HashMap<>(summary);
         table.confirmedAt = confirmedAt;
         return table;
+    }
+
+    /** 매칭 엔진(v2)이 확정한 테이블. 점수 상세와 PRD 7.2 요약을 함께 저장한다. */
+    public static DiningTable confirmedByEngine(Long eventSlotId, Long matchRunId, int memberCount,
+            BigDecimal totalScore, Map<String, Object> scoreDetail, Map<String, Object> summary, Instant confirmedAt) {
+        DiningTable table = confirmed(eventSlotId, matchRunId, memberCount, summary, confirmedAt);
+        table.totalScore = totalScore;
+        table.scoreDetail = new HashMap<>(scoreDetail);
+        return table;
+    }
+
+    /** 예약명은 처음 정한 값을 계속 쓴다 (재배정해도 바뀌지 않음). */
+    public void proposeReservationName(String name) {
+        if (this.reservationName == null) {
+            this.reservationName = name;
+        }
+    }
+
+    public boolean hasVenue() {
+        return venueId != null;
+    }
+
+    public void assignVenue(Long venueId, Instant at) {
+        if (this.venueId != null) {
+            throw new IllegalStateException("이미 식당이 배정된 테이블이다: " + id);
+        }
+        this.venueId = venueId;
+        this.venueAssignedAt = at;
     }
 }
