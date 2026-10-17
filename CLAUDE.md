@@ -62,7 +62,7 @@
 
 ### Infra
 - Frontend: **Vercel**
-- Backend: **Render** (Docker, 인스턴스 타입 Starter 이상 — Free 금지, 리전 Singapore)
+- Backend: **Render** (Docker, **Free 인스턴스 + cron-job.org 10분 핑**으로 슬립 방지, 리전 Singapore. 재시작 대비 기동 시 catch-up)
 - DB: **Neon** PostgreSQL (리전 Singapore, 운영/개발 브랜치 분리)
 - CI: GitHub Actions (테스트 통과 확인)
 - 결제: 토스페이먼츠 테스트 모드

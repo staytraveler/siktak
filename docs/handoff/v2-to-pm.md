@@ -1,27 +1,30 @@
 # V2 → PM
 
-> 작성: 2026-10-17 · V2 · 지금 하는 블레이버스 태스크: **MatchRun 실행 기록 및 배치 사유 저장** (4.4 — 스키마 V3·예외 큐·식당 배정·엔진 연결 커밋 완료, 조회 API·시드 남음)
-> 아래는 4.2 완료 보고
+> 작성: 2026-10-17 16:13 · V2 · 지금 하는 블레이버스 태스크: **없음 (4.4 완료, PM 검토 대기)**
 
 ## 결과 요약
-- 4.1 PM 확정 반영 + 4.2 계산 로직 4개 완료. `feat/matching-engine`에 기능별 커밋·push (main 머지 안 함)
-  - `fc63359` 4.1 엔진 (I번호 주석, 사유 코드 문구, demo-scenario 3-3 성향 열 반영)
-  - `e1a8574` 식당 자동 배정 / `9ea8257` 대화 주제 선택 + 시드 콘텐츠 28개 / `9646e7d` 대체 일정 추천 / `4e4923e` 확정 후 취소 재배치 / `5f10789` 진행 기록
-- 테스트: 4.2 신규 29개, 전체 `./gradlew test` 72개 통과
-- 시드 기준 확인: S1 식당 2개 배정 + 1개 `VENUE_UNAVAILABLE`, J2 user14 추천 S4 → S5, E21·E22 통과
-- 상세는 `docs/tasks/4.2-pure-domain-logic.md` 완료 보고
+- 4.4 완료. main 머지(`181f466`) 후 기능별 커밋·push: `d1d3b37` V3·예외 큐·식당 배정 / `bd124c0` 엔진 v2 연결 / `c79688a` 조회 API·시드 / `330b78d` 문서. main 머지는 안 함
+- **DB 통합 테스트(Neon dev)로 J1·J2가 demo-scenario 4장과 일치**: S2 6인, S1 3테이블(user05·06 분리), user15 2단계 재배치, user14 WAITING → J2에서 ALTERNATIVE_OFFERED(추천 S4→S5), user16 제외, S1 테이블 1개 `VENUE_UNAVAILABLE` 예외, E20 재실행 중복 없음, 운영자 재배정
+- 엔진 전환 `siktak.matching.engine=v2|simple` (기본 v2)
+- 상세는 `docs/tasks/4.4-matching-pipeline.md` 완료 보고
 
 ## 블레이버스 체크할 태스크
-- 지역·시간·인원 기준 자동 배정
-- 공통 관심사 기반 대화 주제 생성
-- 대체 날짜·지역 추천 로직
+- 최소 점수 기준 자동 확정 / 실패자 ALTERNATIVE_OFFERED 전환 / MatchRun 실행 기록 및 배치 사유 저장
+- 식당·수용 인원 데이터 구조 / 배정 실패 시 대체 탐색 및 예외 전환
+- ExceptionCase 저장 구조
 
 ## PM 확인 필요
-1. **가격대 코드 목록 정의 필요**: `profiles.price_range`와 `venues.price_range` 값이 정해지지 않아 문자열 일치로만 센다. 같은 코드 목록을 정해 주면 시드·화면에 맞춘다
-2. 예약명 순번은 넘겨받은 회차 테이블 목록 기준이다. 재배정 때 순번이 바뀌지 않도록 호출 측(V1)이 회차 전체를 넘기거나 처음 예약명을 저장해야 한다
-3. 취소 재배치 실패 사유는 `UNDER_MIN_SIZE`, 옮긴 사람은 1단계 `REALLOCATED_SAME_SLOT`
-4. V1 참고: `ContentType` enum·시드 JSON·`ConversationContentSeed` 로더가 이미 있으니 콘텐츠 엔티티·시드 투입에서 재사용. 회차 상태는 `SlotStatus`를 만들지 않고 `open` boolean으로 받는다
-5. 시드 콘텐츠 문구와 QUIET 태그 검토
+1. **`TableMatcher` 포트 대신 `MatchingService` 분기**: 포트로는 여러 회차 재배치·사유·실패를 담을 수 없어서. v2는 "호출 회차 + 매칭 시각 도래한 미매칭 회차"를 한 번에 실행하고, 이미 매칭된 회차로 다시 부르면 그 실행을 돌려준다
+2. 계정 제한 예외 = `SAFETY_REPORT`, 프로필 없음 = `DATA_MISSING`(WAITING 유지)
+3. deferred는 M4a만, `respond_by` = 1순위 회차 시작 시각, 테이블 없는 대상 회차도 `MATCHED`
+4. ERD `match_placement_logs`: decision `DEFERRED`·`EXCLUDED`, 컬럼 `from_slot_id`·`to_slot_id`·`cause_code` 반영 요청
+
+## V1에게 전달할 것
+- **마이그레이션 V3 사용함** (`V3__matching_pipeline.sql`). V1은 V4부터
+- 2.4 스케줄러는 지금처럼 `MatchingService.runForSlot(slotId, null)`을 부르면 된다 (operatorId null = 스케줄러). S1·S2가 같은 시각이어도 한 번만 실행됨
+- demo-v1 시드에서 지역·회차 생성 후 `DemoVenueSeed.seed(성수, 홍대합정, 강남 regionId, {"S1".."S5": slotId})`와 `ConversationContentSeeder.seedIfEmpty()` 호출, 프로필 `price_range`에 `UNDER_20K`/`20K_40K`/`OVER_40K` 값 넣기
+- `Application`에 `match_fail_reason` 쓰기 메서드(예: `recordMatchFailReason(String)`) 추가 부탁. 지금은 [임시]로 flush 뒤 SQL 갱신 중이고, 메서드가 생기면 바꾼다
+- `FlowSkeletonIntegrationTest`에 `siktak.matching.engine=simple`을 지정했다 (가짜 매칭 동작 검증용)
 
 ## 사용자 작업 요청
-- 없음
+- 없음 (DB 테스트는 Neon dev에 임시 스키마를 만들어 돌린 뒤 삭제했다. public 스키마는 그대로)
