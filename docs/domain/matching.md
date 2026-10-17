@@ -140,6 +140,7 @@ CTO 자료 03·09의 화면 항목을 기준으로 정했다. 프로필 입력 �
 | 희망 상대 성향 (최대 3) | `preferred_traits` | 본인 성향과 같은 목록 |
 | 관심사 (최대 5) | `interests` | `FOOD`(맛집), `TRAVEL`(여행), `MOVIE`(영화), `SPORTS`(운동), `READING`(독서), `EXHIBITION`(전시), `MUSIC`(음악), `GAME`(게임), `PET`(반려동물), `CAREER`(자기계발) |
 | MBTI | `mbti` | 16종 또는 미입력 |
+| 희망 식사 가격대 | `price_range` (프로필·식당 공통) | `UNDER_20K`(2만 원 미만), `20K_40K`(2~4만 원), `OVER_40K`(4만 원 이상) |
 
 > `conversation_style`은 MVP에서 매칭 점수에 넣지 않고, 테이블 큐레이션 문구와 대화 콘텐츠 선택에만 쓴다.
 
