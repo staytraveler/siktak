@@ -5,3 +5,8 @@ spring:
     url: ${TEST_DB_URL}
     username: ${TEST_DB_USERNAME}
     password: ${TEST_DB_PASSWORD}
+
+siktak:
+  # 테스트는 필요한 데이터를 스스로 만든다
+  dev-seed:
+    enabled: false

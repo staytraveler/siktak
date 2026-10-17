@@ -41,3 +41,6 @@ siktak:
     provider: mock
   notification:
     channel: in-app
+  # [2.3] 개발용 시드(지역·테스트 계정·회차 1개). 2.4 정식 시드·데모 도구로 대체한다.
+  dev-seed:
+    enabled: ${SIKTAK_DEV_SEED_ENABLED:true}
