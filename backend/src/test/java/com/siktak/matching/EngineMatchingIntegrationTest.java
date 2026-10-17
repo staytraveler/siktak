@@ -41,6 +41,7 @@ import com.siktak.exception.domain.CaseStatus;
 import com.siktak.exception.domain.CaseType;
 import com.siktak.exception.domain.ExceptionCase;
 import com.siktak.exception.infra.ExceptionCaseRepository;
+import com.siktak.matching.application.MatchQueryService;
 import com.siktak.matching.application.MatchingService;
 import com.siktak.matching.application.TableVenueService;
 import com.siktak.matching.domain.DiningTable;
@@ -62,9 +63,9 @@ import com.siktak.slot.infra.RegionRepository;
 import com.siktak.user.domain.User;
 import com.siktak.user.domain.UserRole;
 import com.siktak.user.infra.UserRepository;
+import com.siktak.content.application.ConversationContentSeeder;
+import com.siktak.venue.application.DemoVenueSeed;
 import com.siktak.venue.domain.Venue;
-import com.siktak.venue.domain.VenueSlotCapacity;
-import com.siktak.venue.infra.VenueRepository;
 import com.siktak.venue.infra.VenueSlotCapacityRepository;
 
 /**
@@ -126,7 +127,9 @@ class EngineMatchingIntegrationTest {
     @Autowired private ApplicationService applicationService;
     @Autowired private MatchingService matchingService;
     @Autowired private TableVenueService tableVenueService;
-    @Autowired private VenueRepository venueRepository;
+    @Autowired private MatchQueryService matchQueryService;
+    @Autowired private DemoVenueSeed demoVenueSeed;
+    @Autowired private ConversationContentSeeder contentSeeder;
     @Autowired private VenueSlotCapacityRepository capacityRepository;
     @Autowired private DiningTableRepository diningTableRepository;
     @Autowired private TableMemberRepository tableMemberRepository;
@@ -163,12 +166,11 @@ class EngineMatchingIntegrationTest {
         s4 = slot(seongsu, d.plusDays(7).atTime(19, 30), d.plusDays(5).atTime(12, 0));
         s5 = slot(gangnam, d.plusDays(7).atTime(19, 30), d.plusDays(5).atTime(12, 0));
 
-        oak = venueRepository.save(Venue.create(seongsu.getId(), "성수 오크테이블", "서울 성동구", null, "20K_40K", null));
-        green = venueRepository.save(Venue.create(seongsu.getId(), "성수 그린키친", "서울 성동구", null, "20K_40K", null));
-        mono = venueRepository.save(Venue.create(hongdae.getId(), "합정 모노다이닝", "서울 마포구", null, "20K_40K", null));
-        capacityRepository.save(VenueSlotCapacity.of(oak.getId(), s1.getId(), 2, 6));
-        capacityRepository.save(VenueSlotCapacity.of(green.getId(), s1.getId(), 0, 6));
-        capacityRepository.save(VenueSlotCapacity.of(mono.getId(), s2.getId(), 1, 6));
+        List<Venue> venues = demoVenueSeed.seed(seongsu.getId(), hongdae.getId(), gangnam.getId(), Map.of(
+                "S1", s1.getId(), "S2", s2.getId(), "S3", s3.getId(), "S4", s4.getId(), "S5", s5.getId()));
+        oak = venues.get(0);
+        green = venues.get(1);
+        mono = venues.get(2);
 
         operatorId = userRepository.save(User.create("admin-" + tag, UserRole.OPERATOR, "운영자", null)).getId();
         Map<Long, Long> slotIds = Map.of(DemoSeed.S1, s1.getId(), DemoSeed.S2, s2.getId(), DemoSeed.S3, s3.getId());
@@ -283,6 +285,15 @@ class EngineMatchingIntegrationTest {
         assertThat(exceptionCaseRepository.findById(venueCases.get(0).getId()).orElseThrow().getCaseStatus())
                 .isEqualTo(CaseStatus.RESOLVED);
         assertThat(tableVenueService.assignVenue(noVenue.getId(), operatorId).getVenueId()).isEqualTo(green.getId());
+
+        // 참가자 매칭 근거 (7-3): 재배치 사유는 보이고, 다른 참가자 정보·점수는 없다
+        MatchQueryService.Explanation e15 = matchQueryService.explain(u15);
+        assertThat(e15.criteria()).isEqualTo(MatchQueryService.CRITERIA_TEXT);
+        assertThat(e15.reallocation()).isEqualTo("같은 날 선택하신 다른 지역 테이블로 조정되었어요");
+        assertThat(e15.ageBand()).contains("대");
+        assertThat(e15.genderRatio()).startsWith("남 ");
+        assertThat(matchQueryService.explain(app.get(1)).reallocation()).isNull();
+        assertThat(matchQueryService.explain(u14).message()).isEqualTo("선택하신 다음 일정에서 다시 매칭해요");
     }
 
     @Test
@@ -308,6 +319,20 @@ class EngineMatchingIntegrationTest {
         // user14의 respond_by는 원래 1순위(S1) 행사 시작 시각
         assertThat(resolutionRepository.findByApplicationId(app.get(14).getId()).orElseThrow().getRespondBy())
                 .isEqualTo(s1.getStartsAt());
+    }
+
+    @Test
+    void 시드_식당_수용량과_대화콘텐츠가_들어가고_콘텐츠는_한_번만_들어간다() {
+        assertThat(capacityRepository.findByEventSlotIdOrderByVenueIdAsc(s4.getId())).hasSize(2)
+                .allSatisfy(c -> assertThat(c.getMaxTables()).isEqualTo(2));
+        assertThat(capacityRepository.findByEventSlotIdOrderByVenueIdAsc(s5.getId())).singleElement()
+                .satisfies(c -> assertThat(c.getMaxTables()).isEqualTo(2));
+
+        jdbc.update("delete from conversation_contents");
+        assertThat(contentSeeder.seedIfEmpty()).isEqualTo(28);
+        assertThat(contentSeeder.seedIfEmpty()).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from conversation_contents where tags @> '[\"QUIET\"]'",
+                Integer.class)).isEqualTo(13);
     }
 
     // ------------------------------------------------------------------ 도우미
