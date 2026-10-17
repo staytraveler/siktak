@@ -62,7 +62,7 @@
 
 ### Infra
 - Frontend: **Vercel**
-- Backend: **Render** (Docker, 인스턴스 타입 Starter 이상 — Free 금지, 리전 Singapore)
+- Backend: **Render** (Docker, **Free 인스턴스 + cron-job.org 10분 핑**으로 슬립 방지, 리전 Singapore. 재시작 대비 기동 시 catch-up)
 - DB: **Neon** PostgreSQL (리전 Singapore, 운영/개발 브랜치 분리)
 - CI: GitHub Actions (테스트 통과 확인)
 - 결제: 토스페이먼츠 테스트 모드
@@ -197,8 +197,18 @@ siktak/
 | **PM클로드** | 기획 세션 (Claude 앱) | 작업지시서 작성, V클로드 결과 검토, 전체 진행도 관리 |
 | **V클로드** | 이 세션 (VS Code Claude Code) | 지시서대로 구현·테스트·커밋, 완료 보고 작성 |
 
-### 소통 방식
-- PM → V: `docs/tasks/`의 **작업지시서**. 사용자가 PM클로드의 짧은 메시지를 그대로 붙여넣어 전달한다. `[PM]`으로 시작하는 사용자 메시지는 PM클로드가 쓴 것이다.
+### 소통 방식 (메시지 파일)
+두 세션은 아래 두 파일로 대화한다. 사용자는 내용을 옮기지 않고 **신호만** 전달한다.
+
+| 파일 | 쓰는 쪽 | 내용 |
+|---|---|---|
+| `docs/handoff/pm-to-v.md` | PM클로드 | 다음에 할 일, 검토 결과, 결정 사항 |
+| `docs/handoff/v-to-pm.md` | V클로드 | 작업 결과 요약, PM 확인 필요 사항, 사용자 작업 요청 |
+
+- 사용자가 **"PM 확인"**이라고 하면: `docs/handoff/pm-to-v.md`를 읽고 그대로 진행한다.
+- V클로드는 작업이 끝나거나 PM 판단이 필요하면 `docs/handoff/v-to-pm.md`를 **최신 내용으로 덮어쓰고**, 사용자에게 "PM에게 전달해주세요" 한 줄로 알린다.
+- 각 파일 맨 위에는 작성 시각을 적는다. 이전 내용은 남기지 않는다 (이력은 git과 `docs/progress.md`에 남는다).
+- 작업 단위 지시는 `docs/tasks/`의 **작업지시서**, 결과는 지시서 맨 아래 **완료 보고**에도 남긴다.
 - V → PM: 지시서 맨 아래 **완료 보고**와 `docs/progress.md`. PM클로드는 이 폴더를 직접 읽을 수 있으므로, 사용자에게는 짧게 요약만 하면 된다.
 - PM클로드는 `docs/` 아래 문서만 수정하고 코드는 건드리지 않는다. V클로드는 `docs/tasks/`의 지시서 본문과 `docs/domain/` 명세를 PM 확인 없이 바꾸지 않는다.
 - 판단이 필요한 질문은 V클로드가 혼자 정하지 말고 완료 보고나 응답의 **"PM 확인 필요"**에 적는다. 사용자가 PM클로드에게 전달한다.

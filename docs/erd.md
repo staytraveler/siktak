@@ -296,9 +296,12 @@ erDiagram
 | id | bigint PK | |
 | match_run_id | bigint FK | |
 | application_id | bigint FK | |
-| decision | varchar | `PLACED` / `REALLOCATED` / `CONFIRMED` / `FAILED` |
+| decision | varchar | `PLACED` / `REALLOCATED` / `CONFIRMED` / `FAILED` / `DEFERRED` / `EXCLUDED` |
 | from_table_id | bigint null | |
 | to_table_id | bigint null | |
+| from_slot_id | bigint null | 재배치 출발 회차 |
+| to_slot_id | bigint null | 재배치 도착 회차 |
+| cause_code | varchar null | 처음 미배치 원인 (matching.md 11장 I8) |
 | realloc_step | int null | PRD 7.4 재배치 단계 (1~4) |
 | reason_code | varchar | 예: `UNDER_MIN_SIZE`, `AGE_GAP`, `BLOCKED_PAIR`, `LOW_SCORE` |
 | reason_text | text | 사람이 읽을 수 있는 설명 |

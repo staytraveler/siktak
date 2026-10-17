@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.siktak.common.error.BusinessException;
 import com.siktak.common.error.ErrorCode;
+import com.siktak.common.schedule.ScheduledJob;
+import com.siktak.common.schedule.ScheduledJobRegistry;
 import com.siktak.slot.api.CreateSlotRequest;
 import com.siktak.slot.domain.EventSlot;
 import com.siktak.slot.domain.Region;
@@ -26,6 +28,7 @@ public class SlotService {
 
     private final EventSlotRepository eventSlotRepository;
     private final RegionRepository regionRepository;
+    private final ScheduledJobRegistry jobRegistry;
     private final Clock clock;
 
     @Transactional
@@ -41,8 +44,11 @@ public class SlotService {
         if (request.applyDeadlineAt().isAfter(request.matchRunAt())) {
             throw invalid("applyDeadlineAt", "신청 마감은 매칭 실행 시각 이전이어야 합니다.");
         }
-        return eventSlotRepository.save(EventSlot.create(region, request.startsAt(), request.endsAt(),
+        EventSlot slot = eventSlotRepository.save(EventSlot.create(region, request.startsAt(), request.endsAt(),
                 request.capacity(), request.applyDeadlineAt(), request.matchRunAt()));
+        // 매칭 마감 시각에 자동 매칭 (커밋 후 메모리 일정에 등록, DB 폴링 없음)
+        jobRegistry.schedule(new ScheduledJob(MatchRunJobHandler.JOB_TYPE, slot.getId(), slot.getMatchRunAt()));
+        return slot;
     }
 
     public List<EventSlot> findAll() {

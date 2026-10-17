@@ -44,6 +44,12 @@ siktak:
   matching:
     # v2: 매칭 엔진(matching.domain.engine) / simple: 2.3 가짜 순차 매칭 (데모 직전 비상 전환용)
     engine: ${SIKTAK_MATCHING_ENGINE:v2}
-  # [2.3] 개발용 시드(지역·테스트 계정·회차 1개). 2.4 정식 시드·데모 도구로 대체한다.
-  dev-seed:
-    enabled: ${SIKTAK_DEV_SEED_ENABLED:true}
+  # 데모 도구: 데모 시계(offset)·시드 초기화·J1~J6 점프 (docs/demo-scenario.md). false면 offset 0 고정, 데모 API 404
+  demo:
+    enabled: ${SIKTAK_DEMO_ENABLED:true}
+    # 빈 DB로 기동하면 demo-v1 시드를 자동 투입
+    auto-seed: ${SIKTAK_DEMO_AUTO_SEED:true}
+  # 시간 기반 작업 실행기: 틱은 메모리 일정만 본다 (DB 폴링 없음)
+  scheduler:
+    enabled: ${SIKTAK_SCHEDULER_ENABLED:true}
+    tick: PT1M

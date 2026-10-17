@@ -20,6 +20,18 @@
 - 이슈: `applications.match_fail_reason`은 쓰기 메서드가 없어 [임시] SQL로 갱신(V1에 도메인 메서드 요청). 시드 연결·프로필 가격대는 V1 시드에 요청
 - 다음: PM 검토 → main 머지 지시 대기
 
+## 2026-10-17 16:13 (2.4)
+- 완료: 2.4 데모 시계·시간 기반 작업 실행기·demo-v1 시드·/admin/demo — PRD 18장 시연 전반, MAT-01(시각 기반 자동 실행)
+  - V2 4.1·4.2 main 머지, 2.2 URL 반영·완료 보고
+  - DemoClock(offset 메모리) + DemoClockService(변경 시만 settings 저장, 기동 시 1회 적재)
+  - ScheduledJobRegistry(메모리) + ScheduledJobRunner(1분 틱, 도래 작업만 ShedLock, 기동 catch-up, 재시도 3회) + MatchRunJobHandler, 회차 생성 시 등록
+  - DemoSeedService(TRUNCATE → offset 0 → 지역 3·회차 5·사용자 31·프로필·신청 27 → SeedContributor) + 빈 DB 자동 투입, DevSeedRunner 제거
+  - 데모 API·화면(J1~J6, +1시간, +1일, 시드 초기화)
+  - 검증: 테스트 115건 통과, 로컬 Neon dev·배포 Render 모두 시드 초기화 → J1 → S1·S2 자동 매칭 확인
+- 변경: decisions.md [CC] 7건(데모 시계, 실행기, ShedLock 트랜잭션 매니저, 락 시각, 시드 규칙, SeedContributor, 테스트 프로필). V2 영역 MatchingService 최소 수정 1건(사용자 승인)
+- 이슈: ShedLock 기본 설정이 바깥 트랜잭션을 커밋하는 버그 발견·수정(테스트 데이터가 Neon dev에 커밋됐었음). 시드 초기화가 느림(로컬 35초, Render 21초). 가짜 매칭이라 연령 조건 미적용(4.4에서 해결)
+- 다음: PM 다음 지시. V2 4.4 머지 후 배포 시드 재초기화
+
 ## 2026-10-17 (V2, `feat/matching-engine`) 4.2 순수 도메인 로직
 - 완료: DB 없는 계산부 4개, 기능별 커밋·push
   - INF-02 식당 자동 배정 `com.siktak.venue.domain.assign` (`e1a8574`)

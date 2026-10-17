@@ -21,17 +21,17 @@
 ```
 GitHub main push
    ├─ GitHub Actions ── backend 테스트(Postgres 서비스 컨테이너) + frontend lint·build   (배포 안 함)
-   ├─ Vercel ────────── frontend/  →  https://<vercel-url>        (/app, /admin)
-   └─ Render ────────── backend/Dockerfile → https://<render-url>  (/api/v1/**, /swagger-ui.html)
+   ├─ Vercel ────────── frontend/  →  https://siktak-rho.vercel.app        (/app, /admin)
+   └─ Render ────────── backend/Dockerfile → https://siktak.onrender.com  (/api/v1/**, /swagger-ui.html)
                               │
                               └─ Neon PostgreSQL (Singapore, production 브랜치, 쓸 때만 깨움)
 ```
 
 | 대상 | URL |
 |---|---|
-| 참가자 앱 | (배포 후 기입) |
-| 운영자 웹 | (배포 후 기입) |
-| API·Swagger | (배포 후 기입) |
+| 참가자 앱 | https://siktak-rho.vercel.app/app |
+| 운영자 웹 | https://siktak-rho.vercel.app/admin |
+| API·Swagger | https://siktak.onrender.com/swagger-ui.html |
 
 환경변수 목록과 설정 방법: [docs/integrations.md](docs/integrations.md#환경변수)
 
