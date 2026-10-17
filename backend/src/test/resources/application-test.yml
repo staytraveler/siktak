@@ -1,0 +1,7 @@
+# DB 통합 테스트(@Tag("db")) 전용 프로필.
+# CI: GitHub Actions Postgres 서비스 컨테이너 / 로컬: Neon dev 브랜치 (docs/decisions.md)
+spring:
+  datasource:
+    url: ${TEST_DB_URL}
+    username: ${TEST_DB_USERNAME}
+    password: ${TEST_DB_PASSWORD}
