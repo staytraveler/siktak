@@ -16,6 +16,25 @@
 | Frontend | React, TypeScript, Vite, React Router, TanStack Query, axios, Tailwind CSS | Vercel |
 | DB | PostgreSQL | Neon |
 
+## 배포
+
+```
+GitHub main push
+   ├─ GitHub Actions ── backend 테스트(Postgres 서비스 컨테이너) + frontend lint·build   (배포 안 함)
+   ├─ Vercel ────────── frontend/  →  https://<vercel-url>        (/app, /admin)
+   └─ Render ────────── backend/Dockerfile → https://<render-url>  (/api/v1/**, /swagger-ui.html)
+                              │
+                              └─ Neon PostgreSQL (Singapore, production 브랜치, 쓸 때만 깨움)
+```
+
+| 대상 | URL |
+|---|---|
+| 참가자 앱 | (배포 후 기입) |
+| 운영자 웹 | (배포 후 기입) |
+| API·Swagger | (배포 후 기입) |
+
+환경변수 목록과 설정 방법: [docs/integrations.md](docs/integrations.md#환경변수)
+
 ## 폴더 구조
 
 ```
@@ -42,7 +61,8 @@ cd backend
 ./gradlew test             # 테스트
 ```
 
-- 헬스체크: `GET http://localhost:8080/api/v1/health`
+- 헬스체크: `GET http://localhost:8080/api/v1/health` (DB 확인: `/api/v1/health/db`)
+- DB 통합 테스트: `TEST_DB_URL`·`TEST_DB_USERNAME`·`TEST_DB_PASSWORD`(Neon dev)를 설정하면 `@Tag("db")` 테스트도 실행된다
 - API 문서: `http://localhost:8080/swagger-ui.html`
 
 ### Frontend

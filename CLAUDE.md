@@ -125,6 +125,7 @@ siktak/
 - `now()`를 직접 호출하지 않는다. **`Clock` 빈을 주입**해서 쓴다 (데모용 시간 제어).
 - 서버 시간대는 Asia/Seoul. 시각은 `Instant`/`timestamptz`로 저장한다.
 - 금액은 원 단위 `long`.
+- 스케줄러·워커는 DB를 주기적으로 폴링하지 않는다 (decisions.md 참고).
 
 ---
 
