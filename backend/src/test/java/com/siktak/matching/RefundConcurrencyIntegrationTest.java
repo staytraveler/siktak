@@ -112,6 +112,7 @@ class RefundConcurrencyIntegrationTest {
             }
             jdbc.update("delete from applications where user_id = ?", userId);
             jdbc.update("delete from payments where user_id = ?", userId);
+            jdbc.update("delete from profiles where user_id = ?", userId);
             jdbc.update("delete from users where id = ?", userId);
         }
         jdbc.update("delete from event_slots where id = ?", slotId);
@@ -152,6 +153,11 @@ class RefundConcurrencyIntegrationTest {
         return tx.execute(s -> {
             String tag = UUID.randomUUID().toString().substring(0, 8);
             User user = userRepository.save(User.create("conc-" + tag, UserRole.PARTICIPANT, "동시성", null));
+            jdbc.update("""
+                    insert into profiles (user_id, birth_year, gender, interests, self_traits, price_range,
+                                          privacy_agreed_at, policy_agreed_at)
+                    values (?, 1996, 'FEMALE', '["FOOD"]'::jsonb, '["LISTENER"]'::jsonb, '20K_40K', now(), now())
+                    """, user.getId());
             userIds.add(user.getId());
             Application a = applicationService.submit(user.getId(), List.of(slotId), PassType.SINGLE);
             applicationService.approvePayment(user.getId(), a.getId());

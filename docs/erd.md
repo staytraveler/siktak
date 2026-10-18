@@ -505,7 +505,7 @@ erDiagram
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
 | id | bigint PK | |
-| case_type | varchar | `PAYMENT_ERROR` / `REFUND_FAILED` / `DATA_MISSING` / `MATCH_CONFLICT` / `VENUE_UNAVAILABLE` / `NOTIFICATION_FAILED` / `SAFETY_REPORT` |
+| case_type | varchar | `PAYMENT_ERROR` / `REFUND_FAILED` / `DATA_MISSING` / `MATCH_CONFLICT` / `VENUE_UNAVAILABLE` / `NOTIFICATION_FAILED` / `SAFETY_REPORT` / `NO_SHOW_CANDIDATE` (7.1, 행사 종료 시 미체크인 노쇼 후보) |
 | case_status | varchar | `OPEN` / `IN_PROGRESS` / `RESOLVED` |
 | application_id | bigint FK null | |
 | dining_table_id | bigint FK null | |

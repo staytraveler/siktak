@@ -69,6 +69,11 @@ public class EventSlot extends BaseTimeEntity {
         return slotStatus == SlotStatus.OPEN && now.isBefore(applyDeadlineAt);
     }
 
+    /** 행사 종료 처리(EVENT_END)가 끝난 회차 */
+    public void markDone() {
+        this.slotStatus = SlotStatus.DONE;
+    }
+
     public void markMatched() {
         this.slotStatus = SlotStatus.MATCHED;
     }

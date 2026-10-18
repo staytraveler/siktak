@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminDemoController {
 
     private final DemoService demoService;
+    private final DemoScenarioActions actions;
 
     @GetMapping
     public DemoService.DemoStatus status() {
@@ -46,6 +47,24 @@ public class AdminDemoController {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "알 수 없는 점프 코드입니다: " + code);
         }
         return demoService.jump(jump, operator.id());
+    }
+
+    /** 체크인 일괄 (시연용): 1회차 확정자 중 user13을 제외한 전원. */
+    @PostMapping("/check-in-all")
+    public DemoScenarioActions.Result checkInAll() {
+        return actions.checkInAll();
+    }
+
+    /** 피드백 일괄 (시연용): 체크인한 참가자 중 피드백이 없는 사람에게 기본 피드백. */
+    @PostMapping("/feedback-all")
+    public DemoScenarioActions.Result feedbackAll() {
+        return actions.feedbackAll();
+    }
+
+    /** 2회차 신청 투입: 1회차 S1 참석자 전원 + user25·user26이 S4에 신청·결제. */
+    @PostMapping("/round2-applications")
+    public DemoScenarioActions.Result round2Applications() {
+        return actions.round2Applications();
     }
 
     /** 시계를 minutes만큼 앞당긴다 (+1시간 = 60, +1일 = 1440). */

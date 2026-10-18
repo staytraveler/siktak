@@ -82,3 +82,10 @@
 - 2026-10-18 [CC] 5.2 단체방 안내 멱등 키: `table-{id}:guide:venue|guide:pending|curation|policy|reminder-d1|content`. 식당 미배정이면 `guide:pending`("확정 후 안내")을 올리고, 운영자 재배정(`TableVenueService.assignVenue`) 때 `guide:venue`를 추가 게시. 확정 알림은 재배정 때 다시 보내지 않음
 - 2026-10-18 [CC] 5.2 [해석] 집합 시간 = 모임 시작 시각(PRD에 별도 규칙 없음). 취소 정책 문구는 prd.md 63행(진행 2일 전 환불 불가, 당일 취소·단체방 퇴장 불가, 노쇼) 그대로. 큐레이션은 연령대(출생연도 범위)·성비·공통 관심사 집계만 — 이름·점수·개인 선호 없음
 - 2026-10-18 [CC] 5.2 `notification_templates`는 참조 데이터라 데모 초기화(TRUNCATE) 대상에서 제외(`KEEP_TABLES`) — 마이그레이션 V7이 넣은 12종이 초기화 뒤에도 남는다
+- 2026-10-18 [CC] 7.1 참석(`attendances`, V6): 매칭 확정 시 `TableMemberConfirmedEvent`(EngineMatchingService가 발행, 동기 `@EventListener`)로 `SCHEDULED` 생성(T1) — 같은 트랜잭션이라 확정과 참석 생성이 함께 커밋·롤백된다. 참석 상태 이력은 `status_histories(target_type=ATTENDANCE)`에 남기고 전이표 검사는 `AttendanceService`가 한다 (신청 축 서비스와 분리)
+- 2026-10-18 [CC] 7.1 체크인(T2)은 `policy.checkin-open-minutes`(`siktak.policy.checkin-open-minutes`, 기본 30)분 전 ~ 행사 종료까지, 밖이면 409. 이미 체크인했으면 같은 결과(멱등). 참석 취소(T3·T4)는 이번 범위 밖
+- 2026-10-18 [CC] 7.1 행사 종료 작업 `EVENT_END`(대상 = 회차 ID, 시각 = `ends_at`): 회차 상태 `MATCHED → DONE`으로 처리 완료를 표시해 멱등(재실행·catch-up 안전). 별도 컬럼은 만들지 않았다. 기동 시 `MATCHED` 회차를 다시 읽어 지난 것은 즉시 실행
+- 2026-10-18 [CC] 7.1 노쇼 후보는 `attendances.no_show_candidate=true`로만 표시(상태는 `SCHEDULED` 유지, T5는 운영자) + 예외 처리함에 `ExceptionCase(NO_SHOW_CANDIDATE)` 신규 종류로 올린다 — demo-scenario 12단계 "예외 처리함에는 식당 부족(처리 완료)과 노쇼 후보만 존재"를 충족하려고 `case_type`에 값 추가(erd.md 반영). PRD 12장 상태 enum은 건드리지 않음
+- 2026-10-18 [CC] 7.1 만남 이력(`user_encounters`)은 같은 테이블 `ATTENDED` 쌍마다 `insert ... on conflict do nothing`, `met_at` = 행사 시작 시각. 종료 이벤트 `EventEndedEvent(slotId, attendedUserIds, noShowCandidateUserIds)` 발행(V2 피드백 요청 알림이 사용)
+- 2026-10-18 [CC] 7.1 피드백은 `ATTENDED`만 제출(아니면 409), 재참여 의향 1~5·추천 0~10 필수. 사람별 선호는 별도 `PUT /me/applications/{id}/person-preferences`(전체 교체, 멱등) — 동석자는 `table_members.id`(companionId)와 이름만 노출해 다른 참가자의 사용자 ID를 내보내지 않는다. 조회는 본인이 쓴 것만
+- 2026-10-18 [CC] Flyway `out-of-order: true` — V1(짝수)·V2(홀수) 번호 규칙 때문에 V2가 먼저 적용한 V7 뒤에 V6이 들어온다. 공유 Neon dev DB·배포 DB 모두 필요

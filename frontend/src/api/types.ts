@@ -56,8 +56,38 @@ export interface FeedbackItem {
   tableRating: number
   conversationRating: number
   venueRating: number
+  rejoinIntent: number | null
+  recommendScore: number | null
   comment: string | null
   submittedAt: string
+}
+
+// 체크인 (7.1, GET/POST /api/v1/me/applications/{id}/attendance|check-in)
+export interface Attendance {
+  applicationId: number
+  attendanceStatus: 'SCHEDULED' | 'ATTENDED' | 'CANCELED_EARLY' | 'CANCELED_LATE' | 'NO_SHOW'
+  checkedInAt: string | null
+  checkInOpensAt: string
+  checkInClosesAt: string
+  canCheckIn: boolean
+}
+
+// 사람별 선호 (비공개, 동석자는 이름만)
+export type PreferenceType = 'WANT_AGAIN' | 'AVOID'
+export interface Companion {
+  companionId: number
+  name: string
+}
+export interface PreferenceChoice {
+  companionId: number
+  preference: PreferenceType
+}
+
+export interface DemoActionResult {
+  action: string
+  done: number
+  skipped: number
+  message: string
 }
 
 export interface MatchRun {

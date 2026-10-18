@@ -10,6 +10,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ import com.siktak.matching.domain.MatchDecision;
 import com.siktak.matching.domain.MatchPlacementLog;
 import com.siktak.matching.domain.MatchRun;
 import com.siktak.matching.domain.TableMember;
+import com.siktak.matching.domain.TableMemberConfirmedEvent;
 import com.siktak.matching.infra.DiningTableRepository;
 import com.siktak.matching.infra.MatchPlacementLogRepository;
 import com.siktak.matching.infra.MatchRunRepository;
@@ -64,6 +66,7 @@ public class MatchingService {
     private final ChatService chatService;
     private final EngineMatchingService engineMatchingService;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
     /** {@code v2}(기본): 매칭 엔진, {@code simple}: 2.3 가짜 순차 매칭 (데모 직전 비상용으로 남겨둔다). */
     @Value("${siktak.matching.engine:v2}")
@@ -121,6 +124,7 @@ public class MatchingService {
                 transitionService.apply(application, Transition.M3, system);
                 application.assignSlot(slotId);
                 tableMemberRepository.save(TableMember.join(table.getId(), applicationId, application.getUserId(), now));
+                events.publishEvent(new TableMemberConfirmedEvent(table.getId(), applicationId, application.getUserId()));
                 placementLogRepository.save(MatchPlacementLog.of(run.getId(), applicationId, MatchDecision.CONFIRMED,
                         table.getId(), "SIMPLE_SEQUENTIAL",
                         "신청 순서대로 " + group.size() + "명 테이블에 배치되어 확정됐습니다 (가짜 매칭)."));

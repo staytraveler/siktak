@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
-import type { ApplicationItem, ResolutionChoice } from '../../api/types'
+import type { ApplicationItem, PreferenceType, ResolutionChoice } from '../../api/types'
 import StatusBadges from '../../components/StatusBadges'
 import SessionBar from '../../components/SessionBar'
 import { formatDateTime, PAYMENT_STATUS } from '../../lib/format'
@@ -151,77 +151,205 @@ function TableSection({ applicationId }: { applicationId: number }) {
         </ul>
       </section>
 
-      <FeedbackSection applicationId={applicationId} />
+      <AttendanceSection applicationId={applicationId} />
     </>
   )
 }
+
+// 체크인 (7.1, FDB-01): 행사 시작 30분 전부터 종료까지. 체크인한 사람만 피드백을 남길 수 있다
+function AttendanceSection({ applicationId }: { applicationId: number }) {
+  const queryClient = useQueryClient()
+  const attendance = useQuery({
+    queryKey: ['attendance', applicationId],
+    queryFn: () => api.attendance(applicationId),
+    retry: false,
+  })
+  const checkIn = useMutation({
+    mutationFn: () => api.checkIn(applicationId),
+    onSuccess: (data) => queryClient.setQueryData(['attendance', applicationId], data),
+  })
+  const a = attendance.data
+  if (!a) return null
+
+  return (
+    <>
+      <section className="mt-4 rounded-lg border border-gray-200 p-4 text-sm">
+        <h2 className="font-semibold">체크인</h2>
+        {a.attendanceStatus === 'ATTENDED' ? (
+          <p className="mt-1 text-green-800">체크인 완료 · {formatDateTime(a.checkedInAt)}</p>
+        ) : a.attendanceStatus === 'SCHEDULED' ? (
+          <>
+            <p className="mt-1 text-gray-700">
+              {formatDateTime(a.checkInOpensAt)} ~ {formatDateTime(a.checkInClosesAt)}에 체크인할 수 있어요.
+            </p>
+            {checkIn.isError && <p className="mt-2 text-red-700">{errorMessage(checkIn.error)}</p>}
+            <button
+              type="button"
+              disabled={!a.canCheckIn || checkIn.isPending}
+              onClick={() => checkIn.mutate()}
+              className="mt-2 w-full rounded-lg bg-amber-800 py-3 font-semibold text-white disabled:bg-gray-300"
+            >
+              체크인
+            </button>
+          </>
+        ) : (
+          <p className="mt-1 text-gray-700">참석 상태: {a.attendanceStatus}</p>
+        )}
+      </section>
+      {a.attendanceStatus === 'ATTENDED' && <FeedbackSection applicationId={applicationId} />}
+    </>
+  )
+}
+
+const RATING_FIELDS = [
+  { key: 'tableRating', label: '테이블 분위기', max: 5, min: 1 },
+  { key: 'conversationRating', label: '대화', max: 5, min: 1 },
+  { key: 'venueRating', label: '식당', max: 5, min: 1 },
+  { key: 'rejoinIntent', label: '다시 참여하고 싶은 정도', max: 5, min: 1 },
+  { key: 'recommendScore', label: '지인에게 추천하고 싶은 정도 (0~10)', max: 10, min: 0 },
+] as const
+type RatingKey = (typeof RATING_FIELDS)[number]['key']
 
 function FeedbackSection({ applicationId }: { applicationId: number }) {
   const queryClient = useQueryClient()
   const mine = useQuery({ queryKey: ['my-feedbacks'], queryFn: api.myFeedbacks })
   const submitted = mine.data?.find((f) => f.applicationId === applicationId)
-  const [ratings, setRatings] = useState({ tableRating: 5, conversationRating: 5, venueRating: 5 })
+  const [ratings, setRatings] = useState<Record<RatingKey, number>>({
+    tableRating: 5,
+    conversationRating: 5,
+    venueRating: 5,
+    rejoinIntent: 5,
+    recommendScore: 8,
+  })
   const [comment, setComment] = useState('')
   const submit = useMutation({
     mutationFn: () => api.submitFeedback({ applicationId, ...ratings, comment: comment || undefined }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-feedbacks'] }),
   })
 
-  if (submitted) {
-    return (
-      <section className="mt-4 rounded-lg border border-gray-200 p-4 text-sm">
-        <h2 className="font-semibold">피드백</h2>
-        <p className="mt-1 text-gray-700">
-          제출했어요 · 분위기 {submitted.tableRating} · 대화 {submitted.conversationRating} · 식당{' '}
-          {submitted.venueRating}
-        </p>
-      </section>
-    )
-  }
+  return (
+    <>
+      {submitted ? (
+        <section className="mt-4 rounded-lg border border-gray-200 p-4 text-sm">
+          <h2 className="font-semibold">피드백</h2>
+          <p className="mt-1 text-gray-700">
+            제출했어요 · 분위기 {submitted.tableRating} · 대화 {submitted.conversationRating} · 식당{' '}
+            {submitted.venueRating} · 재참여 {submitted.rejoinIntent ?? '-'} · 추천 {submitted.recommendScore ?? '-'}
+          </p>
+        </section>
+      ) : (
+        <section className="mt-4 rounded-lg border border-gray-200 p-4">
+          <h2 className="font-semibold">식사는 어땠나요?</h2>
+          {RATING_FIELDS.map((f) => (
+            <div key={f.key} className="mt-3">
+              <p className="text-sm text-gray-700">{f.label}</p>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {Array.from({ length: f.max - f.min + 1 }, (_, i) => f.min + i).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setRatings((r) => ({ ...r, [f.key]: n }))}
+                    className={`h-10 min-w-9 flex-1 rounded border text-sm ${
+                      ratings[f.key] === n ? 'border-amber-800 bg-amber-800 text-white' : 'border-gray-300'
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="남기고 싶은 말 (선택)"
+            className="mt-3 w-full rounded border border-gray-300 p-2 text-sm"
+            rows={2}
+          />
+          {submit.isError && <p className="mt-2 text-sm text-red-700">{errorMessage(submit.error)}</p>}
+          <button
+            type="button"
+            disabled={submit.isPending}
+            onClick={() => submit.mutate()}
+            className="mt-2 w-full rounded-lg bg-amber-800 py-3 text-sm font-semibold text-white disabled:bg-gray-300"
+          >
+            피드백 보내기
+          </button>
+        </section>
+      )}
+      <PreferenceSection applicationId={applicationId} />
+    </>
+  )
+}
 
-  const fields: { key: keyof typeof ratings; label: string }[] = [
-    { key: 'tableRating', label: '테이블 분위기' },
-    { key: 'conversationRating', label: '대화' },
-    { key: 'venueRating', label: '식당' },
+// 다시 만나고 싶은/싫은 사람 (FDB-04). 이름만 보이고, 선택은 본인에게만 보이며 상대에게는 알려지지 않는다
+function PreferenceSection({ applicationId }: { applicationId: number }) {
+  const queryClient = useQueryClient()
+  const companions = useQuery({ queryKey: ['companions', applicationId], queryFn: () => api.companions(applicationId) })
+  const saved = useQuery({
+    queryKey: ['person-preferences', applicationId],
+    queryFn: () => api.personPreferences(applicationId),
+  })
+  const [draft, setDraft] = useState<Record<number, PreferenceType | undefined>>()
+  const current: Record<number, PreferenceType | undefined> =
+    draft ?? Object.fromEntries((saved.data ?? []).map((c) => [c.companionId, c.preference]))
+  const save = useMutation({
+    mutationFn: () =>
+      api.savePersonPreferences(
+        applicationId,
+        Object.entries(current).flatMap(([id, preference]) =>
+          preference ? [{ companionId: Number(id), preference }] : [],
+        ),
+      ),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['person-preferences', applicationId], data)
+      setDraft(undefined)
+    },
+  })
+  if (!companions.data?.length) return null
+
+  const options: { value: PreferenceType | undefined; label: string }[] = [
+    { value: undefined, label: '선택 안 함' },
+    { value: 'WANT_AGAIN', label: '다시 만나고 싶어요' },
+    { value: 'AVOID', label: '다시 만나고 싶지 않아요' },
   ]
 
   return (
-    <section className="mt-4 rounded-lg border border-gray-200 p-4">
-      <h2 className="font-semibold">식사는 어땠나요?</h2>
-      {fields.map((f) => (
-        <div key={f.key} className="mt-3">
-          <p className="text-sm text-gray-700">{f.label}</p>
-          <div className="mt-1 flex gap-1">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setRatings((r) => ({ ...r, [f.key]: n }))}
-                className={`h-10 flex-1 rounded border text-sm ${
-                  ratings[f.key] === n ? 'border-amber-800 bg-amber-800 text-white' : 'border-gray-300'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
-      <textarea
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        placeholder="남기고 싶은 말 (선택)"
-        className="mt-3 w-full rounded border border-gray-300 p-2 text-sm"
-        rows={2}
-      />
-      {submit.isError && <p className="mt-2 text-sm text-red-700">{errorMessage(submit.error)}</p>}
+    <section className="mt-4 rounded-lg border border-gray-200 p-4 text-sm">
+      <h2 className="font-semibold">함께한 분들은 어땠나요?</h2>
+      <p className="mt-1 text-xs text-gray-500">선택은 나만 볼 수 있고, 상대에게는 절대 알려지지 않아요.</p>
+      <ul className="mt-2 space-y-3">
+        {companions.data.map((c) => (
+          <li key={c.companionId}>
+            <p className="font-medium">{c.name}</p>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {options.map((o) => (
+                <button
+                  key={o.label}
+                  type="button"
+                  onClick={() => setDraft({ ...current, [c.companionId]: o.value })}
+                  className={`rounded border px-2 py-2 text-xs ${
+                    current[c.companionId] === o.value
+                      ? 'border-amber-800 bg-amber-800 text-white'
+                      : 'border-gray-300'
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </li>
+        ))}
+      </ul>
+      {save.isError && <p className="mt-2 text-red-700">{errorMessage(save.error)}</p>}
+      {save.isSuccess && !draft && <p className="mt-2 text-green-800">저장했어요.</p>}
       <button
         type="button"
-        disabled={submit.isPending}
-        onClick={() => submit.mutate()}
-        className="mt-2 w-full rounded-lg bg-amber-800 py-3 text-sm font-semibold text-white disabled:bg-gray-300"
+        disabled={save.isPending || !draft}
+        onClick={() => save.mutate()}
+        className="mt-3 w-full rounded-lg bg-amber-800 py-3 font-semibold text-white disabled:bg-gray-300"
       >
-        피드백 보내기
+        선택 저장
       </button>
     </section>
   )
