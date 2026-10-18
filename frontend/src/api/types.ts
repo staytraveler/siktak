@@ -45,6 +45,7 @@ export interface ChatMessageItem {
   senderId: number | null
   messageType: string
   body: string
+  payload: Record<string, unknown> | null
   createdAt: string
 }
 
@@ -104,4 +105,14 @@ export interface Resolution {
   respondedAt: string | null
   offeredSlots: { slot: Slot; reasonCode: string; reason: string; available: boolean }[]
   choices: { choice: ResolutionChoice; available: boolean; description: string }[]
+}
+
+export interface NotificationItem {
+  id: number
+  templateCode: string
+  title: string
+  body: string
+  payload: Record<string, unknown> | null
+  sentAt: string | null
+  readAt: string | null
 }

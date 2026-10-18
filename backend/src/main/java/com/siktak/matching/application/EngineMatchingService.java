@@ -18,9 +18,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,10 +45,12 @@ import com.siktak.common.schedule.ScheduledJobRegistry;
 import com.siktak.exception.application.ExceptionCaseService;
 import com.siktak.exception.domain.CaseType;
 import com.siktak.matching.domain.DiningTable;
+import com.siktak.matching.domain.MatchFailureRecorded;
 import com.siktak.matching.domain.MatchDecision;
 import com.siktak.matching.domain.MatchPlacementLog;
 import com.siktak.matching.domain.MatchResolution;
 import com.siktak.matching.domain.MatchRun;
+import com.siktak.matching.domain.TableGuidanceRequested;
 import com.siktak.matching.domain.TableMember;
 import com.siktak.matching.domain.alternative.AlternativeSlot;
 import com.siktak.matching.domain.alternative.AlternativeSlotRecommender;
@@ -112,6 +116,7 @@ public class EngineMatchingService {
     private final VenueAssignmentService venueAssignmentService;
     private final ExceptionCaseService exceptionCaseService;
     private final ScheduledJobRegistry jobRegistry;
+    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     private final MatchingEngine engine = new MatchingEngine();
@@ -227,6 +232,12 @@ public class EngineMatchingService {
 
         int[] venueCounts = assignVenues(ctx, targets, profiles);
         writeFailReasons(ctx);
+        for (UnplacedCandidate u : result.failed()) {
+            eventPublisher.publishEvent(new MatchFailureRecorded(u.applicationId()));
+        }
+        for (Long tableId : new TreeSet<>(tableOfApplication.values())) {
+            eventPublisher.publishEvent(new TableGuidanceRequested(tableId));
+        }
 
         Map<String, Object> summary = new LinkedHashMap<>(JSON.convertValue(result.summary(), Map.class));
         summary.put("slotIds", targetIds);

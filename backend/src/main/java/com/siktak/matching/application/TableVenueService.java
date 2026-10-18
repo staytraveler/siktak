@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +14,7 @@ import com.siktak.common.error.BusinessException;
 import com.siktak.common.error.ErrorCode;
 import com.siktak.exception.application.ExceptionCaseService;
 import com.siktak.matching.domain.DiningTable;
+import com.siktak.matching.domain.TableGuidanceRequested;
 import com.siktak.matching.domain.TableMember;
 import com.siktak.matching.infra.DiningTableRepository;
 import com.siktak.matching.infra.MatchingDataReader;
@@ -37,6 +39,7 @@ public class TableVenueService {
     private final EngineMatchingService engineMatchingService;
     private final VenueAssignmentService venueAssignmentService;
     private final ExceptionCaseService exceptionCaseService;
+    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     /**
@@ -65,6 +68,7 @@ public class TableVenueService {
         table.assignVenue(assigned.venueId(), Instant.now(clock));
         exceptionCaseService.resolve(ExceptionCaseService.venueUnavailableKey(tableId), operatorId,
                 "운영자 재배정으로 식당 배정 완료 (venue " + assigned.venueId() + ")");
+        eventPublisher.publishEvent(new TableGuidanceRequested(tableId));
         return table;
     }
 }

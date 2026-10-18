@@ -45,7 +45,7 @@ import lombok.extern.slf4j.Slf4j;
 public class DemoSeedService {
 
     public static final String SEED_KEY = "demo.seed";
-    private static final List<String> KEEP_TABLES = List.of("flyway_schema_history", "shedlock");
+    private static final List<String> KEEP_TABLES = List.of("flyway_schema_history", "shedlock", "notification_templates");
 
     private final JdbcTemplate jdbcTemplate;
     private final DemoClockService demoClockService;

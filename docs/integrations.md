@@ -8,7 +8,7 @@
 | 연동 | 포트 | 설정 키 | 구현 | 상태 |
 |---|---|---|---|---|
 | 결제·환불 | `PaymentGateway` | `siktak.payment.provider` | `mock` / `toss` | 미구현 |
-| 알림 | `NotificationSender` | `siktak.notification.channel` | `in-app` | 미구현 |
+| 알림 | `NotificationSender` | `siktak.notification.channel` | `in-app` | 구현 (5.2) |
 
 | 인프라 | 용도 | 상태 |
 |---|---|---|
@@ -117,6 +117,9 @@ Render 서버는 상시 가동하지만 **Neon DB는 실제 작업이 있을 때
 - 포트: `NotificationSender`
 - 설정: `siktak.notification.channel=in-app`
 - 용도: PRD 14장 알림 시나리오, INF-01·INF-07·INF-08
-- 동작: (구현 시 작성) 저장 방식, 단체방 시스템 메시지와의 관계
-- 재시도: `policy.notification-retry-max`(기본 3) 후 반복 실패만 `ExceptionCase` 전환
+- 동작: `NotificationService.enqueue(userId, templateCode, vars, payload, scheduledAt, dedupKey)`가 `notifications`에 저장하고(PENDING), 시각이 됐으면 바로 `NotificationSender.send`, 아니면 `NOTIFICATION_SEND` 작업으로 예약한다. `InAppNotificationSender`는 알림 행 자체가 알림함이라 성공하면 SENT로 표시만 한다. 단체방 시스템 메시지(`chat_messages`, `message_key` 멱등)는 별도 경로이고, 같은 계기(확정·리마인드)에서 함께 만든다.
+- 알림 계기: 신청 상태 전이(`ApplicationTransitioned` 이벤트, 상태를 바꾼 트랜잭션 안에서 동기 처리)와 매칭 이벤트(`TableGuidanceRequested`, `MatchFailureRecorded`)
+- 예약 작업: `NOTIFICATION_SEND`(알림), `REMINDER_D1`(행사 1일 전, 대상 테이블), `CONTENT_POST`(행사 시작 시각, 대상 테이블). 모두 기동 시 `loadPending`으로 적재(catch-up)
+- 실패 주입(시연): `siktak.notification.mock.fail=true`(환경변수 `SIKTAK_NOTIFICATION_MOCK_FAIL`) — 항상 발송 실패 → 재시도 후 `NOTIFICATION_FAILED` 예외
+- 재시도: `policy.notification-retry-max`(기본 3) = 첫 시도 뒤 1분 간격 재시도 횟수(총 4번). 모두 실패하면 `FAILED` + `ExceptionCase(NOTIFICATION_FAILED)` 1건
 - 이후 확장: 웹 푸시, 알림톡 (MVP 범위 밖)

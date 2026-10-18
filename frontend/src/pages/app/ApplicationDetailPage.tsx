@@ -96,6 +96,20 @@ function NextStep({ application }: { application: ApplicationItem }) {
   return null
 }
 
+// 단체방 시스템 메시지 종류별 표시 (INF-05·07, CON-03). 기능만, 디자인 없음.
+const MESSAGE_LABEL: Record<string, string> = {
+  NOTICE: '공지',
+  CURATION: '테이블 소개',
+  REMINDER: '리마인드',
+  CONTENT: '대화 주제',
+}
+const MESSAGE_STYLE: Record<string, string> = {
+  NOTICE: 'bg-blue-50',
+  CURATION: 'bg-green-50',
+  REMINDER: 'bg-yellow-50',
+  CONTENT: 'bg-purple-50',
+}
+
 function TableSection({ applicationId }: { applicationId: number }) {
   const table = useQuery({ queryKey: ['my-table', applicationId], queryFn: () => api.myTable(applicationId) })
   const chatRoomId = table.data?.chatRoomId
@@ -125,11 +139,12 @@ function TableSection({ applicationId }: { applicationId: number }) {
         <h2 className="font-semibold">단체방</h2>
         <ul className="mt-2 space-y-2">
           {messages.data?.map((m) => (
-            <li key={m.id} className="rounded-lg bg-gray-100 p-3 text-sm">
+            <li key={m.id} className={`rounded-lg p-3 text-sm ${MESSAGE_STYLE[m.messageType] ?? 'bg-gray-100'}`}>
               <span className="block text-xs text-gray-500">
-                {m.senderType === 'SYSTEM' ? '우연한 식탁' : '참가자'} · {formatDateTime(m.createdAt)}
+                {m.senderType === 'SYSTEM' ? '우연한 식탁' : '참가자'}
+                {MESSAGE_LABEL[m.messageType] ? ` · ${MESSAGE_LABEL[m.messageType]}` : ''} · {formatDateTime(m.createdAt)}
               </span>
-              {m.body}
+              <span className="whitespace-pre-line">{m.body}</span>
             </li>
           ))}
         </ul>

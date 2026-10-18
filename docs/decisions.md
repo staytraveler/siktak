@@ -75,3 +75,10 @@
 - 2026-10-17 [CC] JWT 발급·만료 판단은 데모 시계가 아니라 실제 시각 — 데모 도구로 시계를 며칠 옮겨도 로그인이 풀리지 않게. Clock 빈 규칙의 예외(ShedLock 락 시각과 같은 인프라 시각)
 - 2026-10-17 [CC] 테스트 계정 버튼 목록(admin·demo01·user01·user14·user23)과 비밀번호는 프론트에 하드코딩 — demo-scenario 6장에 공개된 테스트 전용 값. 목록 API는 만들지 않음. 실서비스 전환 시 제거
 - 2026-10-17 [CC] DB 통합 테스트는 public 스키마에 커밋된 데모 시드와 함께 돈다 — 엔진 테스트는 시작 시 기존 OPEN·CLOSED 회차를 MATCHED로 바꿔(테스트 트랜잭션 롤백) "도래 회차 일괄 실행" 대상에서 뺀다
+- 2026-10-18 [CC] 5.2 알림 이벤트는 `@TransactionalEventListener(AFTER_COMMIT)`이 아니라 **동기 `@EventListener`(상태를 바꾼 트랜잭션 안)**로 처리 — 알림이 상태 변경과 함께 저장·롤백되고(커밋 후 실패로 알림만 유실되는 일 없음), 롤백되는 DB 통합 테스트에서도 검증된다. 알림 저장은 DB 쓰기뿐이고 발송 실패는 예외를 던지지 않고 재시도로 넘기므로 상태 전이를 막지 않는다. 지시서 3항과 다른 점
+- 2026-10-18 [CC] 5.2 상태 전이 알림의 단일 계기: `StatusTransitionService.apply`가 상태가 실제로 바뀐 뒤 `ApplicationTransitioned`를 발행(V1 서비스 수정은 이 한 곳). 매핑 A2→신청완료, P1→결제대기, P1a·P2→결제완료, M4·M10→재배치중, P6·P7a→환불요청, P9·P12→환불완료. 알림 키 `{템플릿}:app-{신청ID}`로 반복 전이에도 1건
+- 2026-10-18 [CC] 5.2 매칭 확정 알림(MATCH_CONFIRMED)은 전이(M3·M5) 시점이 아니라 식당 배정 뒤 `TableGuidanceRequested`로 보낸다 — 문구에 식당이 들어가야 해서. 매칭 실패(MATCH_FAILED)는 사유·대체 일정 기록 뒤 `MatchFailureRecorded`로(M6 시점엔 사유가 비어 있음). 일정 이동으로 생긴 새 신청은 신청완료·결제완료 대신 `TRANSFERRED`(새 신청의 M1) 한 건만
+- 2026-10-18 [CC] 5.2 `policy.notification-retry-max`(기본 3)는 6.1 환불과 같이 첫 시도 뒤 재시도 횟수(총 4번, 1분 간격). 실패 시 `FAILED` + `exception_cases(NOTIFICATION_FAILED, notification-{id})`. `NOTIFICATION_SEND` 작업은 기동 시 PENDING 알림을 `scheduled_at`으로 적재
+- 2026-10-18 [CC] 5.2 단체방 안내 멱등 키: `table-{id}:guide:venue|guide:pending|curation|policy|reminder-d1|content`. 식당 미배정이면 `guide:pending`("확정 후 안내")을 올리고, 운영자 재배정(`TableVenueService.assignVenue`) 때 `guide:venue`를 추가 게시. 확정 알림은 재배정 때 다시 보내지 않음
+- 2026-10-18 [CC] 5.2 [해석] 집합 시간 = 모임 시작 시각(PRD에 별도 규칙 없음). 취소 정책 문구는 prd.md 63행(진행 2일 전 환불 불가, 당일 취소·단체방 퇴장 불가, 노쇼) 그대로. 큐레이션은 연령대(출생연도 범위)·성비·공통 관심사 집계만 — 이름·점수·개인 선호 없음
+- 2026-10-18 [CC] 5.2 `notification_templates`는 참조 데이터라 데모 초기화(TRUNCATE) 대상에서 제외(`KEEP_TABLES`) — 마이그레이션 V7이 넣은 12종이 초기화 뒤에도 남는다

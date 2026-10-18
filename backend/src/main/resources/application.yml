@@ -46,8 +46,13 @@ siktak:
   policy:
     # 자동 환불 재시도 횟수. 첫 시도가 실패하면 1분 간격으로 이만큼 다시 시도하고, 그래도 실패하면 REFUND_FAILED + 예외
     refund-retry-max: 3
+    # 알림 발송 재시도 횟수. 첫 시도가 실패하면 1분 간격으로 이만큼 다시 시도하고, 그래도 실패하면 FAILED + 예외 (INF-08)
+    notification-retry-max: 3
   notification:
     channel: in-app
+    mock:
+      # true면 앱 내 알림 발송이 항상 실패한다 — 재시도·예외 처리함 시연용 (5.2)
+      fail: ${SIKTAK_NOTIFICATION_MOCK_FAIL:false}
   # 데모 도구: 데모 시계(offset)·시드 초기화·J1~J6 점프 (docs/demo-scenario.md). false면 offset 0 고정, 데모 API 404
   demo:
     enabled: ${SIKTAK_DEMO_ENABLED:true}

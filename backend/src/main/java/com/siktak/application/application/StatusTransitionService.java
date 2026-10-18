@@ -1,10 +1,12 @@
 package com.siktak.application.application;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.siktak.application.domain.Application;
+import com.siktak.application.domain.status.ApplicationTransitioned;
 import com.siktak.application.domain.status.StatusHistory;
 import com.siktak.application.domain.status.Transition;
 import com.siktak.application.domain.status.TransitionContext;
@@ -30,6 +32,7 @@ public class StatusTransitionService {
 
     private final ApplicationRepository applicationRepository;
     private final StatusHistoryRepository statusHistoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** 다음 상태가 하나뿐인 전이를 적용한다. 상태가 실제로 바뀌면 true. */
     @Transactional(propagation = Propagation.MANDATORY)
@@ -52,6 +55,10 @@ public class StatusTransitionService {
         String reason = changed ? context.reason() : NO_OP_PREFIX + nullToEmpty(context.reason());
         statusHistoryRepository.save(StatusHistory.record(
                 StatusHistory.TARGET_APPLICATION, application.getId(), transition, from, target, context, reason));
+        if (changed) {
+            eventPublisher.publishEvent(
+                    new ApplicationTransitioned(application.getId(), application.getUserId(), transition, target));
+        }
         return changed;
     }
 

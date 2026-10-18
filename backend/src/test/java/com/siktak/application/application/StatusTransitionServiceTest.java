@@ -48,7 +48,7 @@ class StatusTransitionServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new StatusTransitionService(applicationRepository, statusHistoryRepository);
+        service = new StatusTransitionService(applicationRepository, statusHistoryRepository, event -> { });
     }
 
     @Test

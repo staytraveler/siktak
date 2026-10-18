@@ -36,6 +36,10 @@ export default function ParticipantHomePage() {
         <SessionBar />
       </header>
 
+      <Link to="/app/notifications" className="mt-3 block text-sm text-green-800 underline">
+        알림 보기
+      </Link>
+
       <section className="mt-6">
         <h2 className="text-sm font-semibold text-gray-500">내 신청</h2>
         {applications.isPending && <p className="mt-2 text-sm text-gray-500">불러오는 중…</p>}
