@@ -10,6 +10,13 @@
 > - 다음:
 > ```
 
+## 2026-10-18 (7.1)
+- 완료: 7.1 FDB-01~04, MAT-06 — 참석(V6 `attendances`, 확정 시 T1)·체크인(T2)·행사 종료 작업 `EVENT_END`(노쇼 후보 표시·예외 처리함·만남 이력·`EventEndedEvent`)·피드백 확장(재참여·추천, ATTENDED만)·사람별 선호(비공개, 동석자 이름만)·데모 버튼 3종·화면(체크인·피드백·선호·데모 도구)
+  - 검증: 7.1 DB 통합 테스트(시드 → J1 → 체크인 → J5 → 피드백·AVOID → 2회차 → J6, AVOID 쌍 다른 테이블) 통과, 전체 `./gradlew test` 통과(DB 포함), 프론트 build 통과
+- 변경: `ExceptionCase` 종류 `NO_SHOW_CANDIDATE` 추가(erd.md 반영), Flyway `out-of-order: true`, V2 영역 `EngineMatchingService`·`MatchingService`에 이벤트 발행 한 줄씩. decisions.md [CC] 7건. 기존 테스트 2건 수정(RefundConcurrency 프로필 누락 — 3.2 이후 깨져 있었음, FlowSkeleton 피드백 조건)
+- 이슈: Neon 왕복이 느려 DB 통합 테스트가 클래스당 5~10분, 전체 약 1시간. V2와 동시에 돌리면 TRUNCATE 락·시드 삭제로 서로 실패시킴
+- 다음: PM 검토 → 8.x 운영자 참석 관리(T5 확정) 화면
+
 ## 2026-10-17 17:40 (3.1)
 - 완료: 3.1 4.4 통합·배포 검증 + 로그인·권한 — ACC-01(테스트 계정 로그인), PRD 16장(운영자 권한)
   - `feat/matching-engine` main 머지(`7a0c399`), 식당·콘텐츠 SeedContributor, `Application.recordMatchFailReason`

@@ -39,7 +39,7 @@ public class DemoService {
     private final SettingRepository settingRepository;
     private final EventSlotRepository eventSlotRepository;
 
-    /** J1~J6 점프 대상 (demo-scenario 1장). J3~J5는 아직 해당 작업이 없어 시각 이동만 된다. */
+    /** J1~J6 점프 대상 (demo-scenario 1장). J5(EVENT_END)는 7.1, J3·J4는 5.2에서 작업이 붙는다. */
     public enum Jump {
         J1("1회차 매칭 마감 (S1·S2)"),
         J2("S3 매칭 마감"),
@@ -108,7 +108,7 @@ public class DemoService {
     }
 
     @SuppressWarnings("unchecked")
-    private EventSlot slot(String code) {
+    EventSlot slot(String code) {
         Map<String, Object> slots = (Map<String, Object>) seedInfo().get("slots");
         if (slots == null || !slots.containsKey(code)) {
             throw new BusinessException(ErrorCode.CONFLICT, "demo-v1 시드가 없습니다. 시드를 초기화하세요.");
@@ -123,7 +123,7 @@ public class DemoService {
                 .map(v -> (Map<String, Object>) new LinkedHashMap<>(v)).orElse(Map.of());
     }
 
-    private void requireEnabled() {
+    void requireEnabled() {
         if (!clockService.isEnabled()) {
             throw new BusinessException(ErrorCode.NOT_FOUND);
         }

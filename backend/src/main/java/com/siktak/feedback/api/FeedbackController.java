@@ -23,6 +23,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 
+/** 만족도·재참여·추천 의향 (FDB-02·03). 체크인한 참가자만 제출할 수 있다. */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
@@ -34,7 +35,8 @@ public class FeedbackController {
     @ResponseStatus(HttpStatus.CREATED)
     public FeedbackResponse submit(@AuthenticationPrincipal AuthUser user, @Valid @RequestBody FeedbackRequest request) {
         return FeedbackResponse.from(feedbackService.submit(user.id(), request.applicationId(),
-                request.tableRating(), request.conversationRating(), request.venueRating(), request.comment()));
+                request.tableRating(), request.conversationRating(), request.venueRating(), request.rejoinIntent(),
+                request.recommendScore(), request.comment()));
     }
 
     @GetMapping("/me/feedbacks")
@@ -47,15 +49,18 @@ public class FeedbackController {
             @NotNull @Min(1) @Max(5) Integer tableRating,
             @NotNull @Min(1) @Max(5) Integer conversationRating,
             @NotNull @Min(1) @Max(5) Integer venueRating,
+            @NotNull @Min(1) @Max(5) Integer rejoinIntent,
+            @NotNull @Min(0) @Max(10) Integer recommendScore,
             @Size(max = 1000) String comment) {
     }
 
     public record FeedbackResponse(Long id, Long applicationId, int tableRating, int conversationRating,
-            int venueRating, String comment, Instant submittedAt) {
+            int venueRating, Integer rejoinIntent, Integer recommendScore, String comment, Instant submittedAt) {
 
         static FeedbackResponse from(Feedback f) {
             return new FeedbackResponse(f.getId(), f.getApplicationId(), f.getTableRating(),
-                    f.getConversationRating(), f.getVenueRating(), f.getComment(), f.getSubmittedAt());
+                    f.getConversationRating(), f.getVenueRating(), f.getRejoinIntent(), f.getRecommendScore(),
+                    f.getComment(), f.getSubmittedAt());
         }
     }
 }

@@ -75,3 +75,10 @@
 - 2026-10-17 [CC] JWT 발급·만료 판단은 데모 시계가 아니라 실제 시각 — 데모 도구로 시계를 며칠 옮겨도 로그인이 풀리지 않게. Clock 빈 규칙의 예외(ShedLock 락 시각과 같은 인프라 시각)
 - 2026-10-17 [CC] 테스트 계정 버튼 목록(admin·demo01·user01·user14·user23)과 비밀번호는 프론트에 하드코딩 — demo-scenario 6장에 공개된 테스트 전용 값. 목록 API는 만들지 않음. 실서비스 전환 시 제거
 - 2026-10-17 [CC] DB 통합 테스트는 public 스키마에 커밋된 데모 시드와 함께 돈다 — 엔진 테스트는 시작 시 기존 OPEN·CLOSED 회차를 MATCHED로 바꿔(테스트 트랜잭션 롤백) "도래 회차 일괄 실행" 대상에서 뺀다
+- 2026-10-18 [CC] 7.1 참석(`attendances`, V6): 매칭 확정 시 `TableMemberConfirmedEvent`(EngineMatchingService가 발행, 동기 `@EventListener`)로 `SCHEDULED` 생성(T1) — 같은 트랜잭션이라 확정과 참석 생성이 함께 커밋·롤백된다. 참석 상태 이력은 `status_histories(target_type=ATTENDANCE)`에 남기고 전이표 검사는 `AttendanceService`가 한다 (신청 축 서비스와 분리)
+- 2026-10-18 [CC] 7.1 체크인(T2)은 `policy.checkin-open-minutes`(`siktak.policy.checkin-open-minutes`, 기본 30)분 전 ~ 행사 종료까지, 밖이면 409. 이미 체크인했으면 같은 결과(멱등). 참석 취소(T3·T4)는 이번 범위 밖
+- 2026-10-18 [CC] 7.1 행사 종료 작업 `EVENT_END`(대상 = 회차 ID, 시각 = `ends_at`): 회차 상태 `MATCHED → DONE`으로 처리 완료를 표시해 멱등(재실행·catch-up 안전). 별도 컬럼은 만들지 않았다. 기동 시 `MATCHED` 회차를 다시 읽어 지난 것은 즉시 실행
+- 2026-10-18 [CC] 7.1 노쇼 후보는 `attendances.no_show_candidate=true`로만 표시(상태는 `SCHEDULED` 유지, T5는 운영자) + 예외 처리함에 `ExceptionCase(NO_SHOW_CANDIDATE)` 신규 종류로 올린다 — demo-scenario 12단계 "예외 처리함에는 식당 부족(처리 완료)과 노쇼 후보만 존재"를 충족하려고 `case_type`에 값 추가(erd.md 반영). PRD 12장 상태 enum은 건드리지 않음
+- 2026-10-18 [CC] 7.1 만남 이력(`user_encounters`)은 같은 테이블 `ATTENDED` 쌍마다 `insert ... on conflict do nothing`, `met_at` = 행사 시작 시각. 종료 이벤트 `EventEndedEvent(slotId, attendedUserIds, noShowCandidateUserIds)` 발행(V2 피드백 요청 알림이 사용)
+- 2026-10-18 [CC] 7.1 피드백은 `ATTENDED`만 제출(아니면 409), 재참여 의향 1~5·추천 0~10 필수. 사람별 선호는 별도 `PUT /me/applications/{id}/person-preferences`(전체 교체, 멱등) — 동석자는 `table_members.id`(companionId)와 이름만 노출해 다른 참가자의 사용자 ID를 내보내지 않는다. 조회는 본인이 쓴 것만
+- 2026-10-18 [CC] Flyway `out-of-order: true` — V1(짝수)·V2(홀수) 번호 규칙 때문에 V2가 먼저 적용한 V7 뒤에 V6이 들어온다. 공유 Neon dev DB·배포 DB 모두 필요

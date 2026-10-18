@@ -2,11 +2,15 @@ import { apiClient } from './client'
 import type {
   AdminTable,
   ApplicationItem,
+  Attendance,
   ChatMessageItem,
+  Companion,
+  DemoActionResult,
   DemoStatus,
   FeedbackItem,
   MatchRun,
   MyTable,
+  PreferenceChoice,
   Profile,
   ProfileInput,
   Region,
@@ -46,8 +50,18 @@ export const api = {
     tableRating: number
     conversationRating: number
     venueRating: number
+    rejoinIntent: number
+    recommendScore: number
     comment?: string
   }) => post<FeedbackItem>('/api/v1/feedbacks', body),
+  attendance: (applicationId: number) => get<Attendance>(`/api/v1/me/applications/${applicationId}/attendance`),
+  checkIn: (applicationId: number) => post<Attendance>(`/api/v1/me/applications/${applicationId}/check-in`),
+  companions: (applicationId: number) => get<Companion[]>(`/api/v1/me/applications/${applicationId}/companions`),
+  personPreferences: (applicationId: number) =>
+    get<PreferenceChoice[]>(`/api/v1/me/applications/${applicationId}/person-preferences`),
+  savePersonPreferences: async (applicationId: number, choices: PreferenceChoice[]) =>
+    (await apiClient.put<PreferenceChoice[]>(`/api/v1/me/applications/${applicationId}/person-preferences`, { choices }))
+      .data,
 
   // 운영자
   adminSlots: () => get<Slot[]>('/api/v1/admin/slots'),
@@ -67,4 +81,7 @@ export const api = {
   demoReset: () => post<DemoStatus>('/api/v1/admin/demo/reset'),
   demoJump: (code: string) => post<DemoStatus>(`/api/v1/admin/demo/jump/${code}`),
   demoAdvance: (minutes: number) => post<DemoStatus>(`/api/v1/admin/demo/advance?minutes=${minutes}`),
+  demoCheckInAll: () => post<DemoActionResult>('/api/v1/admin/demo/check-in-all'),
+  demoFeedbackAll: () => post<DemoActionResult>('/api/v1/admin/demo/feedback-all'),
+  demoRound2: () => post<DemoActionResult>('/api/v1/admin/demo/round2-applications'),
 }

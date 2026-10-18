@@ -21,6 +21,7 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +49,7 @@ import com.siktak.matching.domain.MatchPlacementLog;
 import com.siktak.matching.domain.MatchResolution;
 import com.siktak.matching.domain.MatchRun;
 import com.siktak.matching.domain.TableMember;
+import com.siktak.matching.domain.TableMemberConfirmedEvent;
 import com.siktak.matching.domain.alternative.AlternativeSlot;
 import com.siktak.matching.domain.alternative.AlternativeSlotRecommender;
 import com.siktak.matching.domain.alternative.SlotOption;
@@ -113,6 +115,7 @@ public class EngineMatchingService {
     private final ExceptionCaseService exceptionCaseService;
     private final ScheduledJobRegistry jobRegistry;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
     private final MatchingEngine engine = new MatchingEngine();
 
@@ -309,6 +312,7 @@ public class EngineMatchingService {
                 }
                 a.assignSlot(p.slotId());
                 tableMemberRepository.save(TableMember.join(table.getId(), applicationId, a.getUserId(), ctx.now));
+                events.publishEvent(new TableMemberConfirmedEvent(table.getId(), applicationId, a.getUserId()));
                 tableOfApplication.put(applicationId, table.getId());
                 userIds.add(a.getUserId());
             }

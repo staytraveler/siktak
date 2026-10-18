@@ -14,7 +14,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/** 참가 후 만족도 (FDB-02, erd.md feedbacks). 신청당 1건. 사람별 선호(person_preferences)는 7.x. */
+/** 참가 후 만족도 (FDB-02, erd.md feedbacks). 신청당 1건. 사람별 선호는 PersonPreference. */
 @Getter
 @Entity
 @Table(name = "feedbacks")
@@ -55,7 +55,8 @@ public class Feedback extends BaseTimeEntity {
     private Instant submittedAt;
 
     public static Feedback submit(Long applicationId, Long diningTableId, Long userId, int tableRating,
-            int conversationRating, int venueRating, String comment, Instant submittedAt) {
+            int conversationRating, int venueRating, int rejoinIntent, int recommendScore, String comment,
+            Instant submittedAt) {
         Feedback feedback = new Feedback();
         feedback.applicationId = applicationId;
         feedback.diningTableId = diningTableId;
@@ -63,6 +64,8 @@ public class Feedback extends BaseTimeEntity {
         feedback.tableRating = tableRating;
         feedback.conversationRating = conversationRating;
         feedback.venueRating = venueRating;
+        feedback.rejoinIntent = rejoinIntent;
+        feedback.recommendScore = recommendScore;
         feedback.comment = comment;
         feedback.submittedAt = submittedAt;
         return feedback;

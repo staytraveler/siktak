@@ -8,5 +8,7 @@ public enum CaseType {
     MATCH_CONFLICT,
     VENUE_UNAVAILABLE,
     NOTIFICATION_FAILED,
-    SAFETY_REPORT
+    SAFETY_REPORT,
+    /** 행사 종료 시 미체크인 노쇼 후보 (7.1, 운영자가 T5로 확정) */
+    NO_SHOW_CANDIDATE
 }

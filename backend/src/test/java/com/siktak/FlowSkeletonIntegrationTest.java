@@ -62,6 +62,7 @@ class FlowSkeletonIntegrationTest {
     @Autowired private StatusHistoryRepository statusHistoryRepository;
     @Autowired private Clock clock;
     @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
+    @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager em;
 
     @Test
     void 신청부터_피드백까지_한_번에_이어지고_매칭은_다시_실행해도_중복되지_않는다() {
@@ -123,11 +124,16 @@ class FlowSkeletonIntegrationTest {
         Long outsider = applications.get(6).getUserId();
         assertThatThrownBy(() -> chatService.messagesFor(roomId, outsider)).isInstanceOf(BusinessException.class);
 
-        // 피드백: 확정자만, 한 번만
-        feedbackService.submit(confirmed.getUserId(), confirmed.getId(), 5, 4, 3, "좋았어요");
-        assertThatThrownBy(() -> feedbackService.submit(confirmed.getUserId(), confirmed.getId(), 5, 5, 5, null))
+        // 피드백: 체크인한 참가자만, 한 번만 (7.1: 체크인 전 제출은 거절)
+        assertThatThrownBy(() -> feedbackService.submit(confirmed.getUserId(), confirmed.getId(), 5, 4, 3, 4, 8, null))
                 .isInstanceOf(BusinessException.class);
-        assertThatThrownBy(() -> feedbackService.submit(outsider, applications.get(6).getId(), 5, 5, 5, null))
+        jdbc.update("update attendances set attendance_status = 'ATTENDED' where application_id = ?", confirmed.getId());
+        em.flush();
+        em.clear();
+        feedbackService.submit(confirmed.getUserId(), confirmed.getId(), 5, 4, 3, 4, 8, "좋았어요");
+        assertThatThrownBy(() -> feedbackService.submit(confirmed.getUserId(), confirmed.getId(), 5, 5, 5, 5, 9, null))
+                .isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> feedbackService.submit(outsider, applications.get(6).getId(), 5, 5, 5, 5, 9, null))
                 .isInstanceOf(BusinessException.class);
 
         // 감사 로그: A1 → A2 → P1 → P2 → M1 → (no-op 결제 없음) → M2 → M3
