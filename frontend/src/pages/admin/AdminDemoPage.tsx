@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
 import type { DemoActionResult, DemoStatus } from '../../api/types'
-import SessionBar from '../../components/SessionBar'
 import { formatDateTime } from '../../lib/format'
 
 // 데모 도구 (/admin/demo, docs/demo-scenario.md 1장). 시계를 앞당기면 같은 스케줄러 코드가 도래한 작업을 바로 실행한다.
@@ -40,16 +39,8 @@ export default function AdminDemoPage() {
   const offsetText = `${Math.floor(offset / 86400)}일 ${Math.floor((offset % 86400) / 3600)}시간 ${Math.floor((offset % 3600) / 60)}분`
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <Link to="/admin" className="text-sm text-gray-500">
-            운영자 홈
-          </Link>
-          <h1 className="text-2xl font-bold">데모 도구</h1>
-        </div>
-        <SessionBar />
-      </header>
+    <div>
+      <h1 className="text-2xl font-bold">데모 도구</h1>
 
       <section className="mt-4 grid gap-3 md:grid-cols-3">
         <Card title="데모 시각">
@@ -146,7 +137,7 @@ export default function AdminDemoPage() {
           {reset.isPending ? '초기화 중…' : '시드 초기화'}
         </button>
       </section>
-    </main>
+    </div>
   )
 }
 

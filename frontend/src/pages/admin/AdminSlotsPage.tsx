@@ -1,10 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
 import type { Slot } from '../../api/types'
-import SessionBar from '../../components/SessionBar'
 import { formatDateTime } from '../../lib/format'
 
 // 회차 관리 (/admin/slots): 생성 폼 + 목록 + [2.3] 매칭 실행 버튼(스케줄러 대체)
@@ -12,22 +10,14 @@ export default function AdminSlotsPage() {
   const slots = useQuery({ queryKey: ['admin-slots'], queryFn: api.adminSlots })
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <Link to="/admin" className="text-sm text-gray-500">
-            운영자 홈
-          </Link>
-          <h1 className="text-2xl font-bold">회차 관리</h1>
-        </div>
-        <SessionBar />
-      </header>
+    <div>
+      <h1 className="text-2xl font-bold">회차 관리</h1>
       <CreateSlotForm />
       <section className="mt-6 space-y-3">
         {slots.isError && <p className="text-sm text-red-700">{errorMessage(slots.error)}</p>}
         {slots.data?.map((s) => <SlotRow key={s.id} slot={s} />)}
       </section>
-    </main>
+    </div>
   )
 }
 

@@ -161,7 +161,7 @@ public class AttendanceService {
             detail.put("eventSlotId", slotId);
             detail.put("userId", a.getUserId());
             exceptionCaseService.open(CaseType.NO_SHOW_CANDIDATE,
-                    "NO_SHOW_CANDIDATE:application-" + a.getApplicationId(), a.getApplicationId(),
+                    noShowCaseKey(a.getApplicationId()), a.getApplicationId(),
                     a.getDiningTableId(), "행사 종료까지 체크인하지 않았습니다. 노쇼 여부를 확인해주세요.", detail);
         }
         Map<Long, List<Attendance>> attendedByTable = all.stream()
@@ -179,6 +179,45 @@ public class AttendanceService {
         });
         slot.markDone();
         events.publishEvent(new EventEndedEvent(slotId, attendedUserIds, noShowUserIds));
+    }
+
+    /** T5: 운영자가 노쇼 후보를 노쇼로 확정한다. 이미 노쇼면 그대로 (멱등). 예외 처리함의 후보 건도 함께 해결한다. */
+    @Transactional
+    public Attendance confirmNoShow(Long attendanceId, Long operatorId, String reason) {
+        Attendance attendance = attendanceRepository.findById(attendanceId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "참석 정보를 찾을 수 없습니다."));
+        if (attendance.getAttendanceStatus() == AttendanceStatus.NO_SHOW) {
+            return attendance;
+        }
+        if (attendance.getAttendanceStatus() != AttendanceStatus.SCHEDULED) {
+            throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION, "예정 상태의 참석만 노쇼로 확정할 수 있습니다.");
+        }
+        attendance.markNoShow();
+        recordHistory(attendance, Transition.T5, AttendanceStatus.SCHEDULED, AttendanceStatus.NO_SHOW,
+                TransitionContext.of(ActorType.OPERATOR, operatorId, reason));
+        exceptionCaseService.resolve(noShowCaseKey(attendance.getApplicationId()), operatorId, "노쇼 확정: " + reason);
+        return attendance;
+    }
+
+    /** 노쇼 후보를 해제한다 (실제로는 참석했거나 사정이 있는 경우). 참석 상태는 바꾸지 않고 예외만 해결한다. */
+    @Transactional
+    public Attendance dismissNoShowCandidate(Long attendanceId, Long operatorId, String reason) {
+        Attendance attendance = attendanceRepository.findById(attendanceId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "참석 정보를 찾을 수 없습니다."));
+        attendance.clearNoShowCandidate();
+        exceptionCaseService.resolve(noShowCaseKey(attendance.getApplicationId()), operatorId, "노쇼 후보 해제: " + reason);
+        return attendance;
+    }
+
+    /** 신청의 참석 정보 ID (예외 처리함에서 노쇼 후보 건을 처리할 때). */
+    @Transactional(readOnly = true)
+    public Long findIdByApplication(Long applicationId) {
+        return attendanceRepository.findByApplicationId(applicationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "참석 정보를 찾을 수 없습니다.")).getId();
+    }
+
+    public static String noShowCaseKey(Long applicationId) {
+        return "NO_SHOW_CANDIDATE:application-" + applicationId;
     }
 
     /** 기동 시 catch-up 대상: 확정은 됐지만 종료 처리가 안 된 회차. */

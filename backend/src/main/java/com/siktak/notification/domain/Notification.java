@@ -105,6 +105,13 @@ public class Notification extends BaseTimeEntity {
         sendStatus = NotificationStatus.FAILED;
     }
 
+    /** 운영자 재발송: 실패 상태를 PENDING으로 되돌려 다시 시도할 수 있게 한다. */
+    public void resetForResend() {
+        sendStatus = NotificationStatus.PENDING;
+        attempts = 0;
+        lastError = null;
+    }
+
     public void markRead(Instant now) {
         if (readAt == null) {
             readAt = now;

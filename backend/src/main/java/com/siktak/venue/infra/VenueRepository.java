@@ -9,4 +9,6 @@ import com.siktak.venue.domain.Venue;
 public interface VenueRepository extends JpaRepository<Venue, Long> {
 
     List<Venue> findByRegionIdOrderByIdAsc(Long regionId);
+
+    List<Venue> findByRegionIdAndActiveTrueOrderByIdAsc(Long regionId);
 }

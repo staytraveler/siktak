@@ -44,6 +44,16 @@ public class ExceptionCaseService {
         return found;
     }
 
+    /** 운영자가 화면에서 직접 닫는다. 사유가 비어 있으면 거절한다. */
+    @Transactional
+    public Optional<ExceptionCase> resolveManually(String caseKey, Long operatorId, String note) {
+        if (note == null || note.isBlank()) {
+            throw new com.siktak.common.error.BusinessException(com.siktak.common.error.ErrorCode.INVALID_REQUEST,
+                    "처리 사유를 입력해 주세요.");
+        }
+        return resolve(caseKey, operatorId, note);
+    }
+
     @Transactional(readOnly = true)
     public List<ExceptionCase> list(CaseStatus status) {
         return status == null ? repository.findAllByOrderByIdAsc() : repository.findByCaseStatusOrderByIdAsc(status);

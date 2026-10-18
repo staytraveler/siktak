@@ -63,6 +63,12 @@ public class ChatService {
         return chatMessageRepository.findByChatRoomIdOrderByIdAsc(chatRoomId);
     }
 
+    /** 운영자용: 멤버 확인 없이 방의 모든 메시지. */
+    @Transactional(readOnly = true)
+    public List<ChatMessage> messagesOfRoom(Long chatRoomId) {
+        return chatMessageRepository.findByChatRoomIdOrderByIdAsc(chatRoomId);
+    }
+
     @Transactional(readOnly = true)
     public java.util.Optional<ChatRoom> findByTable(Long diningTableId) {
         return chatRoomRepository.findByDiningTableId(diningTableId);

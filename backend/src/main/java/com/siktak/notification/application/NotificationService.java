@@ -137,6 +137,22 @@ public class NotificationService {
         return n;
     }
 
+    /** 운영자 재발송 (NOTIFICATION_FAILED 처리). 성공하면 해당 예외를 해결한다. 이미 보낸 알림이면 아무것도 하지 않는다. */
+    @Transactional
+    public Notification resendByOperator(Long notificationId, Long operatorId) {
+        Notification n = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "알림을 찾을 수 없습니다."));
+        if (n.getSendStatus() == NotificationStatus.SENT) {
+            return n;
+        }
+        n.resetForResend();
+        attemptSend(n);
+        if (n.getSendStatus() == NotificationStatus.SENT) {
+            exceptionCaseService.resolve(failedKey(notificationId), operatorId, "운영자 재발송 성공");
+        }
+        return n;
+    }
+
     public static String failedKey(Long notificationId) {
         return "NOTIFICATION_FAILED:notification-" + notificationId;
     }

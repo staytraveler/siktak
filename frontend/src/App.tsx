@@ -1,5 +1,9 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
+import AdminLayout from './components/AdminLayout'
 import RequireAuth from './components/RequireAuth'
+import AdminExceptionsPage from './pages/admin/AdminExceptionsPage'
+import AdminMatchingPage from './pages/admin/AdminMatchingPage'
+import AdminTableDetailPage from './pages/admin/AdminTableDetailPage'
 import AdminDemoPage from './pages/admin/AdminDemoPage'
 import AdminHomePage from './pages/admin/AdminHomePage'
 import AdminSlotsPage from './pages/admin/AdminSlotsPage'
@@ -19,10 +23,19 @@ const router = createBrowserRouter([
   { path: '/app/applications/:id', element: <RequireAuth><ApplicationDetailPage /></RequireAuth> },
   { path: '/app/history', element: <RequireAuth><HistoryPage /></RequireAuth> },
   { path: '/app/profile', element: <RequireAuth><ProfilePage /></RequireAuth> },
-  { path: '/admin', element: <RequireAuth role="OPERATOR"><AdminHomePage /></RequireAuth> },
-  { path: '/admin/slots', element: <RequireAuth role="OPERATOR"><AdminSlotsPage /></RequireAuth> },
-  { path: '/admin/reports', element: <RequireAuth role="OPERATOR"><AdminReportsPage /></RequireAuth> },
-  { path: '/admin/demo', element: <RequireAuth role="OPERATOR"><AdminDemoPage /></RequireAuth> },
+  {
+    path: '/admin',
+    element: <RequireAuth role="OPERATOR"><AdminLayout /></RequireAuth>,
+    children: [
+      { index: true, element: <AdminHomePage /> },
+      { path: 'exceptions', element: <AdminExceptionsPage /> },
+      { path: 'matching', element: <AdminMatchingPage /> },
+      { path: 'tables/:id', element: <AdminTableDetailPage /> },
+      { path: 'slots', element: <AdminSlotsPage /> },
+      { path: 'reports', element: <AdminReportsPage /> },
+      { path: 'demo', element: <AdminDemoPage /> },
+    ],
+  },
 ])
 
 export default function App() {

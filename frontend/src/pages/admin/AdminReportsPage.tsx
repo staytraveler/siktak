@@ -1,10 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
 import type { AdminReport, ResolveAction } from '../../api/types'
-import SessionBar from '../../components/SessionBar'
 import { formatDateTime } from '../../lib/format'
 
 const ACTIONS: { value: ResolveAction; label: string }[] = [
@@ -20,14 +18,8 @@ export default function AdminReportsPage() {
   const reports = useQuery({ queryKey: ['admin-reports', onlyOpen], queryFn: () => api.adminReports(onlyOpen) })
 
   return (
-    <main className="mx-auto min-h-screen max-w-4xl p-6">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">안전 신고</h1>
-        <SessionBar />
-      </header>
-      <Link to="/admin" className="mt-2 inline-block text-sm text-amber-800 underline">
-        ← 운영자 홈
-      </Link>
+    <div className="max-w-4xl">
+      <h1 className="text-2xl font-bold">안전 신고</h1>
       <label className="mt-4 flex items-center gap-2 text-sm">
         <input type="checkbox" checked={onlyOpen} onChange={(e) => setOnlyOpen(e.target.checked)} />
         미처리만 보기
@@ -36,7 +28,7 @@ export default function AdminReportsPage() {
       <ul className="mt-4 space-y-3">
         {reports.data?.map((r) => <ReportRow key={r.id} report={r} />)}
       </ul>
-    </main>
+    </div>
   )
 }
 

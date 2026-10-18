@@ -213,3 +213,154 @@ export interface AdminReport {
   handledAt: string | null
   createdAt: string
 }
+
+// ---- 운영자 어드민 (8.1) ----
+
+export interface Rate {
+  numerator: number
+  denominator: number
+  rate: number | null
+}
+
+export type CaseType =
+  | 'PAYMENT_ERROR'
+  | 'REFUND_FAILED'
+  | 'DATA_MISSING'
+  | 'MATCH_CONFLICT'
+  | 'VENUE_UNAVAILABLE'
+  | 'NOTIFICATION_FAILED'
+  | 'SAFETY_REPORT'
+  | 'NO_SHOW_CANDIDATE'
+
+export interface Dashboard {
+  totals: {
+    applicants: number
+    applications: number
+    paid: number
+    confirmed: number
+    waitingChoice: number
+    refunded: number
+  }
+  slots: {
+    slotId: number
+    regionName: string
+    startsAt: string
+    slotStatus: string
+    applied: number
+    paid: number
+    confirmed: number
+    waiting: number
+    refunds: number
+  }[]
+  metrics: {
+    autoConfirm: Rate
+    autoRealloc: Rate
+    autoRefund: Rate
+    operatorIntervention: Rate
+    exceptionRate: Rate
+    matchSuccess: Rate
+  }
+  exceptions: { total: number; byType: Record<CaseType, number> }
+}
+
+export interface ExceptionCase {
+  id: number
+  caseType: CaseType
+  caseStatus: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED'
+  applicationId: number | null
+  diningTableId: number | null
+  reason: string
+  detail: Record<string, unknown> | null
+  caseKey: string
+  createdAt: string
+  resolvedBy: number | null
+  resolutionNote: string | null
+  resolvedAt: string | null
+}
+
+export interface VenueCapacity {
+  venueId: number
+  venueName: string
+  maxTables: number
+  reservedTables: number
+  maxSeatsPerTable: number
+}
+
+export interface PlacementLog {
+  id: number
+  applicationId: number
+  decision: string
+  fromSlotId: number | null
+  toSlotId: number | null
+  toTableId: number | null
+  reallocStep: number | null
+  reasonCode: string
+  causeCode: string | null
+  reasonText: string
+  loginId: string | null
+  userName: string | null
+}
+
+export interface MatchRunItem {
+  id: number
+  runKey: string
+  algorithmVersion: string
+  runStatus: string
+  candidateCount: number
+  params: Record<string, unknown>
+  summary: Record<string, unknown>
+  startedAt: string
+  finishedAt: string | null
+}
+
+export interface MatchRunDetail {
+  run: MatchRunItem
+  tables: { id: number; slotId: number; tableStatus: string; memberCount: number; venueAssigned: boolean }[]
+  placementLogs: PlacementLog[]
+}
+
+export interface AdminTableDetail {
+  id: number
+  slotId: number
+  matchRunId: number | null
+  tableStatus: string
+  memberCount: number
+  totalScore: number | null
+  scoreDetail: Record<string, unknown>
+  summary: Record<string, unknown>
+  venue: { id: number; name: string; address: string; priceRange: string | null } | null
+  reservationName: string | null
+  venueAssignedAt: string | null
+  confirmedAt: string | null
+  chatRoomId: number | null
+  members: {
+    applicationId: number
+    userId: number
+    name: string | null
+    loginId: string | null
+    birthYear: number | null
+    gender: string | null
+    mbti: string | null
+    interests: string[]
+  }[]
+}
+
+export interface TableMessage {
+  id: number
+  senderType: string
+  messageType: string
+  body: string
+  createdAt: string
+}
+
+export interface TableNotification {
+  id: number
+  userId: number
+  userName: string | null
+  templateCode: string
+  sendStatus: 'PENDING' | 'SENT' | 'FAILED' | 'CANCELED'
+  attempts: number
+  lastError: string | null
+  scheduledAt: string
+  sentAt: string | null
+}

@@ -72,4 +72,14 @@ public class Attendance extends BaseTimeEntity {
     public void markNoShowCandidate() {
         this.noShowCandidate = true;
     }
+
+    /** T5: 운영자가 노쇼를 확정한다. 전이표 검사는 AttendanceService가 한다. */
+    public void markNoShow() {
+        this.attendanceStatus = AttendanceStatus.NO_SHOW;
+    }
+
+    /** 노쇼 후보 표시를 풀어 준다 (운영자 해제). 참석 상태는 그대로다. */
+    public void clearNoShowCandidate() {
+        this.noShowCandidate = false;
+    }
 }

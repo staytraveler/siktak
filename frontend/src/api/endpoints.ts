@@ -1,5 +1,13 @@
 import { apiClient } from './client'
 import type {
+  AdminTableDetail,
+  Dashboard,
+  ExceptionCase,
+  MatchRunDetail,
+  MatchRunItem,
+  TableMessage,
+  TableNotification,
+  VenueCapacity,
   AdminReport,
   AdminTable,
   ApplicationItem,
@@ -96,6 +104,20 @@ export const api = {
   }) => post<Slot>('/api/v1/admin/slots', body),
   runMatching: (slotId: number) => post<MatchRun>(`/api/v1/admin/slots/${slotId}/run-matching`),
   slotTables: (slotId: number) => get<AdminTable[]>(`/api/v1/admin/slots/${slotId}/tables`),
+
+  // 운영자 어드민 (8.1)
+  dashboard: () => get<Dashboard>('/api/v1/admin/dashboard'),
+  exceptions: () => get<ExceptionCase[]>('/api/v1/admin/exceptions'),
+  exceptionAction: (id: number, action: string, reason?: string) =>
+    post<{ caseId: number; caseStatus: string }>(`/api/v1/admin/exceptions/${id}/${action}`, reason === undefined ? undefined : { reason }),
+  venueCapacities: (slotId: number) => get<VenueCapacity[]>(`/api/v1/admin/slots/${slotId}/venue-capacities`),
+  changeVenueCapacity: async (slotId: number, venueId: number, maxTables: number) =>
+    (await apiClient.put<VenueCapacity>(`/api/v1/admin/slots/${slotId}/venue-capacities/${venueId}`, { maxTables })).data,
+  matchRuns: () => get<MatchRunItem[]>('/api/v1/admin/match-runs'),
+  matchRun: (id: number) => get<MatchRunDetail>(`/api/v1/admin/match-runs/${id}`),
+  adminTable: (id: number) => get<AdminTableDetail>(`/api/v1/admin/tables/${id}`),
+  tableMessages: (id: number) => get<TableMessage[]>(`/api/v1/admin/tables/${id}/messages`),
+  tableNotifications: (id: number) => get<TableNotification[]>(`/api/v1/admin/tables/${id}/notifications`),
 
   // 데모 도구
   demoStatus: () => get<DemoStatus>('/api/v1/admin/demo'),

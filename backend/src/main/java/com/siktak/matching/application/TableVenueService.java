@@ -46,8 +46,13 @@ public class TableVenueService {
      * 이미 식당이 있으면 그대로 돌려준다 (멱등). 배정되면 식당 미배정 예외를 해결 처리한다.
      * 예약명은 처음 정한 값을 그대로 쓴다.
      */
-    @Transactional
     public DiningTable assignVenue(Long tableId, Long operatorId) {
+        return assignVenue(tableId, operatorId, null);
+    }
+
+    /** @param note 운영자 사유. 있으면 예외 처리 기록에 남긴다. */
+    @Transactional
+    public DiningTable assignVenue(Long tableId, Long operatorId, String note) {
         DiningTable table = diningTableRepository.findById(tableId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "테이블을 찾을 수 없습니다."));
         if (table.hasVenue()) {
@@ -67,7 +72,7 @@ public class TableVenueService {
         table.proposeReservationName(assigned.reservationName());
         table.assignVenue(assigned.venueId(), Instant.now(clock));
         exceptionCaseService.resolve(ExceptionCaseService.venueUnavailableKey(tableId), operatorId,
-                "운영자 재배정으로 식당 배정 완료 (venue " + assigned.venueId() + ")");
+                "운영자 재배정으로 식당 배정 완료 (venue " + assigned.venueId() + ")" + (note == null ? "" : ": " + note));
         eventPublisher.publishEvent(new TableGuidanceRequested(tableId));
         return table;
     }
