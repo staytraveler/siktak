@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +14,7 @@ import com.siktak.common.error.BusinessException;
 import com.siktak.common.error.ErrorCode;
 import com.siktak.feedback.domain.Attendance;
 import com.siktak.feedback.domain.Feedback;
+import com.siktak.feedback.domain.FeedbackSubmittedEvent;
 import com.siktak.feedback.infra.AttendanceRepository;
 import com.siktak.feedback.infra.FeedbackRepository;
 
@@ -27,6 +29,7 @@ public class FeedbackService {
     private final AttendanceRepository attendanceRepository;
     private final ApplicationService applicationService;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
     /** 1~5점: 테이블 분위기·대화·식당·재참여 의향, 추천 의향은 0~10. 범위 검증은 API 계층이 한다. */
     @Transactional
@@ -41,9 +44,11 @@ public class FeedbackService {
         if (feedbackRepository.existsByApplicationId(applicationId)) {
             throw new BusinessException(ErrorCode.CONFLICT, "이미 피드백을 제출했습니다.");
         }
-        return feedbackRepository.save(Feedback.submit(applicationId, attendance.getDiningTableId(), userId,
+        Feedback saved = feedbackRepository.save(Feedback.submit(applicationId, attendance.getDiningTableId(), userId,
                 tableRating, conversationRating, venueRating, rejoinIntent, recommendScore, comment,
                 Instant.now(clock)));
+        events.publishEvent(new FeedbackSubmittedEvent(userId, applicationId));
+        return saved;
     }
 
     @Transactional(readOnly = true)

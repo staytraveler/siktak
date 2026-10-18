@@ -40,7 +40,7 @@ export default function AdminReportsPage() {
   )
 }
 
-function ReportRow({ report }: { report: AdminReport }) {
+export function ReportRow({ report }: { report: AdminReport }) {
   const queryClient = useQueryClient()
   const [action, setAction] = useState<ResolveAction>('WARNING')
   const [days, setDays] = useState('30')

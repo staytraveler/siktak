@@ -55,4 +55,16 @@ public class Venue extends BaseTimeEntity {
         v.description = description;
         return v;
     }
+
+    /** 운영자 식당 수정 (8.2). */
+    public void update(Long regionId, String name, String address, String mapUrl, String priceRange,
+            String description, boolean active) {
+        this.regionId = regionId;
+        this.name = name;
+        this.address = address;
+        this.mapUrl = mapUrl;
+        this.priceRange = priceRange;
+        this.description = description;
+        this.active = active;
+    }
 }

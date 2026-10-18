@@ -43,3 +43,7 @@ export function label(map: Record<string, string>, value: string | null | undefi
   if (!value) return '-'
   return map[value] ?? value
 }
+
+// datetime-local 값(서울 시각) ↔ ISO. 서울은 +09:00 고정 (서머타임 없음).
+export const toIso = (local: string) => (local ? `${local}:00+09:00` : '')
+export const toLocalInput = (iso: string) => new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString().slice(0, 16)

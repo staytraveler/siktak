@@ -143,6 +143,10 @@ public class MatchingDataReader {
 
     private static double number(Map<String, JsonNode> values, String key, double fallback) {
         JsonNode node = values.get(key);
+        // settings.value는 JSON 객체라서 숫자 설정은 {"value": n}으로 저장된다 (8.2 운영자 설정 화면)
+        if (node != null && node.isObject()) {
+            node = node.get("value");
+        }
         return node == null || !node.isNumber() ? fallback : node.asDouble();
     }
 

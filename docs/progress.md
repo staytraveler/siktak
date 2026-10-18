@@ -10,6 +10,14 @@
 > - 다음:
 > ```
 
+## 2026-10-18 20:00 (V1, 8.2)
+- 완료: 8.2 운영자 관리 — 회차 수정(매칭 시각 재등록), 식당 CRUD·회차별 수용량(`/admin/venues`), 매칭 가중치·최소 점수(MAT-15, `/admin/settings`), 신청자 목록·CSV 2종(PRD 16장, `/admin/applicants`), 피드백 요약·신고 검토(`/admin/feedback`), 피드백 제출 시 NEXT_SLOT_RECOMMEND 알림(RET-02)
+  - 백엔드 API 11개(`/api/v1/admin/...`), 프론트 공통 `AdminLayout`(좌측 메뉴) + 페이지 4개 신규·회차 페이지 개편
+  - 검증: 비DB 전체 테스트 통과(신규 6건), 프론트 build·lint 통과, 로컬(Neon dev) 기동 후 curl로 설정 저장·검증·회차 수정·식당/수용량·CSV·신청자·피드백 요약 확인
+- 변경: V2 영역 `MatchingDataReader.number()` 4줄(설정 숫자가 `{"value":n}` 객체여도 읽음). 명세 변경 없음
+- 이슈: `AdminLayout`은 8.1(V2) 레이아웃이 main에 없어 임시로 만든 것 — 병합 시 한쪽으로 통합 필요. 검증 중 Neon dev에 테스트 회차 #345(성수 12/20)·식당 #253이 남음(시드 초기화 시 사라짐)
+- 다음: PM 검토 → 배포 확인
+
 ## 2026-10-18 19:30 (V1, main)
 - 완료: 7.2 SAF-01·02, RET-01·02 — 신고·차단(즉시 분리 + 예외 SAFETY_REPORT), 운영자 조치(DISMISS/WARNING/RESTRICTION/PERMANENT_BAN), 참가 이력, 다음 일정 추천. 배포 환경 curl 검증 완료
 - 변경: 대상 지정 applicationId+companionId, RESTRICTION 자동 해제 생략 (decisions.md)

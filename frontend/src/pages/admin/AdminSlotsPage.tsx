@@ -1,66 +1,80 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
-import type { Slot } from '../../api/types'
-import SessionBar from '../../components/SessionBar'
-import { formatDateTime } from '../../lib/format'
+import type { Slot, SlotInput } from '../../api/types'
+import AdminLayout from '../../components/AdminLayout'
+import { formatDateTime, toIso, toLocalInput } from '../../lib/format'
 
-// 회차 관리 (/admin/slots): 생성 폼 + 목록 + [2.3] 매칭 실행 버튼(스케줄러 대체)
+const input = 'rounded border border-gray-300 bg-white px-2 py-1 text-sm'
+
+// 회차 관리 (/admin/slots): 생성·수정 폼 + 목록 + [2.3] 매칭 실행 버튼(스케줄러 대체)
 export default function AdminSlotsPage() {
   const slots = useQuery({ queryKey: ['admin-slots'], queryFn: api.adminSlots })
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <Link to="/admin" className="text-sm text-gray-500">
-            운영자 홈
-          </Link>
-          <h1 className="text-2xl font-bold">회차 관리</h1>
-        </div>
-        <SessionBar />
-      </header>
+    <AdminLayout title="회차 관리">
       <CreateSlotForm />
       <section className="mt-6 space-y-3">
         {slots.isError && <p className="text-sm text-red-700">{errorMessage(slots.error)}</p>}
         {slots.data?.map((s) => <SlotRow key={s.id} slot={s} />)}
       </section>
-    </main>
+    </AdminLayout>
   )
 }
 
-// datetime-local 값(서울 시각)을 +09:00 ISO로 바꾼다
-const toIso = (local: string) => (local ? `${local}:00+09:00` : '')
+interface SlotFormValue {
+  regionId: string
+  startsAt: string
+  endsAt: string
+  capacity: string
+  applyDeadlineAt: string
+  matchRunAt: string
+}
 
-function CreateSlotForm() {
-  const queryClient = useQueryClient()
+const EMPTY: SlotFormValue = { regionId: '', startsAt: '', endsAt: '', capacity: '30', applyDeadlineAt: '', matchRunAt: '' }
+
+const fromSlot = (s: Slot): SlotFormValue => ({
+  regionId: String(s.regionId),
+  startsAt: toLocalInput(s.startsAt),
+  endsAt: toLocalInput(s.endsAt),
+  capacity: String(s.capacity),
+  applyDeadlineAt: toLocalInput(s.applyDeadlineAt),
+  matchRunAt: toLocalInput(s.matchRunAt),
+})
+
+// 생성·수정 공용 입력 폼
+function SlotForm({ initial, submitLabel, onSubmit, pending, error }: {
+  initial: SlotFormValue
+  submitLabel: string
+  onSubmit: (body: SlotInput) => void
+  pending: boolean
+  error: unknown
+}) {
   const regions = useQuery({ queryKey: ['regions'], queryFn: api.regions })
-  const [form, setForm] = useState({ regionId: '', startsAt: '', endsAt: '', capacity: '30', matchRunAt: '' })
-  const create = useMutation({
-    mutationFn: () =>
-      api.createSlot({
-        regionId: Number(form.regionId || regions.data?.[0]?.id),
-        startsAt: toIso(form.startsAt),
-        endsAt: toIso(form.endsAt),
-        capacity: Number(form.capacity),
-        // demo-scenario.md: 신청 마감 = 매칭 실행 시각
-        applyDeadlineAt: toIso(form.matchRunAt),
-        matchRunAt: toIso(form.matchRunAt),
-      }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-slots'] }),
-  })
-  const onSubmit = (e: FormEvent) => {
+  const [form, setForm] = useState(initial)
+  const submit = (e: FormEvent) => {
     e.preventDefault()
-    create.mutate()
+    onSubmit({
+      regionId: Number(form.regionId || regions.data?.[0]?.id),
+      startsAt: toIso(form.startsAt),
+      endsAt: toIso(form.endsAt),
+      capacity: Number(form.capacity),
+      applyDeadlineAt: toIso(form.applyDeadlineAt),
+      matchRunAt: toIso(form.matchRunAt),
+    })
   }
-  const input = 'rounded border border-gray-300 bg-white px-2 py-1 text-sm'
+  const dt = (name: 'startsAt' | 'endsAt' | 'applyDeadlineAt' | 'matchRunAt', text: string) => (
+    <label className="flex flex-col gap-1">
+      {text}
+      <input type="datetime-local" required className={input} value={form[name]}
+        onChange={(e) => setForm({ ...form, [name]: e.target.value })} />
+    </label>
+  )
 
   return (
-    <form onSubmit={onSubmit} className="mt-4 rounded-lg border border-gray-200 bg-white p-4">
-      <h2 className="font-semibold">회차 만들기</h2>
-      <div className="mt-3 grid grid-cols-2 gap-3 text-sm md:grid-cols-5">
+    <form onSubmit={submit}>
+      <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-6">
         <label className="flex flex-col gap-1">
           지역
           <select className={input} value={form.regionId} onChange={(e) => setForm({ ...form, regionId: e.target.value })}>
@@ -71,39 +85,48 @@ function CreateSlotForm() {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1">
-          시작
-          <input type="datetime-local" required className={input} value={form.startsAt}
-            onChange={(e) => setForm({ ...form, startsAt: e.target.value })} />
-        </label>
-        <label className="flex flex-col gap-1">
-          종료
-          <input type="datetime-local" required className={input} value={form.endsAt}
-            onChange={(e) => setForm({ ...form, endsAt: e.target.value })} />
-        </label>
-        <label className="flex flex-col gap-1">
-          매칭 실행·신청 마감
-          <input type="datetime-local" required className={input} value={form.matchRunAt}
-            onChange={(e) => setForm({ ...form, matchRunAt: e.target.value })} />
-        </label>
+        {dt('startsAt', '시작')}
+        {dt('endsAt', '종료')}
+        {dt('applyDeadlineAt', '신청 마감')}
+        {dt('matchRunAt', '매칭 실행')}
         <label className="flex flex-col gap-1">
           정원
           <input type="number" min={4} required className={input} value={form.capacity}
             onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
         </label>
       </div>
-      {create.isError && <p className="mt-2 text-sm text-red-700">{errorMessage(create.error)}</p>}
-      <button type="submit" disabled={create.isPending}
+      {error != null && <p className="mt-2 text-sm text-red-700">{errorMessage(error)}</p>}
+      <button type="submit" disabled={pending}
         className="mt-3 rounded bg-gray-900 px-4 py-2 text-sm text-white disabled:bg-gray-400">
-        만들기
+        {submitLabel}
       </button>
     </form>
+  )
+}
+
+function CreateSlotForm() {
+  const queryClient = useQueryClient()
+  const [formKey, setFormKey] = useState(0)
+  const create = useMutation({
+    mutationFn: api.createSlot,
+    onSuccess: () => {
+      setFormKey((k) => k + 1)
+      queryClient.invalidateQueries({ queryKey: ['admin-slots'] })
+    },
+  })
+  return (
+    <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4">
+      <h2 className="mb-3 font-semibold">회차 만들기</h2>
+      <SlotForm key={formKey} initial={EMPTY} submitLabel="만들기" onSubmit={(b) => create.mutate(b)}
+        pending={create.isPending} error={create.error} />
+    </div>
   )
 }
 
 function SlotRow({ slot }: { slot: Slot }) {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState(false)
   const tables = useQuery({
     queryKey: ['slot-tables', slot.id],
     queryFn: () => api.slotTables(slot.id),
@@ -117,16 +140,28 @@ function SlotRow({ slot }: { slot: Slot }) {
       queryClient.invalidateQueries({ queryKey: ['slot-tables', slot.id] })
     },
   })
+  const update = useMutation({
+    mutationFn: (body: SlotInput) => api.updateSlot(slot.id, body),
+    onSuccess: () => {
+      setEditing(false)
+      queryClient.invalidateQueries({ queryKey: ['admin-slots'] })
+    },
+  })
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="text-sm">
           <span className="font-semibold">#{slot.id} {slot.regionName}</span> · {formatDateTime(slot.startsAt)} · 정원{' '}
-          {slot.capacity} · 매칭 {formatDateTime(slot.matchRunAt)} ·{' '}
+          {slot.capacity} · 마감 {formatDateTime(slot.applyDeadlineAt)} · 매칭 {formatDateTime(slot.matchRunAt)} ·{' '}
           <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">{slot.slotStatus}</span>
         </div>
         <div className="flex gap-2">
+          {slot.slotStatus === 'OPEN' && (
+            <button type="button" onClick={() => setEditing((e) => !e)} className="rounded border px-3 py-1 text-sm">
+              {editing ? '수정 닫기' : '수정'}
+            </button>
+          )}
           <button type="button" onClick={() => setOpen((o) => !o)} className="rounded border px-3 py-1 text-sm">
             {open ? '접기' : '테이블 보기'}
           </button>
@@ -137,6 +172,13 @@ function SlotRow({ slot }: { slot: Slot }) {
           </button>
         </div>
       </div>
+      {editing && (
+        <div className="mt-3 border-t border-gray-100 pt-3">
+          <SlotForm initial={fromSlot(slot)} submitLabel="저장" onSubmit={(b) => update.mutate(b)}
+            pending={update.isPending} error={update.error} />
+          <p className="mt-2 text-xs text-gray-500">매칭 실행 시각을 바꾸면 자동 매칭 일정도 새 시각으로 다시 등록됩니다.</p>
+        </div>
+      )}
       {run.data && (
         <p className="mt-2 text-xs text-gray-600">
           실행 #{run.data.id} ({run.data.algorithmVersion}) · 후보 {run.data.candidateCount}명 · 결과{' '}
