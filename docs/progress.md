@@ -10,6 +10,12 @@
 > - 다음:
 > ```
 
+## 2026-10-18 19:30 (V1, main)
+- 완료: 7.2 SAF-01·02, RET-01·02 — 신고·차단(즉시 분리 + 예외 SAFETY_REPORT), 운영자 조치(DISMISS/WARNING/RESTRICTION/PERMANENT_BAN), 참가 이력, 다음 일정 추천. 배포 환경 curl 검증 완료
+- 변경: 대상 지정 applicationId+companionId, RESTRICTION 자동 해제 생략 (decisions.md)
+- 이슈: 신고 사유 enum PRD 확인 필요, 병합본 DB 테스트 락 경합으로 미완
+- 다음: PM 검토
+
 ## 2026-10-18 (V2, `feat/matching-engine`) 5.2 모임 안내 자동화
 - 완료: INF-01·03·05·07·08, CON-01~03 — 알림 저장·발송·재시도·예외 전환, 상황별 템플릿 12종(V7), 단체방 공지·큐레이션·정책, 리마인드(`REMINDER_D1`)·콘텐츠(`CONTENT_POST`) 예약 게시, 알림함·콘텐츠 API·화면, `FEEDBACK_REQUEST`를 7.1 `EventEndedEvent`에 연결
   - 검증: 비DB 전체 통과, `GuidanceAutomationIntegrationTest` 5건(DB) 통과, 프론트 build·lint 통과
