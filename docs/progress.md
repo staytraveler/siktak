@@ -10,6 +10,12 @@
 > - 다음:
 > ```
 
+## 2026-10-18 20:50 (V2, `feat/matching-engine`)
+- 완료: 8.1 운영자 어드민 — 대시보드(`GET /admin/dashboard`: PRD 11장 정보·3장 지표), 예외 처리함(유형별 조치: 식당 수용량+재배정·환불 재처리/수동 완료·노쇼 확정(T5)/해제·알림 재발송·직접 해결, 사유 필수), 매칭 모니터(실행 목록→테이블·참가자별 배치 로그), 테이블 상세(구성원·S1~S6·7.2 요약·식당·단체방 메시지·알림 발송 상태). 0번: 배포 환경 시드 초기화→J1→J3→J4 curl 확인, 단체방 메시지 5종 정상
+- 변경: 8.2(V1)의 공통 `AdminLayout(title)`에 합침. 수용량 API는 V1의 `/admin/venue-capacities`·`PUT /admin/venues/{id}/capacities/{slotId}`를 사용(내 중복 구현 삭제). 테스트 `AdminConsoleIntegrationTest` 5건(DB)
+- 이슈: DB 통합 테스트가 Neon 원격 왕복 때문에 테스트당 5~8분 걸림
+- 다음: PM 검토
+
 ## 2026-10-21 (V1) 10.1 시연 문서·계정 정리
 - 완료: 8.2 배포 확인(API·Vercel 라우트 전부 200), README.md 심사위원용 재작성, docs/demo-guide.md 신규(12단계 진행표)
 - 변경: 계정 표는 시드(`DemoSeedData`)와 일치 확인. Swagger는 `/swagger-ui.html`(→ `/swagger-ui/index.html` 200)
