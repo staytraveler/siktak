@@ -16,6 +16,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     boolean existsByApplicationId(Long applicationId);
 
+    List<Attendance> findByUserIdOrderByIdDesc(Long userId);
+
     List<Attendance> findByDiningTableIdOrderByIdAsc(Long diningTableId);
 
     @Query("""

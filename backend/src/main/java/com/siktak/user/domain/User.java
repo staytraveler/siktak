@@ -49,6 +49,17 @@ public class User extends BaseTimeEntity {
     @Column(name = "account_status", nullable = false)
     private AccountStatus accountStatus = AccountStatus.ACTIVE;
 
+    /** 참가 제한 (SAF-02). 이미 정지된 계정은 낮추지 않는다. */
+    public void restrict() {
+        if (accountStatus == AccountStatus.ACTIVE) {
+            accountStatus = AccountStatus.RESTRICTED;
+        }
+    }
+
+    public void ban() {
+        accountStatus = AccountStatus.BANNED;
+    }
+
     public static User create(String loginId, UserRole role, String name, String phone) {
         return create(loginId, role, name, phone, null);
     }

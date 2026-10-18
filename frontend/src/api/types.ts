@@ -169,3 +169,47 @@ export interface NotificationItem {
   sentAt: string | null
   readAt: string | null
 }
+
+// 신고·차단 (SAF-01)
+export type ReportReason =
+  | 'HARASSMENT'
+  | 'INAPPROPRIATE_BEHAVIOR'
+  | 'PRIVACY_VIOLATION'
+  | 'SAFETY_THREAT'
+  | 'OTHER'
+
+// 참가 이력·추천 (RET-01·02)
+export interface HistoryItem {
+  applicationId: number
+  eventSlotId: number
+  startsAt: string
+  regionName: string
+  venueName: string | null
+  attendanceStatus: string
+  feedbackSubmitted: boolean
+}
+export interface Recommendation {
+  eventSlotId: number
+  startsAt: string
+  regionId: number
+  regionName: string
+  sameRegion: boolean
+  sameTimeSlot: boolean
+}
+
+// 운영자 신고 조치 (SAF-02)
+export type ResolveAction = 'DISMISS' | 'WARNING' | 'RESTRICTION' | 'PERMANENT_BAN'
+export interface AdminReport {
+  id: number
+  reporterId: number
+  reporterName: string
+  reportedId: number
+  reportedName: string
+  diningTableId: number | null
+  reasonType: string
+  description: string
+  reportStatus: string
+  handledBy: number | null
+  handledAt: string | null
+  createdAt: string
+}

@@ -13,6 +13,9 @@ export default function AdminHomePage() {
         <Link to="/admin/slots" className="inline-block rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm">
           회차 관리 · 매칭 실행 →
         </Link>
+        <Link to="/admin/reports" className="inline-block rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm">
+          안전 신고 처리 →
+        </Link>
         <Link to="/admin/demo" className="inline-block rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm">
           데모 도구 (시간 앞당기기 · 시드 초기화) →
         </Link>

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
-import type { ApplicationItem, PreferenceType, ResolutionChoice } from '../../api/types'
+import type { ApplicationItem, PreferenceType, ReportReason, ResolutionChoice } from '../../api/types'
 import StatusBadges from '../../components/StatusBadges'
 import SessionBar from '../../components/SessionBar'
 import { formatDateTime, PAYMENT_STATUS } from '../../lib/format'
@@ -338,10 +338,11 @@ function PreferenceSection({ applicationId }: { applicationId: number }) {
                 </button>
               ))}
             </div>
+            <SafetyActions applicationId={applicationId} companionId={c.companionId} />
           </li>
         ))}
       </ul>
-      {save.isError && <p className="mt-2 text-red-700">{errorMessage(save.error)}</p>}
+      {save.isError &&<p className="mt-2 text-red-700">{errorMessage(save.error)}</p>}
       {save.isSuccess && !draft && <p className="mt-2 text-green-800">저장했어요.</p>}
       <button
         type="button"
@@ -352,6 +353,80 @@ function PreferenceSection({ applicationId }: { applicationId: number }) {
         선택 저장
       </button>
     </section>
+  )
+}
+
+const REPORT_REASONS: { value: ReportReason; label: string }[] = [
+  { value: 'HARASSMENT', label: '괴롭힘·불쾌한 언행' },
+  { value: 'INAPPROPRIATE_BEHAVIOR', label: '부적절한 행동' },
+  { value: 'PRIVACY_VIOLATION', label: '개인정보 침해' },
+  { value: 'SAFETY_THREAT', label: '안전 위협' },
+  { value: 'OTHER', label: '기타' },
+]
+
+// 동석자 차단·신고 (SAF-01). 접수되면 다음 매칭부터 분리되고, 상대에게는 알려지지 않는다. 기능만, 디자인 없음
+function SafetyActions({ applicationId, companionId }: { applicationId: number; companionId: number }) {
+  const [reporting, setReporting] = useState(false)
+  const [reason, setReason] = useState<ReportReason>('HARASSMENT')
+  const [description, setDescription] = useState('')
+  const block = useMutation({ mutationFn: () => api.blockCompanion(applicationId, companionId) })
+  const report = useMutation({
+    mutationFn: () => api.reportCompanion({ applicationId, companionId, reasonType: reason, description }),
+    onSuccess: () => setReporting(false),
+  })
+
+  return (
+    <div className="mt-1 text-xs">
+      <button
+        type="button"
+        disabled={block.isPending || block.isSuccess}
+        onClick={() => window.confirm('이 분을 차단할까요? 다음 매칭에서 만나지 않아요.') && block.mutate()}
+        className="mr-3 text-gray-500 underline"
+      >
+        {block.isSuccess ? '차단했어요' : '차단'}
+      </button>
+      <button
+        type="button"
+        disabled={report.isSuccess}
+        onClick={() => setReporting(!reporting)}
+        className="text-gray-500 underline"
+      >
+        {report.isSuccess ? '신고를 접수했어요' : '신고'}
+      </button>
+      {reporting && (
+        <div className="mt-2 space-y-2 rounded border border-gray-200 p-2">
+          <select
+            value={reason}
+            onChange={(e) => setReason(e.target.value as ReportReason)}
+            className="w-full rounded border border-gray-300 p-2"
+          >
+            {REPORT_REASONS.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            maxLength={2000}
+            placeholder="어떤 일이 있었는지 알려주세요. 상대에게는 공개되지 않아요."
+            className="w-full rounded border border-gray-300 p-2"
+          />
+          <button
+            type="button"
+            disabled={report.isPending || !description.trim()}
+            onClick={() => report.mutate()}
+            className="w-full rounded bg-red-700 py-2 text-white disabled:bg-gray-300"
+          >
+            신고하기
+          </button>
+        </div>
+      )}
+      {(block.isError || report.isError) && (
+        <p className="mt-1 text-red-700">{errorMessage(block.error ?? report.error)}</p>
+      )}
+    </div>
   )
 }
 

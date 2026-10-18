@@ -3,8 +3,10 @@ import RequireAuth from './components/RequireAuth'
 import AdminDemoPage from './pages/admin/AdminDemoPage'
 import AdminHomePage from './pages/admin/AdminHomePage'
 import AdminSlotsPage from './pages/admin/AdminSlotsPage'
+import AdminReportsPage from './pages/admin/AdminReportsPage'
 import ApplicationDetailPage from './pages/app/ApplicationDetailPage'
 import NotificationsPage from './pages/app/NotificationsPage'
+import HistoryPage from './pages/app/HistoryPage'
 import ParticipantHomePage from './pages/app/ParticipantHomePage'
 import ProfilePage from './pages/app/ProfilePage'
 import LoginPage from './pages/LoginPage'
@@ -15,9 +17,11 @@ const router = createBrowserRouter([
   { path: '/app', element: <RequireAuth><ParticipantHomePage /></RequireAuth> },
   { path: '/app/notifications', element: <RequireAuth><NotificationsPage /></RequireAuth> },
   { path: '/app/applications/:id', element: <RequireAuth><ApplicationDetailPage /></RequireAuth> },
+  { path: '/app/history', element: <RequireAuth><HistoryPage /></RequireAuth> },
   { path: '/app/profile', element: <RequireAuth><ProfilePage /></RequireAuth> },
   { path: '/admin', element: <RequireAuth role="OPERATOR"><AdminHomePage /></RequireAuth> },
   { path: '/admin/slots', element: <RequireAuth role="OPERATOR"><AdminSlotsPage /></RequireAuth> },
+  { path: '/admin/reports', element: <RequireAuth role="OPERATOR"><AdminReportsPage /></RequireAuth> },
   { path: '/admin/demo', element: <RequireAuth role="OPERATOR"><AdminDemoPage /></RequireAuth> },
 ])
 

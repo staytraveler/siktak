@@ -1,5 +1,6 @@
 import { apiClient } from './client'
 import type {
+  AdminReport,
   AdminTable,
   ApplicationItem,
   Attendance,
@@ -8,15 +9,19 @@ import type {
   DemoActionResult,
   DemoStatus,
   FeedbackItem,
+  HistoryItem,
   MatchRun,
   MyTable,
   NotificationItem,
   PreferenceChoice,
   Profile,
   ProfileInput,
+  Recommendation,
   Region,
+  ReportReason,
   Resolution,
   ResolutionChoice,
+  ResolveAction,
   Slot,
 } from './types'
 import type { Session, SessionUser } from './session'
@@ -65,8 +70,21 @@ export const api = {
   savePersonPreferences: async (applicationId: number, choices: PreferenceChoice[]) =>
     (await apiClient.put<PreferenceChoice[]>(`/api/v1/me/applications/${applicationId}/person-preferences`, { choices }))
       .data,
+  blockCompanion: (applicationId: number, companionId: number) =>
+    post<void>('/api/v1/me/blocks', { applicationId, companionId }),
+  reportCompanion: (body: {
+    applicationId: number
+    companionId: number
+    reasonType: ReportReason
+    description: string
+  }) => post<{ reportId: number; reportStatus: string }>('/api/v1/me/reports', body),
+  myHistory: () => get<HistoryItem[]>('/api/v1/me/history'),
+  myRecommendations: () => get<Recommendation[]>('/api/v1/me/recommendations'),
 
   // 운영자
+  adminReports: (open: boolean) => get<AdminReport[]>(`/api/v1/admin/reports?open=${open}`),
+  resolveReport: (reportId: number, body: { action: ResolveAction; days?: number; note?: string }) =>
+    post<AdminReport>(`/api/v1/admin/reports/${reportId}/resolve`, body),
   adminSlots: () => get<Slot[]>('/api/v1/admin/slots'),
   createSlot: (body: {
     regionId: number

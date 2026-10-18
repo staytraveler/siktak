@@ -50,6 +50,9 @@ export default function ParticipantHomePage() {
       <Link to="/app/profile" className="mt-2 inline-block text-sm text-amber-800 underline">
         내 프로필 {profile.data && !profile.data.complete ? '(미완성 · 신청 전에 입력해주세요)' : '보기·수정'}
       </Link>
+      <Link to="/app/history" className="mt-2 ml-4 inline-block text-sm text-amber-800 underline">
+        참가 이력·추천
+      </Link>
 
       <Link to="/app/notifications" className="mt-3 block text-sm text-green-800 underline">
         알림 보기

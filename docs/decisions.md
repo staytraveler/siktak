@@ -89,3 +89,7 @@
 - 2026-10-18 [CC] 7.1 만남 이력(`user_encounters`)은 같은 테이블 `ATTENDED` 쌍마다 `insert ... on conflict do nothing`, `met_at` = 행사 시작 시각. 종료 이벤트 `EventEndedEvent(slotId, attendedUserIds, noShowCandidateUserIds)` 발행(V2 피드백 요청 알림이 사용)
 - 2026-10-18 [CC] 7.1 피드백은 `ATTENDED`만 제출(아니면 409), 재참여 의향 1~5·추천 0~10 필수. 사람별 선호는 별도 `PUT /me/applications/{id}/person-preferences`(전체 교체, 멱등) — 동석자는 `table_members.id`(companionId)와 이름만 노출해 다른 참가자의 사용자 ID를 내보내지 않는다. 조회는 본인이 쓴 것만
 - 2026-10-18 [CC] Flyway `out-of-order: true` — V1(짝수)·V2(홀수) 번호 규칙 때문에 V2가 먼저 적용한 V7 뒤에 V6이 들어온다. 공유 Neon dev DB·배포 DB 모두 필요
+- 2026-10-18 [CC] 7.2 차단·신고 API는 지시서의 `userId` 대신 `applicationId` + `companionId`(table_members.id, 7.1 동석자 API와 동일)로 대상을 가리킨다 — 다른 참가자의 사용자 ID를 응답·요청에 내보내지 않기 위해(CLAUDE.md 6장 개인정보). 같은 테이블 동석자가 아니면 400(`INVALID_REQUEST`)
+- 2026-10-18 [CC] 7.2 신고는 (신고자, 피신고자, 테이블)당 1건(유니크 인덱스)이고 재전송 시 기존 접수를 돌려준다. 접수 즉시 `user_blocks(REPORT)` + `ExceptionCase(SAFETY_REPORT, key=SAFETY_REPORT:report-{id})`. 신고 사유 enum(HARASSMENT 등 5개)은 PRD에 목록이 없어 임의로 정함 — PM 확인 필요
+- 2026-10-18 [CC] 7.2 운영자 조치 `resolve`: DISMISS→신고 DISMISSED, 그 외→RESOLVED + `user_sanctions` 1건(신고당 1건 부분 유니크). RESTRICTION은 `days`≥1 필수, 계정 RESTRICTED(`ends_at`=조치 시각+days). PERMANENT_BAN→BANNED. 이미 닫힌 신고는 재호출해도 무변화. RESTRICTION 기간 만료 자동 해제는 구현하지 않음
+- 2026-10-18 [CC] 7.2 참가 이력은 종료(DONE)된 회차의 참석 기록, 추천은 모집 중(`OPEN`·신청 가능) 회차에서 이미 신청한 회차를 뺀 뒤 ①체크인한 지역 ②같은 요일+시간대(오전<12·오후<17·저녁) ③시작 순으로 최대 3개 — 시간대 구간은 해석
