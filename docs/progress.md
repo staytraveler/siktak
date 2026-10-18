@@ -10,6 +10,12 @@
 > - 다음:
 > ```
 
+## 2026-10-21 (V1) 10.1 시연 문서·계정 정리
+- 완료: 8.2 배포 확인(API·Vercel 라우트 전부 200), README.md 심사위원용 재작성, docs/demo-guide.md 신규(12단계 진행표)
+- 변경: 계정 표는 시드(`DemoSeedData`)와 일치 확인. Swagger는 `/swagger-ui.html`(→ `/swagger-ui/index.html` 200)
+- 이슈: (1) production DB의 S1~S3가 이미 `MATCHED` — 시연 전 시드 초기화 필요(운영 DB라 손대지 않음). (2) dev DB 회차 #345·식당 #253 개별 삭제는 권한 분류기가 거부해 미실행(SQL은 10.1 완료 보고). (3) 운영자 대시보드·예외 처리함 경로는 8.1 완료 후 demo-guide에 확정 필요
+- 다음: PM 확인 → 10.x 통합 검증(J2 이후 화면 경로 확인)
+
 ## 2026-10-18 20:00 (V1, 8.2)
 - 완료: 8.2 운영자 관리 — 회차 수정(매칭 시각 재등록), 식당 CRUD·회차별 수용량(`/admin/venues`), 매칭 가중치·최소 점수(MAT-15, `/admin/settings`), 신청자 목록·CSV 2종(PRD 16장, `/admin/applicants`), 피드백 요약·신고 검토(`/admin/feedback`), 피드백 제출 시 NEXT_SLOT_RECOMMEND 알림(RET-02)
   - 백엔드 API 11개(`/api/v1/admin/...`), 프론트 공통 `AdminLayout`(좌측 메뉴) + 페이지 4개 신규·회차 페이지 개편
