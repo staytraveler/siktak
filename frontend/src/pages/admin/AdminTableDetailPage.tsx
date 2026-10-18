@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
+import AdminLayout from '../../components/AdminLayout'
 import { formatDateTime, SEND_STATUS, TABLE_STATUS } from '../../lib/format'
 
 interface ScoreItem {
@@ -43,160 +44,162 @@ export default function AdminTableDetailPage() {
   const preferred = s.preferredTraitMatch ?? []
 
   return (
-    <div className="space-y-5">
-      <div>
-        <Link to="/admin/matching" className="text-sm text-gray-500">
-          ← 매칭 모니터
-        </Link>
-        <h1 className="text-2xl font-bold">
-          테이블 #{t.id}{' '}
-          <span className="text-base font-normal text-gray-500">
-            회차 #{t.slotId} · {t.memberCount}명 · {TABLE_STATUS[t.tableStatus] ?? t.tableStatus} · 확정{' '}
-            {formatDateTime(t.confirmedAt)}
-          </span>
-        </h1>
-      </div>
+    <AdminLayout title="테이블 상세">
+      <div className="space-y-5">
+        <div>
+          <Link to="/admin/matching" className="text-sm text-gray-500">
+            ← 매칭 모니터
+          </Link>
+          <h1 className="text-2xl font-bold">
+            테이블 #{t.id}{' '}
+            <span className="text-base font-normal text-gray-500">
+              회차 #{t.slotId} · {t.memberCount}명 · {TABLE_STATUS[t.tableStatus] ?? t.tableStatus} · 확정{' '}
+              {formatDateTime(t.confirmedAt)}
+            </span>
+          </h1>
+        </div>
 
-      <Card title="구성원">
-        <table className="w-full text-sm">
-          <thead className="text-left text-xs text-gray-600">
-            <tr>
-              <th className="p-1">이름</th>
-              <th className="p-1">출생연도</th>
-              <th className="p-1">성별</th>
-              <th className="p-1">MBTI</th>
-              <th className="p-1">관심사</th>
-            </tr>
-          </thead>
-          <tbody>
-            {t.members.map((m) => (
-              <tr key={m.userId} className="border-t border-gray-100">
-                <td className="p-1">
-                  {m.name ?? '-'} <span className="text-xs text-gray-500">{m.loginId}</span>
-                </td>
-                <td className="p-1">{m.birthYear ? `${m.birthYear}년생` : '-'}</td>
-                <td className="p-1">{m.gender === 'MALE' ? '남' : m.gender === 'FEMALE' ? '여' : (m.gender ?? '-')}</td>
-                <td className="p-1">{m.mbti ?? '-'}</td>
-                <td className="p-1">{m.interests.join(', ') || '-'}</td>
+        <Card title="구성원">
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs text-gray-600">
+              <tr>
+                <th className="p-1">이름</th>
+                <th className="p-1">출생연도</th>
+                <th className="p-1">성별</th>
+                <th className="p-1">MBTI</th>
+                <th className="p-1">관심사</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card title={`점수 ${t.totalScore != null ? `(합계 ${Number(t.totalScore).toFixed(1)})` : ''}`}>
-          {items.length === 0 && <p className="text-sm text-gray-500">점수 정보가 없어요.</p>}
-          <ul className="space-y-1 text-sm">
-            {items.map((i) => (
-              <li key={i.code} className="flex items-center gap-2">
-                <span className="w-44 shrink-0">
-                  {i.code} {i.label}
-                </span>
-                <span className="h-2 flex-1 rounded bg-gray-100">
-                  <span className="block h-2 rounded bg-gray-700" style={{ width: `${Math.round(i.raw * 100)}%` }} />
-                </span>
-                <span className="w-24 text-right text-xs text-gray-600">
-                  {i.weighted.toFixed(1)} / {i.weight.toFixed(0)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        <Card title="매칭 요약 (PRD 7.2)">
-          <dl className="grid grid-cols-[7rem_1fr] gap-y-1 text-sm">
-            <dt className="text-gray-600">연령대</dt>
-            <dd>{s.age ? `${s.age.minBirthYear}~${s.age.maxBirthYear}년생 (차이 ${s.age.gap}살)` : '-'}</dd>
-            <dt className="text-gray-600">성비</dt>
-            <dd>{s.gender ? `남 ${s.gender.male} · 여 ${s.gender.female}` : '-'}</dd>
-            <dt className="text-gray-600">MBTI</dt>
-            <dd>
-              {s.mbti
-                ? `E ${s.mbti.e ?? 0}/I ${s.mbti.i ?? 0} · N ${s.mbti.n ?? 0}/S ${s.mbti.s ?? 0} · T ${s.mbti.t ?? 0}/F ${s.mbti.f ?? 0} · J ${s.mbti.j ?? 0}/P ${s.mbti.p ?? 0}`
-                : '-'}
-            </dd>
-            <dt className="text-gray-600">공통 관심사</dt>
-            <dd>{s.commonInterests?.join(', ') || '-'}</dd>
-            <dt className="text-gray-600">희망 성향 충족</dt>
-            <dd>
-              {preferred.filter((p) => p.satisfied).length}/{preferred.length}명
-            </dd>
-            <dt className="text-gray-600">선택 회차 순위</dt>
-            <dd>
-              {(s.slotMatch ?? []).filter((x) => x.choiceRank === 1).length}명 1순위 ·{' '}
-              {(s.slotMatch ?? []).filter((x) => x.choiceRank > 1).length}명 그 외
-            </dd>
-            <dt className="text-gray-600">이전 만남</dt>
-            <dd>{s.previousEncounters?.length ?? 0}쌍</dd>
-            <dt className="text-gray-600">조건 충돌</dt>
-            <dd>{s.conflicts ? '있음' : '없음'}</dd>
-          </dl>
-        </Card>
-      </div>
-
-      <Card title="식당 · 예약">
-        {t.venue ? (
-          <p className="text-sm">
-            {t.venue.name} · {t.venue.address} · 예약명 <b>{t.reservationName ?? '-'}</b> · 배정{' '}
-            {formatDateTime(t.venueAssignedAt)}
-          </p>
-        ) : (
-          <p className="text-sm text-red-700">
-            식당이 배정되지 않았어요 (예약명 {t.reservationName ?? '-'}).{' '}
-            <Link to="/admin/exceptions?type=VENUE_UNAVAILABLE" className="underline">
-              예외 처리함에서 수용량을 늘려 재배정
-            </Link>
-          </p>
-        )}
-      </Card>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card title={`단체방 메시지 (${messages.data?.length ?? 0})`}>
-          {messages.isError && <p className="text-sm text-red-700">{errorMessage(messages.error)}</p>}
-          {t.chatRoomId == null && <p className="text-sm text-gray-500">단체방이 아직 없어요.</p>}
-          <ul className="max-h-96 space-y-2 overflow-y-auto text-sm">
-            {messages.data?.map((m) => (
-              <li key={m.id} className="rounded bg-gray-50 p-2">
-                <p className="text-xs text-gray-500">
-                  {m.messageType} · {formatDateTime(m.createdAt)}
-                </p>
-                <p className="whitespace-pre-wrap">{m.body}</p>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        <Card title="알림 발송 상태">
-          {notifications.isError && <p className="text-sm text-red-700">{errorMessage(notifications.error)}</p>}
-          <div className="max-h-96 overflow-y-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs text-gray-600">
-                <tr>
-                  <th className="p-1">대상</th>
-                  <th className="p-1">알림</th>
-                  <th className="p-1">상태</th>
-                  <th className="p-1">시각</th>
+            </thead>
+            <tbody>
+              {t.members.map((m) => (
+                <tr key={m.userId} className="border-t border-gray-100">
+                  <td className="p-1">
+                    {m.name ?? '-'} <span className="text-xs text-gray-500">{m.loginId}</span>
+                  </td>
+                  <td className="p-1">{m.birthYear ? `${m.birthYear}년생` : '-'}</td>
+                  <td className="p-1">{m.gender === 'MALE' ? '남' : m.gender === 'FEMALE' ? '여' : (m.gender ?? '-')}</td>
+                  <td className="p-1">{m.mbti ?? '-'}</td>
+                  <td className="p-1">{m.interests.join(', ') || '-'}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {notifications.data?.map((n) => (
-                  <tr key={n.id} className="border-t border-gray-100">
-                    <td className="p-1">{n.userName ?? n.userId}</td>
-                    <td className="p-1">{n.templateCode}</td>
-                    <td className={`p-1 ${n.sendStatus === 'FAILED' ? 'font-medium text-red-700' : ''}`}>
-                      {SEND_STATUS[n.sendStatus] ?? n.sendStatus}
-                      {n.attempts > 1 && <span className="text-xs text-gray-500"> ({n.attempts}회)</span>}
-                    </td>
-                    <td className="p-1 whitespace-nowrap text-xs">{formatDateTime(n.sentAt ?? n.scheduledAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </Card>
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Card title={`점수 ${t.totalScore != null ? `(합계 ${Number(t.totalScore).toFixed(1)})` : ''}`}>
+            {items.length === 0 && <p className="text-sm text-gray-500">점수 정보가 없어요.</p>}
+            <ul className="space-y-1 text-sm">
+              {items.map((i) => (
+                <li key={i.code} className="flex items-center gap-2">
+                  <span className="w-44 shrink-0">
+                    {i.code} {i.label}
+                  </span>
+                  <span className="h-2 flex-1 rounded bg-gray-100">
+                    <span className="block h-2 rounded bg-gray-700" style={{ width: `${Math.round(i.raw * 100)}%` }} />
+                  </span>
+                  <span className="w-24 text-right text-xs text-gray-600">
+                    {i.weighted.toFixed(1)} / {i.weight.toFixed(0)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+
+          <Card title="매칭 요약 (PRD 7.2)">
+            <dl className="grid grid-cols-[7rem_1fr] gap-y-1 text-sm">
+              <dt className="text-gray-600">연령대</dt>
+              <dd>{s.age ? `${s.age.minBirthYear}~${s.age.maxBirthYear}년생 (차이 ${s.age.gap}살)` : '-'}</dd>
+              <dt className="text-gray-600">성비</dt>
+              <dd>{s.gender ? `남 ${s.gender.male} · 여 ${s.gender.female}` : '-'}</dd>
+              <dt className="text-gray-600">MBTI</dt>
+              <dd>
+                {s.mbti
+                  ? `E ${s.mbti.e ?? 0}/I ${s.mbti.i ?? 0} · N ${s.mbti.n ?? 0}/S ${s.mbti.s ?? 0} · T ${s.mbti.t ?? 0}/F ${s.mbti.f ?? 0} · J ${s.mbti.j ?? 0}/P ${s.mbti.p ?? 0}`
+                  : '-'}
+              </dd>
+              <dt className="text-gray-600">공통 관심사</dt>
+              <dd>{s.commonInterests?.join(', ') || '-'}</dd>
+              <dt className="text-gray-600">희망 성향 충족</dt>
+              <dd>
+                {preferred.filter((p) => p.satisfied).length}/{preferred.length}명
+              </dd>
+              <dt className="text-gray-600">선택 회차 순위</dt>
+              <dd>
+                {(s.slotMatch ?? []).filter((x) => x.choiceRank === 1).length}명 1순위 ·{' '}
+                {(s.slotMatch ?? []).filter((x) => x.choiceRank > 1).length}명 그 외
+              </dd>
+              <dt className="text-gray-600">이전 만남</dt>
+              <dd>{s.previousEncounters?.length ?? 0}쌍</dd>
+              <dt className="text-gray-600">조건 충돌</dt>
+              <dd>{s.conflicts ? '있음' : '없음'}</dd>
+            </dl>
+          </Card>
+        </div>
+
+        <Card title="식당 · 예약">
+          {t.venue ? (
+            <p className="text-sm">
+              {t.venue.name} · {t.venue.address} · 예약명 <b>{t.reservationName ?? '-'}</b> · 배정{' '}
+              {formatDateTime(t.venueAssignedAt)}
+            </p>
+          ) : (
+            <p className="text-sm text-red-700">
+              식당이 배정되지 않았어요 (예약명 {t.reservationName ?? '-'}).{' '}
+              <Link to="/admin/exceptions?type=VENUE_UNAVAILABLE" className="underline">
+                예외 처리함에서 수용량을 늘려 재배정
+              </Link>
+            </p>
+          )}
+        </Card>
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Card title={`단체방 메시지 (${messages.data?.length ?? 0})`}>
+            {messages.isError && <p className="text-sm text-red-700">{errorMessage(messages.error)}</p>}
+            {t.chatRoomId == null && <p className="text-sm text-gray-500">단체방이 아직 없어요.</p>}
+            <ul className="max-h-96 space-y-2 overflow-y-auto text-sm">
+              {messages.data?.map((m) => (
+                <li key={m.id} className="rounded bg-gray-50 p-2">
+                  <p className="text-xs text-gray-500">
+                    {m.messageType} · {formatDateTime(m.createdAt)}
+                  </p>
+                  <p className="whitespace-pre-wrap">{m.body}</p>
+                </li>
+              ))}
+            </ul>
+          </Card>
+
+          <Card title="알림 발송 상태">
+            {notifications.isError && <p className="text-sm text-red-700">{errorMessage(notifications.error)}</p>}
+            <div className="max-h-96 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs text-gray-600">
+                  <tr>
+                    <th className="p-1">대상</th>
+                    <th className="p-1">알림</th>
+                    <th className="p-1">상태</th>
+                    <th className="p-1">시각</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {notifications.data?.map((n) => (
+                    <tr key={n.id} className="border-t border-gray-100">
+                      <td className="p-1">{n.userName ?? n.userId}</td>
+                      <td className="p-1">{n.templateCode}</td>
+                      <td className={`p-1 ${n.sendStatus === 'FAILED' ? 'font-medium text-red-700' : ''}`}>
+                        {SEND_STATUS[n.sendStatus] ?? n.sendStatus}
+                        {n.attempts > 1 && <span className="text-xs text-gray-500"> ({n.attempts}회)</span>}
+                      </td>
+                      <td className="p-1 whitespace-nowrap text-xs">{formatDateTime(n.sentAt ?? n.scheduledAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   )
 }
 

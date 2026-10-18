@@ -214,6 +214,79 @@ export interface AdminReport {
   createdAt: string
 }
 
+// ---- 8.2 운영자 관리
+export interface SlotInput {
+  regionId: number
+  startsAt: string
+  endsAt: string
+  capacity: number
+  applyDeadlineAt: string
+  matchRunAt: string
+}
+
+export interface Venue {
+  id: number
+  regionId: number
+  name: string
+  address: string
+  mapUrl: string | null
+  priceRange: string | null
+  description: string | null
+  active: boolean
+}
+
+export type VenueInput = Omit<Venue, 'id' | 'active'> & { active?: boolean }
+
+export interface VenueCapacity {
+  venueId: number
+  slotId: number
+  maxTables: number
+  reservedTables: number
+  maxSeatsPerTable: number
+}
+
+export interface MatchingSettings {
+  weights: Record<string, number>
+  minScore: number
+}
+
+export interface ApplicantRow {
+  applicationId: number
+  userId: number
+  name: string
+  loginId: string
+  applicationStatus: string
+  paymentStatus: string | null
+  matchStatus: string | null
+  attendanceStatus: string | null
+  assignedSlotId: number | null
+  slotChoices: string | null
+  submittedAt: string | null
+  birthYear: number | null
+  gender: string | null
+  job: string | null
+  mbti: string | null
+  attendedCount: number
+  reportedCount: number
+}
+
+export interface FeedbackAverages {
+  count: number
+  table: number | null
+  conversation: number | null
+  venue: number | null
+  rejoin: number | null
+  recommend: number | null
+}
+
+export interface FeedbackSummary {
+  overall: FeedbackAverages
+  wantAgainCount: number
+  avoidCount: number
+  tables: { tableId: number; slotId: number; averages: FeedbackAverages; wantAgainCount: number; avoidCount: number }[]
+  comments: { tableId: number; slotId: number; tableRating: number; comment: string; submittedAt: string }[]
+}
+
 // ---- 운영자 어드민 (8.1) ----
 
 export interface Rate {
@@ -276,14 +349,6 @@ export interface ExceptionCase {
   resolvedBy: number | null
   resolutionNote: string | null
   resolvedAt: string | null
-}
-
-export interface VenueCapacity {
-  venueId: number
-  venueName: string
-  maxTables: number
-  reservedTables: number
-  maxSeatsPerTable: number
 }
 
 export interface PlacementLog {

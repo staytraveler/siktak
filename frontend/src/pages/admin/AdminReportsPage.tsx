@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
+import AdminLayout from '../../components/AdminLayout'
 import type { AdminReport, ResolveAction } from '../../api/types'
 import { formatDateTime } from '../../lib/format'
 
@@ -18,21 +19,22 @@ export default function AdminReportsPage() {
   const reports = useQuery({ queryKey: ['admin-reports', onlyOpen], queryFn: () => api.adminReports(onlyOpen) })
 
   return (
-    <div className="max-w-4xl">
-      <h1 className="text-2xl font-bold">안전 신고</h1>
-      <label className="mt-4 flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={onlyOpen} onChange={(e) => setOnlyOpen(e.target.checked)} />
-        미처리만 보기
-      </label>
-      {reports.data?.length === 0 && <p className="mt-4 text-sm text-gray-500">신고가 없어요.</p>}
-      <ul className="mt-4 space-y-3">
-        {reports.data?.map((r) => <ReportRow key={r.id} report={r} />)}
-      </ul>
-    </div>
+    <AdminLayout title="안전 신고">
+      <div className="max-w-4xl">
+        <label className="mt-4 flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={onlyOpen} onChange={(e) => setOnlyOpen(e.target.checked)} />
+          미처리만 보기
+        </label>
+        {reports.data?.length === 0 && <p className="mt-4 text-sm text-gray-500">신고가 없어요.</p>}
+        <ul className="mt-4 space-y-3">
+          {reports.data?.map((r) => <ReportRow key={r.id} report={r} />)}
+        </ul>
+      </div>
+    </AdminLayout>
   )
 }
 
-function ReportRow({ report }: { report: AdminReport }) {
+export function ReportRow({ report }: { report: AdminReport }) {
   const queryClient = useQueryClient()
   const [action, setAction] = useState<ResolveAction>('WARNING')
   const [days, setDays] = useState('30')

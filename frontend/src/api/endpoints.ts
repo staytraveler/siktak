@@ -7,7 +7,6 @@ import type {
   MatchRunItem,
   TableMessage,
   TableNotification,
-  VenueCapacity,
   AdminReport,
   AdminTable,
   ApplicationItem,
@@ -31,6 +30,13 @@ import type {
   ResolutionChoice,
   ResolveAction,
   Slot,
+  SlotInput,
+  ApplicantRow,
+  FeedbackSummary,
+  MatchingSettings,
+  Venue,
+  VenueCapacity,
+  VenueInput,
 } from './types'
 import type { Session, SessionUser } from './session'
 
@@ -102,6 +108,18 @@ export const api = {
     applyDeadlineAt: string
     matchRunAt: string
   }) => post<Slot>('/api/v1/admin/slots', body),
+  updateSlot: async (id: number, body: SlotInput) => (await apiClient.put<Slot>(`/api/v1/admin/slots/${id}`, body)).data,
+  adminVenues: () => get<Venue[]>('/api/v1/admin/venues'),
+  createVenue: (body: VenueInput) => post<Venue>('/api/v1/admin/venues', body),
+  updateVenue: async (id: number, body: VenueInput) => (await apiClient.put<Venue>(`/api/v1/admin/venues/${id}`, body)).data,
+  venueCapacities: (slotId: number) => get<VenueCapacity[]>(`/api/v1/admin/venue-capacities?slotId=${slotId}`),
+  setVenueCapacity: async (venueId: number, slotId: number, maxTables: number) =>
+    (await apiClient.put<VenueCapacity>(`/api/v1/admin/venues/${venueId}/capacities/${slotId}`, { maxTables })).data,
+  matchingSettings: () => get<MatchingSettings>('/api/v1/admin/settings/matching'),
+  saveMatchingSettings: async (body: MatchingSettings) =>
+    (await apiClient.put<MatchingSettings>('/api/v1/admin/settings/matching', body)).data,
+  applicants: (slotId?: number) => get<ApplicantRow[]>(`/api/v1/admin/applicants${slotQuery(slotId)}`),
+  feedbackSummary: (slotId?: number) => get<FeedbackSummary>(`/api/v1/admin/feedback-summary${slotQuery(slotId)}`),
   runMatching: (slotId: number) => post<MatchRun>(`/api/v1/admin/slots/${slotId}/run-matching`),
   slotTables: (slotId: number) => get<AdminTable[]>(`/api/v1/admin/slots/${slotId}/tables`),
 
@@ -110,9 +128,6 @@ export const api = {
   exceptions: () => get<ExceptionCase[]>('/api/v1/admin/exceptions'),
   exceptionAction: (id: number, action: string, reason?: string) =>
     post<{ caseId: number; caseStatus: string }>(`/api/v1/admin/exceptions/${id}/${action}`, reason === undefined ? undefined : { reason }),
-  venueCapacities: (slotId: number) => get<VenueCapacity[]>(`/api/v1/admin/slots/${slotId}/venue-capacities`),
-  changeVenueCapacity: async (slotId: number, venueId: number, maxTables: number) =>
-    (await apiClient.put<VenueCapacity>(`/api/v1/admin/slots/${slotId}/venue-capacities/${venueId}`, { maxTables })).data,
   matchRuns: () => get<MatchRunItem[]>('/api/v1/admin/match-runs'),
   matchRun: (id: number) => get<MatchRunDetail>(`/api/v1/admin/match-runs/${id}`),
   adminTable: (id: number) => get<AdminTableDetail>(`/api/v1/admin/tables/${id}`),
@@ -127,4 +142,17 @@ export const api = {
   demoCheckInAll: () => post<DemoActionResult>('/api/v1/admin/demo/check-in-all'),
   demoFeedbackAll: () => post<DemoActionResult>('/api/v1/admin/demo/feedback-all'),
   demoRound2: () => post<DemoActionResult>('/api/v1/admin/demo/round2-applications'),
+}
+
+const slotQuery = (slotId?: number) => (slotId ? `?slotId=${slotId}` : '')
+
+// CSV는 Authorization 헤더가 필요해서 링크 대신 blob으로 받아 저장한다 (PRD 16장).
+export async function downloadCsv(kind: 'applicants' | 'tables', slotId?: number) {
+  const res = await apiClient.get<Blob>(`/api/v1/admin/exports/${kind}.csv${slotQuery(slotId)}`, { responseType: 'blob' })
+  const url = URL.createObjectURL(res.data)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${kind}${slotId ? `-slot${slotId}` : ''}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
 }

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
+import AdminLayout from '../../components/AdminLayout'
 import type { MatchRunItem, PlacementLog } from '../../api/types'
 import { DECISION, formatDateTime, TABLE_STATUS } from '../../lib/format'
 
@@ -32,48 +33,49 @@ export default function AdminMatchingPage() {
   const selectedRunId = selectedId ?? runs.data?.[0]?.id ?? null
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">매칭 모니터</h1>
-      {runs.isError && <p className="text-sm text-red-700">{errorMessage(runs.error)}</p>}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-100 text-left text-xs text-gray-600">
-            <tr>
-              <th className="p-2">실행</th>
-              <th className="p-2">시각</th>
-              <th className="p-2">트리거</th>
-              <th className="p-2">대상 회차</th>
-              <th className="p-2">알고리즘</th>
-              <th className="p-2">결과 요약</th>
-            </tr>
-          </thead>
-          <tbody>
-            {runs.data?.map((r) => (
-              <tr
-                key={r.id}
-                onClick={() => setSelectedId(r.id)}
-                className={`cursor-pointer border-t border-gray-100 hover:bg-gray-50 ${r.id === selectedRunId ? 'bg-amber-50' : ''}`}
-              >
-                <td className="p-2">#{r.id}</td>
-                <td className="p-2 whitespace-nowrap">{formatDateTime(r.startedAt)}</td>
-                <td className="p-2 whitespace-nowrap">{triggerOf(r)}</td>
-                <td className="p-2">{slotIdsOf(r).map(slotLabel).join(', ')}</td>
-                <td className="p-2">{r.algorithmVersion}</td>
-                <td className="p-2">{summaryText(r)}</td>
-              </tr>
-            ))}
-            {runs.data?.length === 0 && (
+    <AdminLayout title="매칭 모니터">
+      <div className="space-y-4">
+        {runs.isError && <p className="text-sm text-red-700">{errorMessage(runs.error)}</p>}
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-100 text-left text-xs text-gray-600">
               <tr>
-                <td colSpan={6} className="p-6 text-center text-gray-500">
-                  아직 매칭 실행 기록이 없어요.
-                </td>
+                <th className="p-2">실행</th>
+                <th className="p-2">시각</th>
+                <th className="p-2">트리거</th>
+                <th className="p-2">대상 회차</th>
+                <th className="p-2">알고리즘</th>
+                <th className="p-2">결과 요약</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {runs.data?.map((r) => (
+                <tr
+                  key={r.id}
+                  onClick={() => setSelectedId(r.id)}
+                  className={`cursor-pointer border-t border-gray-100 hover:bg-gray-50 ${r.id === selectedRunId ? 'bg-amber-50' : ''}`}
+                >
+                  <td className="p-2">#{r.id}</td>
+                  <td className="p-2 whitespace-nowrap">{formatDateTime(r.startedAt)}</td>
+                  <td className="p-2 whitespace-nowrap">{triggerOf(r)}</td>
+                  <td className="p-2">{slotIdsOf(r).map(slotLabel).join(', ')}</td>
+                  <td className="p-2">{r.algorithmVersion}</td>
+                  <td className="p-2">{summaryText(r)}</td>
+                </tr>
+              ))}
+              {runs.data?.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-6 text-center text-gray-500">
+                    아직 매칭 실행 기록이 없어요.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        {selectedRunId != null && <RunDetail runId={selectedRunId} slotLabel={slotLabel} />}
       </div>
-      {selectedRunId != null && <RunDetail runId={selectedRunId} slotLabel={slotLabel} />}
-    </div>
+    </AdminLayout>
   )
 }
 

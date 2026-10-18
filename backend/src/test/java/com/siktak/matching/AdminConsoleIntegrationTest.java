@@ -30,7 +30,7 @@ import com.siktak.notification.application.NotificationService;
 import com.siktak.notification.domain.Notification;
 import com.siktak.notification.domain.NotificationStatus;
 import com.siktak.notification.infra.InAppNotificationSender;
-import com.siktak.venue.application.VenueCapacityService;
+import com.siktak.venue.application.VenueAdminService;
 
 /** 8.1 운영자 어드민: 대시보드 집계, 예외 처리함 조치(식당 재배정·노쇼 T5·알림 재발송·수동 해결). */
 @Tag("db")
@@ -38,7 +38,7 @@ import com.siktak.venue.application.VenueCapacityService;
 class AdminConsoleIntegrationTest extends DemoScenarioDbTestSupport {
 
     @Autowired private DashboardService dashboardService;
-    @Autowired private VenueCapacityService venueCapacityService;
+    @Autowired private VenueAdminService venueAdminService;
     @Autowired private ExceptionCaseService exceptionCaseService;
     @Autowired private AttendanceService attendanceService;
     @Autowired private NotificationService notificationService;
@@ -82,11 +82,9 @@ class AdminConsoleIntegrationTest extends DemoScenarioDbTestSupport {
         DiningTable noVenue = diningTableRepository.findByEventSlotIdOrderByIdAsc(s1.getId()).stream()
                 .filter(t -> !t.hasVenue()).findFirst().orElseThrow();
 
-        var views = venueCapacityService.ofSlot(s1.getId());
-        assertThat(views).extracting(VenueCapacityService.VenueCapacityView::venueName).contains(green.getName());
-        assertThat(venueCapacityService.changeMaxTables(s1.getId(), green.getId(), 1).maxTables()).isEqualTo(1);
+        assertThat(venueAdminService.setMaxTables(green.getId(), s1.getId(), 1).getMaxTables()).isEqualTo(1);
         // 이미 배정된 수보다 줄일 수는 없다
-        assertThatThrownBy(() -> venueCapacityService.changeMaxTables(s1.getId(), oak.getId(), 0))
+        assertThatThrownBy(() -> venueAdminService.setMaxTables(oak.getId(), s1.getId(), 0))
                 .isInstanceOf(BusinessException.class);
 
         tableVenueService.assignVenue(noVenue.getId(), operatorId, "그린키친 1테이블 추가 확보");

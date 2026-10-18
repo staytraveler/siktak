@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
+import AdminLayout from '../../components/AdminLayout'
 import type { ExceptionCase } from '../../api/types'
 import { CASE_STATUS, CASE_TYPE, formatDateTime } from '../../lib/format'
 
@@ -34,73 +35,74 @@ export default function AdminExceptionsPage() {
   const select = 'rounded border border-gray-300 bg-white px-2 py-1 text-sm'
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">예외 처리함</h1>
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <label>
-          유형{' '}
-          <select className={select} value={typeFilter} onChange={(e) => setFilter('type', e.target.value)}>
-            <option value="">전체</option>
-            {Object.entries(CASE_TYPE).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          상태{' '}
-          <select className={select} value={statusFilter} onChange={(e) => setFilter('status', e.target.value)}>
-            <option value="OPEN">처리할 것(대기·처리 중)</option>
-            <option value="RESOLVED">해결됨</option>
-            <option value="ALL">전체</option>
-          </select>
-        </label>
-        <span className="text-gray-500">{rows.length}건</span>
-      </div>
-      {exceptions.isError && <p className="text-sm text-red-700">{errorMessage(exceptions.error)}</p>}
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-100 text-left text-xs text-gray-600">
-              <tr>
-                <th className="p-2">유형</th>
-                <th className="p-2">대상</th>
-                <th className="p-2">사유</th>
-                <th className="p-2">발생</th>
-                <th className="p-2">상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((c) => (
-                <tr
-                  key={c.id}
-                  onClick={() => setSelectedId(c.id)}
-                  className={`cursor-pointer border-t border-gray-100 hover:bg-gray-50 ${c.id === selectedId ? 'bg-amber-50' : ''}`}
-                >
-                  <td className="p-2 whitespace-nowrap">{CASE_TYPE[c.caseType] ?? c.caseType}</td>
-                  <td className="p-2 whitespace-nowrap">{targetOf(c)}</td>
-                  <td className="max-w-xs truncate p-2" title={c.reason}>
-                    {c.reason}
-                  </td>
-                  <td className="p-2 whitespace-nowrap">{formatDateTime(c.createdAt)}</td>
-                  <td className="p-2 whitespace-nowrap">{CASE_STATUS[c.caseStatus]}</td>
-                </tr>
+    <AdminLayout title="예외 처리함">
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <label>
+            유형{' '}
+            <select className={select} value={typeFilter} onChange={(e) => setFilter('type', e.target.value)}>
+              <option value="">전체</option>
+              {Object.entries(CASE_TYPE).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
               ))}
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-6 text-center text-gray-500">
-                    처리할 예외가 없어요.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            </select>
+          </label>
+          <label>
+            상태{' '}
+            <select className={select} value={statusFilter} onChange={(e) => setFilter('status', e.target.value)}>
+              <option value="OPEN">처리할 것(대기·처리 중)</option>
+              <option value="RESOLVED">해결됨</option>
+              <option value="ALL">전체</option>
+            </select>
+          </label>
+          <span className="text-gray-500">{rows.length}건</span>
         </div>
-        <div>{selected ? <CasePanel key={selected.id} c={selected} /> : <Empty />}</div>
+        {exceptions.isError && <p className="text-sm text-red-700">{errorMessage(exceptions.error)}</p>}
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100 text-left text-xs text-gray-600">
+                <tr>
+                  <th className="p-2">유형</th>
+                  <th className="p-2">대상</th>
+                  <th className="p-2">사유</th>
+                  <th className="p-2">발생</th>
+                  <th className="p-2">상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((c) => (
+                  <tr
+                    key={c.id}
+                    onClick={() => setSelectedId(c.id)}
+                    className={`cursor-pointer border-t border-gray-100 hover:bg-gray-50 ${c.id === selectedId ? 'bg-amber-50' : ''}`}
+                  >
+                    <td className="p-2 whitespace-nowrap">{CASE_TYPE[c.caseType] ?? c.caseType}</td>
+                    <td className="p-2 whitespace-nowrap">{targetOf(c)}</td>
+                    <td className="max-w-xs truncate p-2" title={c.reason}>
+                      {c.reason}
+                    </td>
+                    <td className="p-2 whitespace-nowrap">{formatDateTime(c.createdAt)}</td>
+                    <td className="p-2 whitespace-nowrap">{CASE_STATUS[c.caseStatus]}</td>
+                  </tr>
+                ))}
+                {rows.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="p-6 text-center text-gray-500">
+                      처리할 예외가 없어요.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div>{selected ? <CasePanel key={selected.id} c={selected} /> : <Empty />}</div>
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   )
 }
 
@@ -223,6 +225,8 @@ function CasePanel({ c }: { c: ExceptionCase }) {
 function VenueFix({ c }: { c: ExceptionCase }) {
   const queryClient = useQueryClient()
   const slotId = Number(c.detail?.slotId)
+  const regionId = Number(c.detail?.regionId)
+  const venues = useQuery({ queryKey: ['admin-venues'], queryFn: api.adminVenues })
   const capacities = useQuery({
     queryKey: ['venue-capacities', slotId],
     queryFn: () => api.venueCapacities(slotId),
@@ -232,14 +236,19 @@ function VenueFix({ c }: { c: ExceptionCase }) {
   const [maxTables, setMaxTables] = useState<number | null>(null)
   const [reason, setReason] = useState('')
 
-  const list = capacities.data ?? []
-  const current = list.find((v) => v.venueId === (venueId ?? list[0]?.venueId))
+  const list = (venues.data ?? [])
+    .filter((x) => x.regionId === regionId && x.active)
+    .map((x) => {
+      const cap = capacities.data?.find((k) => k.venueId === x.id)
+      return { venueId: x.id, venueName: x.name, maxTables: cap?.maxTables ?? 0, reservedTables: cap?.reservedTables ?? 0 }
+    })
+  const current = list.find((x) => x.venueId === (venueId ?? list[0]?.venueId))
   const target = maxTables ?? (current ? current.maxTables + 1 : 1)
 
   const fix = useMutation({
     mutationFn: async () => {
       if (!current) throw new Error('식당을 선택해 주세요.')
-      await api.changeVenueCapacity(slotId, current.venueId, target)
+      await api.setVenueCapacity(current.venueId, slotId, target)
       await api.exceptionAction(c.id, 'assign-venue', reason.trim())
     },
     onSuccess: () => {
@@ -252,7 +261,7 @@ function VenueFix({ c }: { c: ExceptionCase }) {
   return (
     <div className="space-y-2">
       <p className="font-medium">수용량 늘리기 + 재배정</p>
-      {capacities.isError && <p className="text-red-700">{errorMessage(capacities.error)}</p>}
+      {(capacities.isError || venues.isError) && <p className="text-red-700">{errorMessage(capacities.error ?? venues.error)}</p>}
       <div className="flex flex-wrap items-center gap-2">
         <select
           className="rounded border border-gray-300 px-2 py-1"

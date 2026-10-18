@@ -1,5 +1,4 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
-import AdminLayout from './components/AdminLayout'
 import RequireAuth from './components/RequireAuth'
 import AdminExceptionsPage from './pages/admin/AdminExceptionsPage'
 import AdminMatchingPage from './pages/admin/AdminMatchingPage'
@@ -7,6 +6,10 @@ import AdminTableDetailPage from './pages/admin/AdminTableDetailPage'
 import AdminDemoPage from './pages/admin/AdminDemoPage'
 import AdminHomePage from './pages/admin/AdminHomePage'
 import AdminSlotsPage from './pages/admin/AdminSlotsPage'
+import AdminVenuesPage from './pages/admin/AdminVenuesPage'
+import AdminSettingsPage from './pages/admin/AdminSettingsPage'
+import AdminApplicantsPage from './pages/admin/AdminApplicantsPage'
+import AdminFeedbackPage from './pages/admin/AdminFeedbackPage'
 import AdminReportsPage from './pages/admin/AdminReportsPage'
 import ApplicationDetailPage from './pages/app/ApplicationDetailPage'
 import NotificationsPage from './pages/app/NotificationsPage'
@@ -23,19 +26,17 @@ const router = createBrowserRouter([
   { path: '/app/applications/:id', element: <RequireAuth><ApplicationDetailPage /></RequireAuth> },
   { path: '/app/history', element: <RequireAuth><HistoryPage /></RequireAuth> },
   { path: '/app/profile', element: <RequireAuth><ProfilePage /></RequireAuth> },
-  {
-    path: '/admin',
-    element: <RequireAuth role="OPERATOR"><AdminLayout /></RequireAuth>,
-    children: [
-      { index: true, element: <AdminHomePage /> },
-      { path: 'exceptions', element: <AdminExceptionsPage /> },
-      { path: 'matching', element: <AdminMatchingPage /> },
-      { path: 'tables/:id', element: <AdminTableDetailPage /> },
-      { path: 'slots', element: <AdminSlotsPage /> },
-      { path: 'reports', element: <AdminReportsPage /> },
-      { path: 'demo', element: <AdminDemoPage /> },
-    ],
-  },
+  { path: '/admin', element: <RequireAuth role="OPERATOR"><AdminHomePage /></RequireAuth> },
+  { path: '/admin/slots', element: <RequireAuth role="OPERATOR"><AdminSlotsPage /></RequireAuth> },
+  { path: '/admin/venues', element: <RequireAuth role="OPERATOR"><AdminVenuesPage /></RequireAuth> },
+  { path: '/admin/settings', element: <RequireAuth role="OPERATOR"><AdminSettingsPage /></RequireAuth> },
+  { path: '/admin/applicants', element: <RequireAuth role="OPERATOR"><AdminApplicantsPage /></RequireAuth> },
+  { path: '/admin/feedback', element: <RequireAuth role="OPERATOR"><AdminFeedbackPage /></RequireAuth> },
+  { path: '/admin/reports', element: <RequireAuth role="OPERATOR"><AdminReportsPage /></RequireAuth> },
+  { path: '/admin/demo', element: <RequireAuth role="OPERATOR"><AdminDemoPage /></RequireAuth> },
+  { path: '/admin/exceptions', element: <RequireAuth role="OPERATOR"><AdminExceptionsPage /></RequireAuth> },
+  { path: '/admin/matching', element: <RequireAuth role="OPERATOR"><AdminMatchingPage /></RequireAuth> },
+  { path: '/admin/tables/:id', element: <RequireAuth role="OPERATOR"><AdminTableDetailPage /></RequireAuth> },
 ])
 
 export default function App() {

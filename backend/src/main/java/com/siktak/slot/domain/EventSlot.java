@@ -65,6 +65,17 @@ public class EventSlot extends BaseTimeEntity {
         return slot;
     }
 
+    /** 운영자 회차 수정 (8.2). 모집 중(OPEN)일 때만 호출한다. */
+    public void reschedule(Region region, Instant startsAt, Instant endsAt, int capacity, Instant applyDeadlineAt,
+            Instant matchRunAt) {
+        this.region = region;
+        this.startsAt = startsAt;
+        this.endsAt = endsAt;
+        this.capacity = capacity;
+        this.applyDeadlineAt = applyDeadlineAt;
+        this.matchRunAt = matchRunAt;
+    }
+
     public boolean isOpenForApplication(Instant now) {
         return slotStatus == SlotStatus.OPEN && now.isBefore(applyDeadlineAt);
     }
