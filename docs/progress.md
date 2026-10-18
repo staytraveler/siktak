@@ -10,6 +10,13 @@
 > - 다음:
 > ```
 
+## 2026-10-18 (V2, `feat/matching-engine`) 5.2 모임 안내 자동화
+- 완료: INF-01·03·05·07·08, CON-01~03 — 알림 저장·발송·재시도·예외 전환, 상황별 템플릿 12종(V7), 단체방 공지·큐레이션·정책, 리마인드(`REMINDER_D1`)·콘텐츠(`CONTENT_POST`) 예약 게시, 알림함·콘텐츠 API·화면, `FEEDBACK_REQUEST`를 7.1 `EventEndedEvent`에 연결
+  - 검증: 비DB 전체 통과, `GuidanceAutomationIntegrationTest` 5건(DB) 통과, 프론트 build·lint 통과
+- 변경: 알림 이벤트는 동기 `@EventListener`(지시서의 AFTER_COMMIT과 다름). decisions.md [CC] 참조
+- 이슈: 배포 환경 J1→J3→J4 확인 미실시, `NEXT_SLOT_RECOMMEND` 발송 계기 미구현
+- 다음: PM 검토
+
 ## 2026-10-18 (7.1)
 - 완료: 7.1 FDB-01~04, MAT-06 — 참석(V6 `attendances`, 확정 시 T1)·체크인(T2)·행사 종료 작업 `EVENT_END`(노쇼 후보 표시·예외 처리함·만남 이력·`EventEndedEvent`)·피드백 확장(재참여·추천, ATTENDED만)·사람별 선호(비공개, 동석자 이름만)·데모 버튼 3종·화면(체크인·피드백·선호·데모 도구)
   - 검증: 7.1 DB 통합 테스트(시드 → J1 → 체크인 → J5 → 피드백·AVOID → 2회차 → J6, AVOID 쌍 다른 테이블) 통과, 전체 `./gradlew test` 통과(DB 포함), 프론트 build 통과
