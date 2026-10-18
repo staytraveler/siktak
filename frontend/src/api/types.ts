@@ -15,6 +15,7 @@ export interface Slot {
   applyDeadlineAt: string
   matchRunAt: string
   slotStatus: string
+  remainingSeats?: number | null
 }
 
 export interface ApplicationItem {
@@ -105,6 +106,28 @@ export interface Resolution {
   respondedAt: string | null
   offeredSlots: { slot: Slot; reasonCode: string; reason: string; available: boolean }[]
   choices: { choice: ResolutionChoice; available: boolean; description: string }[]
+  }
+
+export interface Profile {
+  complete: boolean
+  birthYear: number | null
+  gender: string | null
+  job: string | null
+  mbti: string | null
+  interests: string[]
+  selfTraits: string[]
+  preferredTraits: string[]
+  conversationStyle: string | null
+  priceRange: string | null
+  foodRestrictions: string | null
+  allergies: string | null
+  privacyAgreedAt: string | null
+  policyAgreedAt: string | null
+}
+
+export type ProfileInput = Omit<Profile, 'complete' | 'privacyAgreedAt' | 'policyAgreedAt'> & {
+  privacyAgreed: boolean
+  policyAgreed: boolean
 }
 
 export interface NotificationItem {

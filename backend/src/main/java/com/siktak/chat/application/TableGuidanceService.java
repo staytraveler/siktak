@@ -241,7 +241,7 @@ public class TableGuidanceService {
                 .append(GuidanceFormat.time(slot.getEndsAt())).append("\n");
         sb.append("장소: ").append(venue.getName()).append(" (").append(venue.getAddress()).append(")\n");
         {
-            sb.append("지도: ").append(venue.getMapUrl()).append("\n");
+            sb.append("지도: ").append(mapUrl(venue)).append("\n");
         }
         sb.append("예약명: ").append(table.getReservationName() == null ? "확정 후 안내" : table.getReservationName())
                 .append("\n");

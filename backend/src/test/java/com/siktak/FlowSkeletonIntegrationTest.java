@@ -61,6 +61,7 @@ class FlowSkeletonIntegrationTest {
     @Autowired private EventSlotRepository eventSlotRepository;
     @Autowired private StatusHistoryRepository statusHistoryRepository;
     @Autowired private Clock clock;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     @Test
     void 신청부터_피드백까지_한_번에_이어지고_매칭은_다시_실행해도_중복되지_않는다() {
@@ -76,6 +77,12 @@ class FlowSkeletonIntegrationTest {
         List<Application> applications = new ArrayList<>();
         for (int i = 0; i < 7; i++) {
             User user = userRepository.save(User.create("u" + i + "-" + run, UserRole.PARTICIPANT, "참가자" + i, null));
+            // 3.2: 신청에는 완성된 프로필이 필요하다
+            jdbc.update("""
+                    insert into profiles (user_id, birth_year, gender, interests, self_traits, price_range,
+                                          privacy_agreed_at, policy_agreed_at)
+                    values (?, 1996, 'FEMALE', '["FOOD"]'::jsonb, '["LISTENER"]'::jsonb, '20K_40K', now(), now())
+                    """, user.getId());
             Application application = applicationService.submit(user.getId(), List.of(slot.getId()), PassType.SINGLE);
             assertThat(application.getApplicationStatus()).isEqualTo(ApplicationStatus.SUBMITTED);
             assertThat(application.getPaymentStatus()).isEqualTo(PaymentStatus.PENDING);
