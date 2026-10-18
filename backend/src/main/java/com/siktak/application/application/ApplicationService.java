@@ -25,6 +25,7 @@ import com.siktak.common.error.ErrorCode;
 import com.siktak.payment.application.PaymentService;
 import com.siktak.payment.domain.Payment;
 import com.siktak.payment.domain.PaymentPurpose;
+import com.siktak.profile.application.ProfileService;
 import com.siktak.slot.domain.EventSlot;
 import com.siktak.slot.infra.EventSlotRepository;
 
@@ -38,12 +39,16 @@ public class ApplicationService {
     /** states.md 9장 policy.payment-deadline-hours 기본값. 설정값(settings) 연동은 이후 작업. */
     static final Duration PAYMENT_DEADLINE = Duration.ofHours(24);
 
+    /** APP-02 복수 일정 선택 상한 (지시서 3.2: 회차 1~5개). */
+    static final int MAX_SLOT_CHOICES = 5;
+
     private static final Set<MatchStatus> FINISHED_MATCH = Set.of(MatchStatus.TRANSFERRED, MatchStatus.NO_MATCH);
 
     private final ApplicationRepository applicationRepository;
     private final EventSlotRepository eventSlotRepository;
     private final StatusTransitionService transitionService;
     private final PaymentService paymentService;
+    private final ProfileService profileService;
     private final Clock clock;
 
     /** 신청 제출: A1 → A2, 1회권이면 결제 대기 P1. */
@@ -54,8 +59,13 @@ public class ApplicationService {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "현재는 1회권만 신청할 수 있습니다.");
         }
         List<Long> slotIds = List.copyOf(new LinkedHashSet<>(slotIdsInPriorityOrder));
-        if (slotIds.isEmpty()) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "회차를 하나 이상 선택해야 합니다.");
+        if (slotIds.isEmpty() || slotIds.size() > MAX_SLOT_CHOICES) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST,
+                    "회차는 1~" + MAX_SLOT_CHOICES + "개까지 선택할 수 있습니다.");
+        }
+        if (!profileService.isComplete(userId)) {
+            // 화면은 이 코드를 받으면 프로필 입력 화면으로 안내한다 (APP-02)
+            throw new BusinessException(ErrorCode.PROFILE_INCOMPLETE);
         }
         Instant now = Instant.now(clock);
         List<EventSlot> slots = eventSlotRepository.findByIdIn(slotIds);
@@ -63,7 +73,7 @@ public class ApplicationService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "선택한 회차를 찾을 수 없습니다.");
         }
         if (slots.stream().anyMatch(slot -> !slot.isOpenForApplication(now))) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "모집이 끝난 회차가 포함되어 있습니다.");
+            throw new BusinessException(ErrorCode.CONFLICT, "모집이 끝난 회차가 포함되어 있습니다.");
         }
         rejectDuplicate(userId, slotIds);
 

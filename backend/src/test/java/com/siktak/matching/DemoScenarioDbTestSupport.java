@@ -211,8 +211,8 @@ abstract class DemoScenarioDbTestSupport {
                 "참가자" + no, null)).getId();
         jdbc.update("""
                 insert into profiles (user_id, birth_year, gender, mbti, interests, self_traits, preferred_traits,
-                                      price_range)
-                values (?, ?, ?, ?, ?::jsonb, ?::jsonb, ?::jsonb, '20K_40K')
+                                      price_range, privacy_agreed_at, policy_agreed_at)
+                values (?, ?, ?, ?, ?::jsonb, ?::jsonb, ?::jsonb, '20K_40K', now(), now())
                 """, userId, c.birthYear(), c.gender().name(), c.mbti() == null ? null : c.mbti().name(),
                 json(c.interests()), json(c.selfTraits()), json(c.preferredTraits()));
         return userId;
@@ -222,8 +222,10 @@ abstract class DemoScenarioDbTestSupport {
         Long userId = userRepository.save(User.create(String.format("user%02d-%s", no, tag), UserRole.PARTICIPANT,
                 "참가자" + no, null)).getId();
         jdbc.update("""
-                insert into profiles (user_id, birth_year, gender, interests, self_traits, preferred_traits)
-                values (?, ?, ?, '["FOOD"]'::jsonb, '["LISTENER"]'::jsonb, '["EMPATHETIC"]'::jsonb)
+                insert into profiles (user_id, birth_year, gender, interests, self_traits, preferred_traits,
+                                      price_range, privacy_agreed_at, policy_agreed_at)
+                values (?, ?, ?, '["FOOD"]'::jsonb, '["LISTENER"]'::jsonb, '["EMPATHETIC"]'::jsonb,
+                        '20K_40K', now(), now())
                 """, userId, birthYear, gender);
         return userId;
     }

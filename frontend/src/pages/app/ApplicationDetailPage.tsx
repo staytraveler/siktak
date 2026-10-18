@@ -60,6 +60,7 @@ function Detail({ application }: { application: ApplicationItem }) {
         {application.paymentStatus === 'PENDING' && (
           <>
             <p className="mt-3 text-xs text-gray-500">결제 기한 {formatDateTime(application.paymentDueAt)}</p>
+            <p className="mt-1 text-xs text-gray-500">진행 2일 전부터 환불 불가, 당일 취소 및 단체방 퇴장 불가</p>
             {pay.isError && <p className="mt-2 text-sm text-red-700">{errorMessage(pay.error)}</p>}
             <button
               type="button"

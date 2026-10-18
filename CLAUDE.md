@@ -23,15 +23,6 @@
 | `docs/decisions.md` | 결정 로그 |
 | `docs/progress.md` | 진행 기록 |
 
----|---|
-| `docs/prd.md` | PRD v0.2 원문. **모든 판단의 최우선 기준** |
-| `docs/prd-analysis.md` | PRD·심사 기준 분석, 미정의 항목 |
-| `docs/domain/states.md` | 신청·결제·매칭·참석 상태 전이표 |
-| `docs/domain/matching.md` | 매칭 알고리즘 명세 |
-| `docs/erd.md` | 데이터 모델 |
-| `docs/decisions.md` | 결정 로그 |
-| `docs/progress.md` | 세션별 진행 기록 |
-
 ---
 
 ## 2. 의사결정 규칙

@@ -7,6 +7,8 @@ import type {
   FeedbackItem,
   MatchRun,
   MyTable,
+  Profile,
+  ProfileInput,
   Region,
   Resolution,
   ResolutionChoice,
@@ -23,6 +25,8 @@ export const api = {
   me: () => get<SessionUser>('/api/v1/auth/me'),
 
   regions: () => get<Region[]>('/api/v1/regions'),
+  myProfile: () => get<Profile>('/api/v1/me/profile'),
+  saveProfile: async (body: ProfileInput) => (await apiClient.put<Profile>('/api/v1/me/profile', body)).data,
 
   // 참가자
   openSlots: () => get<Slot[]>('/api/v1/slots'),

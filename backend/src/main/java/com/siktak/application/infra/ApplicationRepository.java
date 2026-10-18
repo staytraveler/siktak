@@ -28,4 +28,16 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             order by a.submittedAt asc, a.id asc
             """)
     List<Application> findCandidatesForSlot(@Param("slotId") Long slotId, @Param("matchStatus") MatchStatus matchStatus);
+
+    /** 회차를 후보로 고른 진행 중 신청 수 (남은 자리 표시용, APP-01). 이동·미매칭으로 끝난 신청은 제외한다. */
+    @Query("""
+            select c.eventSlotId, count(distinct a.id) from Application a join a.slotChoices c
+            where c.eventSlotId in :slotIds
+              and a.applicationStatus = com.siktak.application.domain.status.ApplicationStatus.SUBMITTED
+              and (a.matchStatus is null or a.matchStatus not in (
+                  com.siktak.application.domain.status.MatchStatus.TRANSFERRED,
+                  com.siktak.application.domain.status.MatchStatus.NO_MATCH))
+            group by c.eventSlotId
+            """)
+    List<Object[]> countActiveBySlot(@Param("slotIds") List<Long> slotIds);
 }
