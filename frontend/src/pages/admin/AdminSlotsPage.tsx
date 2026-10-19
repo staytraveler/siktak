@@ -166,7 +166,7 @@ function SlotRow({ slot }: { slot: Slot }) {
             {open ? '접기' : '테이블 보기'}
           </button>
           <button type="button" disabled={run.isPending} onClick={() => run.mutate()}
-            className="rounded bg-amber-800 px-3 py-1 text-sm text-white disabled:bg-gray-400"
+            className="rounded bg-accent px-3 py-1 text-sm text-white disabled:bg-gray-400"
             title="2.3 임시: 스케줄러 대신 수동 실행. 다시 눌러도 결과가 중복되지 않습니다.">
             매칭 실행 (임시)
           </button>

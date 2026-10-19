@@ -164,7 +164,7 @@ function CasePanel({ c }: { c: ExceptionCase }) {
         <div className="space-y-3 border-t border-gray-100 pt-3">
           {c.caseType === 'VENUE_UNAVAILABLE' && <VenueFix c={c} />}
           {c.caseType === 'SAFETY_REPORT' && (
-            <Link to="/admin/reports" className="inline-block text-amber-800 underline">
+            <Link to="/admin/reports" className="inline-block text-accent underline">
               신고 상세에서 조치하기 →
             </Link>
           )}

@@ -78,19 +78,20 @@ export default function ProfilePage() {
     form.priceRange != null && form.privacyAgreed && form.policyAgreed
 
   return (
-    <main className="mx-auto min-h-screen max-w-md bg-white p-4 pb-10">
+    <main className="mx-auto min-h-screen max-w-md bg-paper p-[18px] pb-10 text-ink">
       <header className="flex items-center justify-between gap-2">
-        <Link to="/app" className="text-sm text-gray-600">
+        <Link to="/app" className="flex min-h-[44px] items-center text-sm font-bold text-accent">
           ← 홈
         </Link>
         <SessionBar />
       </header>
-      <h1 className="mt-4 text-xl font-bold">내 프로필</h1>
+      <div className="mt-3 font-display text-[17px] text-accent italic">About you.</div>
+      <h1 className="font-serif text-[28px] leading-tight font-black tracking-[-1px]">내 프로필</h1>
       {params.get('next') && (
-        <p className="mt-1 text-sm text-amber-800">신청하려면 프로필을 먼저 채워주세요. 1~2분이면 끝나요.</p>
+        <p className="mt-1 text-sm font-bold text-accent">신청하려면 프로필을 먼저 채워주세요. 1~2분이면 끝나요.</p>
       )}
-      {profile.isPending && <p className="mt-4 text-sm text-gray-500">불러오는 중…</p>}
-      {profile.isError && <p className="mt-4 text-sm text-red-700">{errorMessage(profile.error)}</p>}
+      {profile.isPending && <p className="mt-4 text-sm text-muted">불러오는 중…</p>}
+      {profile.isError && <p className="mt-4 text-sm font-medium text-accent">{errorMessage(profile.error)}</p>}
 
       <Section title="1. 기본 정보">
         <Label>출생연도 (만 19~45세)</Label>
@@ -100,7 +101,7 @@ export default function ProfilePage() {
           value={form.birthYear ?? ''}
           onChange={(e) => set('birthYear', e.target.value ? Number(e.target.value) : null)}
           placeholder="예: 1997"
-          className="w-full rounded-lg border border-gray-300 p-2 text-sm"
+          className="min-h-[44px] w-full border-[1.5px] border-ink bg-card px-3 text-sm"
         />
         <Label>성별</Label>
         <Chips options={GENDERS} selected={form.gender ? [form.gender] : []} onToggle={(c) => set('gender', c)} />
@@ -110,7 +111,7 @@ export default function ProfilePage() {
           maxLength={50}
           value={form.job ?? ''}
           onChange={(e) => set('job', e.target.value || null)}
-          className="w-full rounded-lg border border-gray-300 p-2 text-sm"
+          className="min-h-[44px] w-full border-[1.5px] border-ink bg-card px-3 text-sm"
         />
       </Section>
 
@@ -144,7 +145,7 @@ export default function ProfilePage() {
           maxLength={200}
           value={form.foodRestrictions ?? ''}
           onChange={(e) => set('foodRestrictions', e.target.value || null)}
-          className="w-full rounded-lg border border-gray-300 p-2 text-sm"
+          className="min-h-[44px] w-full border-[1.5px] border-ink bg-card px-3 text-sm"
         />
         <Label>알레르기 (선택)</Label>
         <input
@@ -152,24 +153,24 @@ export default function ProfilePage() {
           maxLength={200}
           value={form.allergies ?? ''}
           onChange={(e) => set('allergies', e.target.value || null)}
-          className="w-full rounded-lg border border-gray-300 p-2 text-sm"
+          className="min-h-[44px] w-full border-[1.5px] border-ink bg-card px-3 text-sm"
         />
         <label className="mt-4 flex items-start gap-2 text-sm">
-          <input type="checkbox" checked={form.privacyAgreed} onChange={(e) => set('privacyAgreed', e.target.checked)} className="mt-1" />
+          <input type="checkbox" checked={form.privacyAgreed} onChange={(e) => set('privacyAgreed', e.target.checked)} className="mt-1 h-5 w-5 accent-[#7e2a27]" />
           <span>[필수] 개인정보 수집·이용에 동의합니다. (매칭 전에는 다른 참가자에게 공개되지 않아요)</span>
         </label>
         <label className="mt-2 flex items-start gap-2 text-sm">
-          <input type="checkbox" checked={form.policyAgreed} onChange={(e) => set('policyAgreed', e.target.checked)} className="mt-1" />
+          <input type="checkbox" checked={form.policyAgreed} onChange={(e) => set('policyAgreed', e.target.checked)} className="mt-1 h-5 w-5 accent-[#7e2a27]" />
           <span>[필수] 운영정책에 동의합니다. 진행 2일 전부터 환불 불가, 당일 취소 및 단체방 퇴장 불가.</span>
         </label>
       </Section>
 
-      {save.isError && <p className="mt-4 text-sm text-red-700">{errorMessage(save.error)}</p>}
+      {save.isError && <p className="mt-4 text-sm font-medium text-accent">{errorMessage(save.error)}</p>}
       <button
         type="button"
         disabled={!ready || save.isPending}
         onClick={() => save.mutate()}
-        className="mt-4 w-full rounded-lg bg-amber-800 py-3 text-sm font-semibold text-white disabled:bg-gray-300"
+        className="mt-4 w-full min-h-[52px] bg-ink text-[15px] font-bold text-cream disabled:opacity-40"
       >
         {save.isPending ? '저장 중…' : '저장하기'}
       </button>
@@ -180,14 +181,14 @@ export default function ProfilePage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-6 space-y-2">
-      <h2 className="text-sm font-semibold text-gray-500">{title}</h2>
+      <h2 className="border-b-[1.5px] border-ink pb-1.5 font-display text-[17px] italic">{title}</h2>
       {children}
     </section>
   )
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <p className="pt-2 text-sm font-medium">{children}</p>
+  return <p className="pt-2 text-sm font-bold">{children}</p>
 }
 
 function Chips({
@@ -206,8 +207,8 @@ function Chips({
           key={o.code}
           type="button"
           onClick={() => onToggle(o.code)}
-          className={`rounded-full border px-3 py-1 text-sm ${
-            selected.includes(o.code) ? 'border-amber-700 bg-amber-50 text-amber-900' : 'border-gray-300'
+          className={`min-h-[44px] border-[1.5px] border-ink px-3 text-sm font-bold ${
+            selected.includes(o.code) ? 'bg-ink text-cream' : 'bg-card'
           }`}
         >
           {o.label}

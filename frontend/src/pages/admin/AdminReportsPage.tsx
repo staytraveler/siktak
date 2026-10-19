@@ -90,7 +90,7 @@ export function ReportRow({ report }: { report: AdminReport }) {
             type="button"
             disabled={resolve.isPending}
             onClick={() => resolve.mutate()}
-            className="rounded bg-amber-800 px-3 py-1 text-white disabled:bg-gray-300"
+            className="rounded bg-accent px-3 py-1 text-white disabled:bg-gray-300"
           >
             처리
           </button>

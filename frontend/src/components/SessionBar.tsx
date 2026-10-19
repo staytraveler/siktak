@@ -16,11 +16,15 @@ export default function SessionBar() {
   }
 
   return (
-    <div className="flex items-center gap-2 text-xs text-gray-600">
-      <span className="shrink-0">
+    <div className="flex items-center gap-2 text-xs text-muted">
+      <span className="min-w-0 truncate">
         {session.user.name} ({session.user.loginId})
       </span>
-      <button type="button" onClick={logout} className="rounded border border-gray-300 px-2 py-1 text-gray-900">
+      <button
+        type="button"
+        onClick={logout}
+        className="min-h-[44px] shrink-0 border-[1.5px] border-ink bg-card px-3 font-bold text-ink"
+      >
         로그아웃
       </button>
     </div>

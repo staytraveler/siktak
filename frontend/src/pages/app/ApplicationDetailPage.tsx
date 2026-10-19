@@ -4,9 +4,23 @@ import { Link, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
 import type { ApplicationItem, PreferenceType, ReportReason, ResolutionChoice } from '../../api/types'
-import StatusBadges from '../../components/StatusBadges'
+import ApplicationHero from '../../components/ApplicationHero'
 import SessionBar from '../../components/SessionBar'
+import StatusBadges from '../../components/StatusBadges'
+import {
+  AppShell,
+  EmptyState,
+  ErrorText,
+  inputCls,
+  LinkButton,
+  PrimaryButton,
+  SecondaryButton,
+  SectionHeader,
+  SlotTicket,
+} from '../../components/ui'
+import { RESOLUTION_STATUSES } from '../../lib/design'
 import { formatDateTime, PAYMENT_STATUS } from '../../lib/format'
+import { useServerNow, useTableInfo } from '../../lib/useTableInfo'
 
 // 신청 상세 (/app/applications/:id): 상태 → 결제 → 확정 테이블·단체방 → 피드백
 export default function ApplicationDetailPage() {
@@ -15,68 +29,87 @@ export default function ApplicationDetailPage() {
   const application = applications.data?.find((a) => a.id === id)
 
   return (
-    <main className="mx-auto min-h-screen max-w-md bg-white p-4">
-      <header className="flex items-center justify-between gap-2">
-        <Link to="/app" className="text-sm text-gray-600">
-          ← 홈
-        </Link>
-        <SessionBar />
-      </header>
-      {applications.isPending && <p className="mt-6 text-sm text-gray-500">불러오는 중…</p>}
+    <AppShell>
+      {applications.isPending && <p className="px-[22px] pt-6 text-sm text-muted">불러오는 중…</p>}
       {applications.isSuccess && !application && (
-        <p className="mt-6 text-sm text-gray-500">이 계정의 신청이 아니에요. 테스트 계정을 확인해주세요.</p>
+        <div className="px-[22px] pt-6">
+          <p className="text-sm text-muted">이 계정의 신청이 아니에요. 테스트 계정을 확인해주세요.</p>
+          <Link to="/app" className="mt-2 flex min-h-[44px] items-center font-bold text-accent">
+            ← 홈으로
+          </Link>
+        </div>
       )}
       {application && <Detail application={application} />}
-    </main>
+    </AppShell>
   )
 }
 
 function Detail({ application }: { application: ApplicationItem }) {
   const queryClient = useQueryClient()
+  const nowMs = useServerNow()
+  const confirmed = application.matchStatus === 'CONFIRMED'
+  const { table } = useTableInfo(application.id, confirmed)
   const pay = useMutation({
     mutationFn: () => api.mockApprove(application.id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-applications'] }),
   })
-  const confirmed = application.matchStatus === 'CONFIRMED'
+  const resolving = RESOLUTION_STATUSES.includes(application.matchStatus ?? '')
 
   return (
     <>
-      <section className="mt-4 rounded-lg border border-gray-200 p-4">
-        <h1 className="text-lg font-bold">신청 #{application.id}</h1>
-        <div className="mt-2">
+      <ApplicationHero application={application} nowMs={nowMs} memberCount={table.data?.memberCount} />
+
+      <div className="flex flex-col gap-5 px-[18px] pt-5">
+        <section className="flex flex-col gap-2.5">
+          <SectionHeader title={`Application #${application.id}`} label="신청 내역" />
           <StatusBadges application={application} />
-        </div>
-        <ol className="mt-3 space-y-1 text-sm">
-          {application.slotChoices.map((c) => (
-            <li key={c.priority}>
-              {c.priority}순위 · {c.slot?.regionName} {formatDateTime(c.slot?.startsAt)}
-              {application.assignedSlotId === c.slot?.id && (
-                <span className="ml-1 text-xs font-semibold text-green-700">확정</span>
-              )}
-            </li>
-          ))}
-        </ol>
-        <NextStep application={application} />
-        {application.paymentStatus === 'PENDING' && (
+          <div className="flex flex-col gap-2">
+            {application.slotChoices.map(
+              (c) =>
+                c.slot && (
+                  <SlotTicket
+                    key={c.priority}
+                    startsAt={c.slot.startsAt}
+                    title={`${c.priority}순위 · ${c.slot.regionName}`}
+                    sub={formatDateTime(c.slot.startsAt)}
+                    stampTone={application.assignedSlotId === c.slot.id ? 'accent' : 'ink'}
+                    selected={application.assignedSlotId === c.slot.id}
+                    badge={
+                      application.assignedSlotId === c.slot.id ? (
+                        <span className="bg-sage px-2 py-0.5 text-[11px] font-bold">확정</span>
+                      ) : undefined
+                    }
+                  />
+                ),
+            )}
+          </div>
+          <NextStep application={application} />
+          {application.paymentStatus === 'PENDING' && (
+            <>
+              <p className="text-[11px] text-muted">진행 2일 전부터 환불 불가, 당일 취소 및 단체방 퇴장 불가</p>
+              {pay.isError && <ErrorText>{errorMessage(pay.error)}</ErrorText>}
+              <PrimaryButton disabled={pay.isPending} onClick={() => pay.mutate()}>
+                결제하기 (테스트 결제 9,900원)
+              </PrimaryButton>
+            </>
+          )}
+        </section>
+
+        {resolving && <ResolutionSection applicationId={application.id} />}
+        {confirmed && (
           <>
-            <p className="mt-3 text-xs text-gray-500">결제 기한 {formatDateTime(application.paymentDueAt)}</p>
-            <p className="mt-1 text-xs text-gray-500">진행 2일 전부터 환불 불가, 당일 취소 및 단체방 퇴장 불가</p>
-            {pay.isError && <p className="mt-2 text-sm text-red-700">{errorMessage(pay.error)}</p>}
-            <button
-              type="button"
-              disabled={pay.isPending}
-              onClick={() => pay.mutate()}
-              className="mt-2 w-full rounded-lg bg-amber-800 py-3 text-sm font-semibold text-white disabled:bg-gray-300"
-            >
-              결제하기 (테스트 결제 9,900원)
-            </button>
+            <LinkButton to={`/app/applications/${application.id}/table`}>
+              <span>단체방 입장하기</span>
+              <span>→</span>
+            </LinkButton>
+            <AttendanceSection applicationId={application.id} />
           </>
         )}
-      </section>
-      {RESOLUTION_STATUSES.includes(application.matchStatus ?? '') && (
-        <ResolutionSection applicationId={application.id} />
-      )}
-      {confirmed && <TableSection applicationId={application.id} />}
+
+        <div className="border-t-[1.5px] border-ink pt-3">
+          <SessionBar />
+        </div>
+      </div>
     </>
   )
 }
@@ -84,76 +117,13 @@ function Detail({ application }: { application: ApplicationItem }) {
 // 대기 상태에서도 다음에 무슨 일이 일어나는지 보여준다 (STA-02)
 function NextStep({ application }: { application: ApplicationItem }) {
   if (application.paymentStatus === 'PENDING') {
-    return <p className="mt-3 text-sm text-gray-700">결제를 마치면 매칭 대기열에 들어가요.</p>
+    return <p className="text-sm text-body">결제를 마치면 매칭 대기열에 들어가요.</p>
   }
   if (application.matchStatus === 'WAITING') {
     const first = application.slotChoices[0]?.slot
-    return (
-      <p className="mt-3 text-sm text-gray-700">
-        매칭을 기다리고 있어요. 매칭 발표 예정: {formatDateTime(first?.matchRunAt)}
-      </p>
-    )
+    return <p className="text-sm text-body">매칭을 기다리고 있어요. 매칭 발표 예정: {formatDateTime(first?.matchRunAt)}</p>
   }
   return null
-}
-
-// 단체방 시스템 메시지 종류별 표시 (INF-05·07, CON-03). 기능만, 디자인 없음.
-const MESSAGE_LABEL: Record<string, string> = {
-  NOTICE: '공지',
-  CURATION: '테이블 소개',
-  REMINDER: '리마인드',
-  CONTENT: '대화 주제',
-}
-const MESSAGE_STYLE: Record<string, string> = {
-  NOTICE: 'bg-blue-50',
-  CURATION: 'bg-green-50',
-  REMINDER: 'bg-yellow-50',
-  CONTENT: 'bg-purple-50',
-}
-
-function TableSection({ applicationId }: { applicationId: number }) {
-  const table = useQuery({ queryKey: ['my-table', applicationId], queryFn: () => api.myTable(applicationId) })
-  const chatRoomId = table.data?.chatRoomId
-  const messages = useQuery({
-    queryKey: ['chat', chatRoomId],
-    queryFn: () => api.chatMessages(chatRoomId!),
-    enabled: chatRoomId != null,
-  })
-
-  return (
-    <>
-      <section className="mt-4 rounded-lg border border-green-200 bg-green-50 p-4">
-        <h2 className="font-semibold text-green-900">테이블이 확정됐어요</h2>
-        {table.data && (
-          <>
-            <p className="mt-1 text-sm text-green-900">{table.data.memberCount}명이 함께해요.</p>
-            <ul className="mt-2 list-disc pl-5 text-xs text-green-800">
-              {table.data.reasons.map((r) => (
-                <li key={r}>{r}</li>
-              ))}
-            </ul>
-          </>
-        )}
-      </section>
-
-      <section className="mt-4 rounded-lg border border-gray-200 p-4">
-        <h2 className="font-semibold">단체방</h2>
-        <ul className="mt-2 space-y-2">
-          {messages.data?.map((m) => (
-            <li key={m.id} className={`rounded-lg p-3 text-sm ${MESSAGE_STYLE[m.messageType] ?? 'bg-gray-100'}`}>
-              <span className="block text-xs text-gray-500">
-                {m.senderType === 'SYSTEM' ? '우연한 식탁' : '참가자'}
-                {MESSAGE_LABEL[m.messageType] ? ` · ${MESSAGE_LABEL[m.messageType]}` : ''} · {formatDateTime(m.createdAt)}
-              </span>
-              <span className="whitespace-pre-line">{m.body}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <AttendanceSection applicationId={applicationId} />
-    </>
-  )
 }
 
 // 체크인 (7.1, FDB-01): 행사 시작 30분 전부터 종료까지. 체크인한 사람만 피드백을 남길 수 있다
@@ -173,27 +143,22 @@ function AttendanceSection({ applicationId }: { applicationId: number }) {
 
   return (
     <>
-      <section className="mt-4 rounded-lg border border-gray-200 p-4 text-sm">
-        <h2 className="font-semibold">체크인</h2>
+      <section className="flex flex-col gap-2.5 text-sm">
+        <SectionHeader title="Check-in" label="체크인" />
         {a.attendanceStatus === 'ATTENDED' ? (
-          <p className="mt-1 text-green-800">체크인 완료 · {formatDateTime(a.checkedInAt)}</p>
+          <p className="border-[1.5px] border-ink bg-sage px-3 py-3 font-bold">체크인 완료 · {formatDateTime(a.checkedInAt)}</p>
         ) : a.attendanceStatus === 'SCHEDULED' ? (
           <>
-            <p className="mt-1 text-gray-700">
+            <p className="text-body">
               {formatDateTime(a.checkInOpensAt)} ~ {formatDateTime(a.checkInClosesAt)}에 체크인할 수 있어요.
             </p>
-            {checkIn.isError && <p className="mt-2 text-red-700">{errorMessage(checkIn.error)}</p>}
-            <button
-              type="button"
-              disabled={!a.canCheckIn || checkIn.isPending}
-              onClick={() => checkIn.mutate()}
-              className="mt-2 w-full rounded-lg bg-amber-800 py-3 font-semibold text-white disabled:bg-gray-300"
-            >
+            {checkIn.isError && <ErrorText>{errorMessage(checkIn.error)}</ErrorText>}
+            <PrimaryButton disabled={!a.canCheckIn || checkIn.isPending} onClick={() => checkIn.mutate()}>
               체크인
-            </button>
+            </PrimaryButton>
           </>
         ) : (
-          <p className="mt-1 text-gray-700">참석 상태: {a.attendanceStatus}</p>
+          <p className="text-body">참석 상태: {a.attendanceStatus}</p>
         )}
       </section>
       {a.attendanceStatus === 'ATTENDED' && <FeedbackSection applicationId={applicationId} />}
@@ -230,27 +195,28 @@ function FeedbackSection({ applicationId }: { applicationId: number }) {
   return (
     <>
       {submitted ? (
-        <section className="mt-4 rounded-lg border border-gray-200 p-4 text-sm">
-          <h2 className="font-semibold">피드백</h2>
-          <p className="mt-1 text-gray-700">
+        <section className="flex flex-col gap-2.5 text-sm">
+          <SectionHeader title="Feedback" label="피드백" />
+          <p className="text-body">
             제출했어요 · 분위기 {submitted.tableRating} · 대화 {submitted.conversationRating} · 식당{' '}
             {submitted.venueRating} · 재참여 {submitted.rejoinIntent ?? '-'} · 추천 {submitted.recommendScore ?? '-'}
           </p>
         </section>
       ) : (
-        <section className="mt-4 rounded-lg border border-gray-200 p-4">
-          <h2 className="font-semibold">식사는 어땠나요?</h2>
+        <section className="flex flex-col gap-3">
+          <SectionHeader title="How was dinner?" label="피드백" />
           {RATING_FIELDS.map((f) => (
-            <div key={f.key} className="mt-3">
-              <p className="text-sm text-gray-700">{f.label}</p>
+            <div key={f.key}>
+              <p className="text-sm text-body">{f.label}</p>
               <div className="mt-1 flex flex-wrap gap-1">
                 {Array.from({ length: f.max - f.min + 1 }, (_, i) => f.min + i).map((n) => (
                   <button
                     key={n}
                     type="button"
                     onClick={() => setRatings((r) => ({ ...r, [f.key]: n }))}
-                    className={`h-10 min-w-9 flex-1 rounded border text-sm ${
-                      ratings[f.key] === n ? 'border-amber-800 bg-amber-800 text-white' : 'border-gray-300'
+                    aria-pressed={ratings[f.key] === n}
+                    className={`min-h-[44px] min-w-[36px] flex-1 border-[1.5px] border-ink text-sm font-bold ${
+                      ratings[f.key] === n ? 'bg-ink text-cream' : 'bg-card'
                     }`}
                   >
                     {n}
@@ -263,18 +229,13 @@ function FeedbackSection({ applicationId }: { applicationId: number }) {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="남기고 싶은 말 (선택)"
-            className="mt-3 w-full rounded border border-gray-300 p-2 text-sm"
+            className={`${inputCls} py-2`}
             rows={2}
           />
-          {submit.isError && <p className="mt-2 text-sm text-red-700">{errorMessage(submit.error)}</p>}
-          <button
-            type="button"
-            disabled={submit.isPending}
-            onClick={() => submit.mutate()}
-            className="mt-2 w-full rounded-lg bg-amber-800 py-3 text-sm font-semibold text-white disabled:bg-gray-300"
-          >
+          {submit.isError && <ErrorText>{errorMessage(submit.error)}</ErrorText>}
+          <PrimaryButton disabled={submit.isPending} onClick={() => submit.mutate()}>
             피드백 보내기
-          </button>
+          </PrimaryButton>
         </section>
       )}
       <PreferenceSection applicationId={applicationId} />
@@ -315,23 +276,22 @@ function PreferenceSection({ applicationId }: { applicationId: number }) {
   ]
 
   return (
-    <section className="mt-4 rounded-lg border border-gray-200 p-4 text-sm">
-      <h2 className="font-semibold">함께한 분들은 어땠나요?</h2>
-      <p className="mt-1 text-xs text-gray-500">선택은 나만 볼 수 있고, 상대에게는 절대 알려지지 않아요.</p>
-      <ul className="mt-2 space-y-3">
+    <section className="flex flex-col gap-2.5 text-sm">
+      <SectionHeader title="Who sat with you" label="동석자" />
+      <p className="text-xs text-muted">선택은 나만 볼 수 있고, 상대에게는 절대 알려지지 않아요.</p>
+      <ul className="flex flex-col gap-4">
         {companions.data.map((c) => (
           <li key={c.companionId}>
-            <p className="font-medium">{c.name}</p>
+            <p className="font-serif font-black">{c.name}</p>
             <div className="mt-1 flex flex-wrap gap-1">
               {options.map((o) => (
                 <button
                   key={o.label}
                   type="button"
                   onClick={() => setDraft({ ...current, [c.companionId]: o.value })}
-                  className={`rounded border px-2 py-2 text-xs ${
-                    current[c.companionId] === o.value
-                      ? 'border-amber-800 bg-amber-800 text-white'
-                      : 'border-gray-300'
+                  aria-pressed={current[c.companionId] === o.value}
+                  className={`min-h-[44px] border-[1.5px] border-ink px-3 text-xs font-bold ${
+                    current[c.companionId] === o.value ? 'bg-ink text-cream' : 'bg-card'
                   }`}
                 >
                   {o.label}
@@ -342,16 +302,11 @@ function PreferenceSection({ applicationId }: { applicationId: number }) {
           </li>
         ))}
       </ul>
-      {save.isError &&<p className="mt-2 text-red-700">{errorMessage(save.error)}</p>}
-      {save.isSuccess && !draft && <p className="mt-2 text-green-800">저장했어요.</p>}
-      <button
-        type="button"
-        disabled={save.isPending || !draft}
-        onClick={() => save.mutate()}
-        className="mt-3 w-full rounded-lg bg-amber-800 py-3 font-semibold text-white disabled:bg-gray-300"
-      >
+      {save.isError && <ErrorText>{errorMessage(save.error)}</ErrorText>}
+      {save.isSuccess && !draft && <p className="font-bold text-accent">저장했어요.</p>}
+      <PrimaryButton disabled={save.isPending || !draft} onClick={() => save.mutate()}>
         선택 저장
-      </button>
+      </PrimaryButton>
     </section>
   )
 }
@@ -364,7 +319,7 @@ const REPORT_REASONS: { value: ReportReason; label: string }[] = [
   { value: 'OTHER', label: '기타' },
 ]
 
-// 동석자 차단·신고 (SAF-01). 접수되면 다음 매칭부터 분리되고, 상대에게는 알려지지 않는다. 기능만, 디자인 없음
+// 동석자 차단·신고 (SAF-01). 접수되면 다음 매칭부터 분리되고, 상대에게는 알려지지 않는다.
 function SafetyActions({ applicationId, companionId }: { applicationId: number; companionId: number }) {
   const [reporting, setReporting] = useState(false)
   const [reason, setReason] = useState<ReportReason>('HARASSMENT')
@@ -381,7 +336,7 @@ function SafetyActions({ applicationId, companionId }: { applicationId: number; 
         type="button"
         disabled={block.isPending || block.isSuccess}
         onClick={() => window.confirm('이 분을 차단할까요? 다음 매칭에서 만나지 않아요.') && block.mutate()}
-        className="mr-3 text-gray-500 underline"
+        className="mr-3 min-h-[44px] text-muted underline"
       >
         {block.isSuccess ? '차단했어요' : '차단'}
       </button>
@@ -389,17 +344,13 @@ function SafetyActions({ applicationId, companionId }: { applicationId: number; 
         type="button"
         disabled={report.isSuccess}
         onClick={() => setReporting(!reporting)}
-        className="text-gray-500 underline"
+        className="min-h-[44px] text-muted underline"
       >
         {report.isSuccess ? '신고를 접수했어요' : '신고'}
       </button>
       {reporting && (
-        <div className="mt-2 space-y-2 rounded border border-gray-200 p-2">
-          <select
-            value={reason}
-            onChange={(e) => setReason(e.target.value as ReportReason)}
-            className="w-full rounded border border-gray-300 p-2"
-          >
+        <div className="mt-1 flex flex-col gap-2 border-[1.5px] border-ink bg-card p-2">
+          <select value={reason} onChange={(e) => setReason(e.target.value as ReportReason)} className={inputCls}>
             {REPORT_REASONS.map((r) => (
               <option key={r.value} value={r.value}>
                 {r.label}
@@ -411,32 +362,28 @@ function SafetyActions({ applicationId, companionId }: { applicationId: number; 
             onChange={(e) => setDescription(e.target.value)}
             maxLength={2000}
             placeholder="어떤 일이 있었는지 알려주세요. 상대에게는 공개되지 않아요."
-            className="w-full rounded border border-gray-300 p-2"
+            className={`${inputCls} py-2`}
           />
           <button
             type="button"
             disabled={report.isPending || !description.trim()}
             onClick={() => report.mutate()}
-            className="w-full rounded bg-red-700 py-2 text-white disabled:bg-gray-300"
+            className="min-h-[44px] bg-accent font-bold text-cream disabled:opacity-40"
           >
             신고하기
           </button>
         </div>
       )}
-      {(block.isError || report.isError) && (
-        <p className="mt-1 text-red-700">{errorMessage(block.error ?? report.error)}</p>
-      )}
+      {(block.isError || report.isError) && <ErrorText>{errorMessage(block.error ?? report.error)}</ErrorText>}
     </div>
   )
 }
 
-// 매칭 실패 후 선택 (6.1, STA-04~06): 추천 일정 이동 · 이용권 보관 · 환불. 기능만, 디자인 없음
-const RESOLUTION_STATUSES = ['ALTERNATIVE_OFFERED', 'NO_MATCH', 'TRANSFERRED']
-
+// 매칭 실패 후 선택 (6.1, STA-04~06): 추천 일정 이동 · 이용권 보관 · 환불 (Resolve.html)
 const CHOICE_LABEL: Record<ResolutionChoice, string> = {
   TRANSFER: '추천 일정으로 이동',
   KEEP: '이용권 보관',
-  REFUND: '환불',
+  REFUND: '바로 환불',
 }
 
 function ResolutionSection({ applicationId }: { applicationId: number }) {
@@ -462,58 +409,63 @@ function ResolutionSection({ applicationId }: { applicationId: number }) {
   const refund = can('REFUND')
 
   return (
-    <section className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-      <h2 className="font-semibold text-amber-900">이번 일정은 매칭되지 않았어요</h2>
-      {r.matchFailReason && <p className="mt-1 text-amber-900">{r.matchFailReason}</p>}
+    <section className="flex flex-col gap-3">
+      {r.matchFailReason && (
+        <p className="px-1 text-[13px] leading-[1.7] text-body">
+          {r.matchFailReason} <b className="text-ink">결제는 그대로</b>, 추가 비용 없이 옮길 수 있어요.
+        </p>
+      )}
 
       {r.resolutionStatus === 'OFFERED' ? (
         <>
-          <p className="mt-2 text-xs text-gray-600">
-            {formatDateTime(r.respondBy)}까지 고르지 않으면 이용권으로 보관돼요.
-          </p>
-          <h3 className="mt-3 font-semibold">추천 일정</h3>
-          {r.offeredSlots.length === 0 && <p className="mt-1 text-gray-600">추천할 수 있는 일정이 없어요.</p>}
-          <ul className="mt-1 space-y-2">
-            {r.offeredSlots.map((o) => (
+          <SectionHeader title="Other evenings" label="추천 일정" />
+          {r.offeredSlots.length === 0 && <EmptyState>추천할 수 있는 일정이 없어요.</EmptyState>}
+          <ul className="flex flex-col gap-2.5">
+            {r.offeredSlots.map((o, i) => (
               <li key={o.slot.id}>
-                <button
-                  type="button"
+                <SlotTicket
+                  startsAt={o.slot.startsAt}
+                  title={o.slot.regionName}
+                  sub={o.reason}
+                  stampTone={i === 0 ? 'accent' : 'ink'}
+                  selected={i === 0}
                   disabled={!o.available || !transfer?.available || choose.isPending}
                   onClick={() => choose.mutate({ choice: 'TRANSFER', slotId: o.slot.id })}
-                  className="w-full rounded-lg border border-amber-800 bg-white p-3 text-left disabled:border-gray-300 disabled:text-gray-400"
-                >
-                  {o.slot.regionName} {formatDateTime(o.slot.startsAt)}
-                  <span className="ml-1 text-xs text-gray-500">({o.reason})</span>
-                </button>
+                  badge={<span className="shrink-0 text-[13px] font-bold text-accent">이동 →</span>}
+                />
               </li>
             ))}
           </ul>
-          {transfer && <p className="mt-1 text-xs text-gray-500">{transfer.description}</p>}
-          {[keep, refund].map(
-            (c) =>
-              c && (
-                <div key={c.choice} className="mt-3">
-                  <button
-                    type="button"
-                    disabled={!c.available || choose.isPending}
-                    onClick={() => choose.mutate({ choice: c.choice })}
-                    className="w-full rounded-lg bg-amber-800 py-3 font-semibold text-white disabled:bg-gray-300"
-                  >
-                    {CHOICE_LABEL[c.choice]}
-                  </button>
-                  <p className="mt-1 text-xs text-gray-500">{c.description}</p>
-                </div>
-              ),
-          )}
-          {choose.isError && <p className="mt-2 text-red-700">{errorMessage(choose.error)}</p>}
+          {transfer && <p className="text-[11px] text-muted">{transfer.description}</p>}
+
+          <div className="grid grid-cols-2 gap-2">
+            {keep && (
+              <SecondaryButton disabled={!keep.available || choose.isPending} onClick={() => choose.mutate({ choice: 'KEEP' })}>
+                {CHOICE_LABEL.KEEP}
+              </SecondaryButton>
+            )}
+            {refund && (
+              <PrimaryButton
+                disabled={!refund.available || choose.isPending}
+                onClick={() => choose.mutate({ choice: 'REFUND' })}
+              >
+                {CHOICE_LABEL.REFUND}
+              </PrimaryButton>
+            )}
+          </div>
+          {[keep, refund].map((c) => c && <p key={c.choice} className="text-[11px] text-muted">{c.description}</p>)}
+          <p className="text-center text-[11px] text-muted">
+            {formatDateTime(r.respondBy)}까지 선택하지 않으면 이용권으로 보관돼요
+          </p>
+          {choose.isError && <ErrorText>{errorMessage(choose.error)}</ErrorText>}
         </>
       ) : (
-        <p className="mt-2 text-gray-800">
+        <p className="border-[1.5px] border-ink bg-card p-3 text-sm text-ink">
           {r.resolutionStatus === 'AUTO_KEPT'
             ? '기한까지 선택하지 않아 이용권으로 보관했어요.'
             : `${CHOICE_LABEL[r.choice!]}을 선택했어요.`}
           {r.choice === 'TRANSFER' && r.newApplicationId && (
-            <Link to={`/app/applications/${r.newApplicationId}`} className="ml-1 underline">
+            <Link to={`/app/applications/${r.newApplicationId}`} className="ml-1 font-bold text-accent underline">
               새 신청 보기
             </Link>
           )}

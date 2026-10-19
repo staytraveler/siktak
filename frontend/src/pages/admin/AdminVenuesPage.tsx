@@ -211,7 +211,7 @@ function VenueRow({ venue, regionName, slotId, slotRegionId }: {
           <button
             type="button"
             disabled={tables === '' || setCapacity.isPending}
-            className="rounded bg-amber-800 px-3 py-1 text-white disabled:bg-gray-300"
+            className="rounded bg-accent px-3 py-1 text-white disabled:bg-gray-300"
             onClick={() => setCapacity.mutate()}
           >
             수용량 저장

@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { errorMessage } from '../api/client'
 import { api } from '../api/endpoints'
 import { clearSession, homeOf, setSession, type Session } from '../api/session'
+import { ErrorText, HeroBlock, inputCls, PrimaryButton, SectionHeader } from '../components/ui'
 
 // 테스트 계정 (docs/demo-scenario.md 6장). 심사위원이 버튼 한 번으로 들어가도록 비밀번호를 함께 둔다.
 const TEST_ACCOUNTS = [
@@ -14,7 +15,7 @@ const TEST_ACCOUNTS = [
   { loginId: 'user23', password: 'siktak1234', label: '참가자 user23', note: 'S3 매칭 실패 → 환불 선택' },
 ]
 
-// 로그인 (/login). 디자인은 9.x에서 입힌다.
+// 로그인 (/login)
 export default function LoginPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -44,53 +45,56 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-md bg-white p-4">
-      <h1 className="text-xl font-bold">우연한 식탁 로그인</h1>
+    <main className="mx-auto min-h-screen max-w-md bg-paper text-ink">
+      <HeroBlock
+        kicker="Welcome to the table."
+        height={340}
+        illustration="homeTable"
+        illustrationHeight={210}
+        illustrationOffset={-40}
+        title={<>우연한 식탁에<br />어서 오세요</>}
+      />
 
-      <form onSubmit={submit} className="mt-6 space-y-3">
+      <form onSubmit={submit} className="space-y-3 px-[18px] pt-5">
         <label className="block text-sm">
-          <span className="text-gray-600">아이디</span>
+          <span className="text-[11px] tracking-[1.5px] text-muted">아이디</span>
           <input
-            className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+            className={`mt-1 ${inputCls}`}
             value={loginId}
             onChange={(e) => setLoginId(e.target.value)}
             autoComplete="username"
           />
         </label>
         <label className="block text-sm">
-          <span className="text-gray-600">비밀번호</span>
+          <span className="text-[11px] tracking-[1.5px] text-muted">비밀번호</span>
           <input
             type="password"
-            className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+            className={`mt-1 ${inputCls}`}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
           />
         </label>
-        <button
-          type="submit"
-          disabled={login.isPending || !loginId || !password}
-          className="w-full rounded bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-        >
+        <PrimaryButton type="submit" disabled={login.isPending || !loginId || !password}>
           로그인
-        </button>
-        {login.isError && <p className="text-sm text-red-700">{errorMessage(login.error)}</p>}
+        </PrimaryButton>
+        {login.isError && <ErrorText>{errorMessage(login.error)}</ErrorText>}
       </form>
 
-      <section className="mt-8">
-        <h2 className="text-sm font-semibold text-gray-500">테스트 계정으로 로그인</h2>
-        <ul className="mt-2 space-y-2">
+      <section className="flex flex-col gap-2 px-[18px] pt-7 pb-10">
+        <SectionHeader title="Test accounts" label="테스트 계정" />
+        <ul className="flex flex-col gap-2">
           {TEST_ACCOUNTS.map((account) => (
             <li key={account.loginId}>
               <button
                 type="button"
                 disabled={login.isPending}
                 onClick={() => login.mutate(account)}
-                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-left text-sm disabled:opacity-50"
+                className="min-h-[44px] w-full border-[1.5px] border-ink bg-card px-4 py-3 text-left text-sm disabled:opacity-50"
               >
-                <span className="font-semibold">{account.label}</span>
-                <span className="ml-2 text-gray-500">{account.loginId}</span>
-                <span className="block text-xs text-gray-500">{account.note}</span>
+                <span className="font-serif font-black">{account.label}</span>
+                <span className="ml-2 text-muted">{account.loginId}</span>
+                <span className="block text-xs text-muted">{account.note}</span>
               </button>
             </li>
           ))}
