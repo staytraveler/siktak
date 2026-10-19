@@ -187,6 +187,7 @@ export function SlotTicket({
   title,
   sub,
   badge,
+  time,
   selected,
   order,
   stampTone = 'accent',
@@ -198,6 +199,7 @@ export function SlotTicket({
   title: string
   sub?: ReactNode
   badge?: ReactNode
+  time?: string // 식사 시작 시각(예: 19:30). 있으면 제목 위에 크게 표시
   selected?: boolean
   order?: number
   stampTone?: 'accent' | 'ink'
@@ -220,12 +222,13 @@ export function SlotTicket({
       </div>
       <div className="flex min-w-0 flex-1 items-center justify-between gap-2 border-l-[1.5px] border-dashed border-ink px-3.5 py-3 text-left">
         <div className="flex min-w-0 flex-col gap-0.5">
+          {time && <span className="font-display text-[26px] leading-none font-black">{time}</span>}
           <span className="font-serif text-base font-black">{title}</span>
           {sub && <span className="text-[11px] text-muted">{sub}</span>}
         </div>
         {order != null && order >= 0 ? (
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-cream">
-            {order + 1}
+            {'①②③④⑤'[order] ?? order + 1}
           </span>
         ) : (
           badge
@@ -233,9 +236,9 @@ export function SlotTicket({
       </div>
     </>
   )
-  const cls = `flex w-full min-h-[44px] border-[1.5px] border-ink bg-card text-ink ${selected ? 'shadow-print' : ''} ${
-    disabled ? 'opacity-50' : ''
-  }`
+  const cls = `flex w-full min-h-[44px] border-[1.5px] bg-card text-ink ${
+    selected ? 'border-accent shadow-print outline outline-2 -outline-offset-[3px] outline-accent' : 'border-ink'
+  } ${disabled ? 'opacity-50' : ''}`
   if (to)
     return (
       <Link to={to} className={cls}>

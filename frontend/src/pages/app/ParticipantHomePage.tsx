@@ -36,14 +36,31 @@ export default function ParticipantHomePage() {
       {applications.isError && <p className="px-[22px] pt-6 text-sm font-medium text-accent">{errorMessage(applications.error)}</p>}
 
       {applications.isSuccess && !main && (
-        <HeroBlock
-          kicker="Welcome."
-          height={370}
-          illustration="homeTable"
-          illustrationHeight={230}
-          illustrationOffset={-20}
-          title={<>첫 식탁을<br />차려볼까요</>}
-        />
+        <>
+          <HeroBlock
+            kicker="Welcome."
+            height={270}
+            illustration="homeTable"
+            illustrationHeight={150}
+            illustrationOffset={-10}
+            title={<>첫 식탁을<br />차려볼까요</>}
+          />
+          <div className="flex flex-col gap-3 px-[18px] pt-5">
+            {profile.data && !profile.data.complete && (
+              <Link to="/app/profile?next=/app/slots" className="flex min-h-[44px] items-center justify-between border-[1.5px] border-ink bg-mustard px-4 py-3 text-sm">
+                <span>
+                  <b className="font-serif">프로필 먼저 채우기</b>
+                  <span className="block text-xs">신청 전에 프로필이 필요해요</span>
+                </span>
+                <span className="font-bold">→</span>
+              </Link>
+            )}
+            <LinkButton to="/app/slots">
+              <span>이번 주 식탁 고르기</span>
+              <span>→</span>
+            </LinkButton>
+          </div>
+        </>
       )}
 
       {main && (

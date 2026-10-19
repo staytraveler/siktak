@@ -5,7 +5,16 @@ import { AxiosError } from 'axios'
 import { errorMessage, type ApiError } from '../../api/client'
 import { api } from '../../api/endpoints'
 import { AppShell, EmptyState, ErrorText, PageTitle, PrimaryButton, SlotTicket } from '../../components/ui'
+import { dateParts, daysUntil } from '../../lib/design'
 import { formatDateTime } from '../../lib/format'
+import { useServerNow } from '../../lib/useTableInfo'
+
+// 신청 마감까지 "D-3 마감" / "오늘 마감" 같은 짧은 표기
+function deadlineLabel(deadlineIso: string, nowMs: number): string {
+  if (Date.parse(deadlineIso) <= nowMs) return '마감'
+  const d = daysUntil(deadlineIso, nowMs)
+  return d <= 0 ? '오늘 마감' : `D-${d} 마감`
+}
 
 const MAX_PICKS = 5 // APP-02: 서버 상한과 같다
 
@@ -14,6 +23,7 @@ export default function SlotsPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const slots = useQuery({ queryKey: ['open-slots'], queryFn: api.openSlots })
+  const nowMs = useServerNow()
   // 체크한 순서 = 우선순위 (matching.md MD7)
   const [picked, setPicked] = useState<number[]>([])
 
@@ -53,13 +63,14 @@ export default function SlotsPage() {
             <SlotTicket
               key={s.id}
               startsAt={s.startsAt}
+              time={dateParts(s.startsAt).hm}
               title={s.regionName}
               sub={
                 <>
-                  신청 마감 {formatDateTime(s.applyDeadlineAt)}
-                  <br />
-                  매칭 {formatDateTime(s.matchRunAt)}
+                  <b className="text-ink">{deadlineLabel(s.applyDeadlineAt, nowMs)}</b>
                   {s.remainingSeats != null && ` · 남은 자리 ${s.remainingSeats}`}
+                  <br />
+                  <span className="text-[10px]">매칭 {formatDateTime(s.matchRunAt)}</span>
                 </>
               }
               selected={order >= 0}
@@ -71,16 +82,20 @@ export default function SlotsPage() {
 
         <div className="mt-2 flex flex-wrap gap-2 text-sm">
           <span className="border-[1.5px] border-ink bg-mustard px-3 py-2 font-bold">1회권 9,900원</span>
-          <span className="border-[1.5px] border-ink/30 px-3 py-2 text-muted">멤버십·크레딧 (준비 중)</span>
         </div>
         <p className="text-[11px] leading-relaxed text-muted">
           진행 2일 전부터 환불 불가, 당일 취소 및 단체방 퇴장 불가. 노쇼 시 이용이 제한될 수 있어요.
         </p>
         {submit.isError && <ErrorText>{errorMessage(submit.error)}</ErrorText>}
-        <PrimaryButton disabled={picked.length === 0 || submit.isPending} onClick={() => submit.mutate()}>
-          {picked.length === 0 ? '일정을 골라주세요' : `${picked.length}개 일정으로 신청하기`}
-        </PrimaryButton>
       </section>
+
+      {/* 하단 고정 선택 바: 메뉴 바로 위. 결제 수단은 신청 직후 상세 화면에서 고른다 */}
+      <div className="sticky bottom-[58px] z-20 mt-4 flex items-center justify-between gap-3 border-t-[1.5px] border-ink bg-card px-[18px] py-2.5">
+        <span className="text-sm font-bold">{picked.length}개 선택</span>
+        <PrimaryButton className="!w-auto min-w-[120px]" disabled={picked.length === 0 || submit.isPending} onClick={() => submit.mutate()}>
+          {submit.isPending ? '신청 중…' : '다음 →'}
+        </PrimaryButton>
+      </div>
     </AppShell>
   )
 }
