@@ -83,6 +83,8 @@ export default function LoginPage() {
 
       <section className="flex flex-col gap-2 px-[18px] pt-7 pb-10">
         <SectionHeader title="Test accounts" label="테스트 계정" />
+        <p className="text-xs text-muted">탭하면 바로 로그인</p>
+        {login.isError && <ErrorText>{errorMessage(login.error)}</ErrorText>}
         <ul className="flex flex-col gap-2">
           {TEST_ACCOUNTS.map((account) => (
             <li key={account.loginId}>
@@ -90,11 +92,15 @@ export default function LoginPage() {
                 type="button"
                 disabled={login.isPending}
                 onClick={() => login.mutate(account)}
-                className="min-h-[44px] w-full border-[1.5px] border-ink bg-card px-4 py-3 text-left text-sm disabled:opacity-50"
+                className={`min-h-[44px] w-full border-[1.5px] border-ink px-4 py-3 text-left text-sm active:translate-y-px active:bg-mustard ${
+                  login.isPending && login.variables?.loginId === account.loginId ? 'bg-mustard' : 'bg-card disabled:opacity-50'
+                }`}
               >
                 <span className="font-serif font-black">{account.label}</span>
                 <span className="ml-2 text-muted">{account.loginId}</span>
-                <span className="block text-xs text-muted">{account.note}</span>
+                <span className="block text-xs text-muted">
+                  {login.isPending && login.variables?.loginId === account.loginId ? '로그인 중…' : account.note}
+                </span>
               </button>
             </li>
           ))}

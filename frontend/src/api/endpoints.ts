@@ -65,6 +65,8 @@ export const api = {
     post<Resolution>(`/api/v1/me/applications/${applicationId}/resolution`, { choice, slotId }),
   myTable: (applicationId: number) => get<MyTable>(`/api/v1/me/applications/${applicationId}/table`),
   chatMessages: (chatRoomId: number) => get<ChatMessageItem[]>(`/api/v1/chat-rooms/${chatRoomId}/messages`),
+  sendTableMessage: (tableId: number, content: string) =>
+    post<ChatMessageItem>(`/api/v1/tables/${tableId}/messages`, { content }),
   myNotifications: () => get<NotificationItem[]>('/api/v1/me/notifications'),
   readNotification: (id: number) => post<NotificationItem>(`/api/v1/me/notifications/${id}/read`),
   myFeedbacks: () => get<FeedbackItem[]>('/api/v1/me/feedbacks'),

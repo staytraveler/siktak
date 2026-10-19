@@ -2,9 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { api } from '../api/endpoints'
 import { fetchHealth } from '../api/health'
-import { parseVenueNotice } from './design'
 
-// 확정된 테이블 + 단체방 메시지 + 안내에서 뽑은 식당 정보. 이미 있는 API만 쓴다.
+// 확정된 테이블(식당·예약명·지도 포함) + 단체방 메시지. 단체방은 10초마다 새로고침한다.
 export function useTableInfo(applicationId: number | undefined, enabled = true) {
   const on = enabled && applicationId != null
   const table = useQuery({
@@ -17,9 +16,14 @@ export function useTableInfo(applicationId: number | undefined, enabled = true) 
     queryKey: ['chat', chatRoomId],
     queryFn: () => api.chatMessages(chatRoomId!),
     enabled: on && chatRoomId != null,
+    refetchInterval: 10_000,
   })
-  const notices = (messages.data ?? []).filter((m) => m.messageType === 'NOTICE').map((m) => m.body)
-  return { table, messages, venue: parseVenueNotice(notices) }
+  const venue = {
+    venueName: table.data?.venueName ?? undefined,
+    reservation: table.data?.reservationName ?? undefined,
+    mapUrl: table.data?.mapUrl ?? undefined,
+  }
+  return { table, messages, venue }
 }
 
 // 데모 시각 제어 때문에 D-n은 브라우저 시계가 아니라 서버 시각으로 센다.

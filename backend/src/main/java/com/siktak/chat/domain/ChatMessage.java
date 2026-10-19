@@ -65,6 +65,17 @@ public class ChatMessage extends BaseTimeEntity {
         return message;
     }
 
+    /** 참가자가 보낸 일반 대화 메시지. 시스템 메시지와 달리 message_key가 없다. */
+    public static ChatMessage fromUser(Long chatRoomId, Long senderId, String body) {
+        ChatMessage message = new ChatMessage();
+        message.chatRoomId = chatRoomId;
+        message.senderType = SenderType.USER;
+        message.senderId = senderId;
+        message.messageType = MessageType.TEXT;
+        message.body = body;
+        return message;
+    }
+
     public enum SenderType {
         USER,
         SYSTEM

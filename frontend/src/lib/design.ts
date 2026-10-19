@@ -34,29 +34,6 @@ export function dayPart(hour: number): string {
 const WEEKDAY_KO: Record<string, string> = { MON: '월', TUE: '화', WED: '수', THU: '목', FRI: '금', SAT: '토', SUN: '일' }
 export const weekdayKo = (w: string) => WEEKDAY_KO[w] ?? w
 
-// 확정 안내(NOTICE) 메시지에서 식당·예약명·지도 링크를 꺼낸다.
-// [해석] 테이블 API에 식당 정보가 없어 TableGuidanceService.venueNotice 문구("장소:/지도:/예약명:")를 파싱한다.
-export function parseVenueNotice(bodies: string[]): {
-  venueName?: string
-  reservation?: string
-  mapUrl?: string
-} {
-  const find = (key: string) => {
-    for (const body of bodies) {
-      const line = body.split('\n').find((l) => l.startsWith(`${key}: `))
-      if (line) return line.slice(key.length + 2).trim()
-    }
-    return undefined
-  }
-  const place = find('장소')
-  const reservation = find('예약명')
-  return {
-    venueName: place?.replace(/\s*\(.*\)\s*$/, ''),
-    reservation: reservation && reservation !== '확정 후 안내' ? reservation : undefined,
-    mapUrl: find('지도'),
-  }
-}
-
 export const RESOLUTION_STATUSES = ['ALTERNATIVE_OFFERED', 'NO_MATCH', 'TRANSFERRED']
 
 // 신청의 대표 회차: 확정된 회차 → 없으면 1순위
