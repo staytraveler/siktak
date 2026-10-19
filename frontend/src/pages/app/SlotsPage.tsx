@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { AxiosError } from 'axios'
 import { errorMessage, type ApiError } from '../../api/client'
 import { api } from '../../api/endpoints'
-import { AppShell, EmptyState, ErrorText, PageTitle, PrimaryButton, SlotTicket } from '../../components/ui'
+import { AppShell, EmptyState, ErrorText, PageTitle, PrimaryButton, SecondaryButton, SlotTicket } from '../../components/ui'
 import { dateParts, daysUntil } from '../../lib/design'
 import { formatDateTime } from '../../lib/format'
 import { useServerNow } from '../../lib/useTableInfo'
@@ -27,8 +27,13 @@ export default function SlotsPage() {
   // 체크한 순서 = 우선순위 (matching.md MD7)
   const [picked, setPicked] = useState<number[]>([])
 
+  const credits = useQuery({ queryKey: ['my-credits'], queryFn: api.myCredits })
+  const creditCount = credits.data?.activeCount ?? 0
+  // 보관 이용권이 있으면 "다음"에서 결제 수단을 고른다. 없으면 바로 1회권으로 신청
+  const [choosing, setChoosing] = useState(false)
+
   const submit = useMutation({
-    mutationFn: () => api.submitApplication(picked),
+    mutationFn: (passType: 'SINGLE' | 'CREDIT') => api.submitApplication(picked, passType),
     onError: (error) => {
       // 프로필 미완성이면 프로필 화면으로 안내 (APP-02)
       if (error instanceof AxiosError && (error.response?.data as ApiError | undefined)?.code === 'PROFILE_INCOMPLETE') {
@@ -37,6 +42,8 @@ export default function SlotsPage() {
     },
     onSuccess: (created) => {
       setPicked([])
+      setChoosing(false)
+      queryClient.invalidateQueries({ queryKey: ['my-credits'] })
       queryClient.invalidateQueries({ queryKey: ['my-applications'] })
       navigate(`/app/applications/${created.id}`)
     },
@@ -80,9 +87,22 @@ export default function SlotsPage() {
           )
         })}
 
-        <div className="mt-2 flex flex-wrap gap-2 text-sm">
-          <span className="rounded-xl border border-line bg-mustard px-3 py-2 font-bold">1회권 9,900원</span>
-        </div>
+        {creditCount === 0 && (
+          <div className="mt-2 flex flex-wrap gap-2 text-sm">
+            <span className="rounded-xl border border-line bg-mustard px-3 py-2 font-bold">1회권 9,900원</span>
+          </div>
+        )}
+        {choosing && (
+          <div className="mt-2 flex flex-col gap-2 rounded-2xl border border-line bg-card p-3">
+            <b className="text-sm">어떻게 신청할까요?</b>
+            <PrimaryButton disabled={submit.isPending} onClick={() => submit.mutate('CREDIT')}>
+              보관 이용권으로 신청 (추가 결제 없음 · {creditCount}장 보유)
+            </PrimaryButton>
+            <SecondaryButton disabled={submit.isPending} onClick={() => submit.mutate('SINGLE')}>
+              1회권으로 신청 (9,900원)
+            </SecondaryButton>
+          </div>
+        )}
         <p className="text-[11px] leading-relaxed text-muted">
           진행 2일 전부터 환불 불가, 당일 취소 및 단체방 퇴장 불가. 노쇼 시 이용이 제한될 수 있어요.
         </p>
@@ -92,7 +112,7 @@ export default function SlotsPage() {
       {/* 하단 고정 선택 바: 메뉴 바로 위. 결제 수단은 신청 직후 상세 화면에서 고른다 */}
       <div className="sticky bottom-[58px] z-20 mt-4 flex items-center justify-between gap-3 border-t border-line bg-card px-[18px] py-2.5">
         <span className="text-sm font-bold">{picked.length}개 선택</span>
-        <PrimaryButton className="!w-auto min-w-[120px]" disabled={picked.length === 0 || submit.isPending} onClick={() => submit.mutate()}>
+        <PrimaryButton className="!w-auto min-w-[120px]" disabled={picked.length === 0 || submit.isPending} onClick={() => (creditCount > 0 ? setChoosing(true) : submit.mutate('SINGLE'))}>
           {submit.isPending ? '신청 중…' : '다음 →'}
         </PrimaryButton>
       </div>

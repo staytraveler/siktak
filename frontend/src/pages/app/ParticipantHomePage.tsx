@@ -22,6 +22,7 @@ function pickMain(list: ApplicationItem[]): ApplicationItem | undefined {
 export default function ParticipantHomePage() {
   const applications = useQuery({ queryKey: ['my-applications'], queryFn: api.myApplications })
   const profile = useQuery({ queryKey: ['my-profile'], queryFn: api.myProfile })
+  const credits = useQuery({ queryKey: ['my-credits'], queryFn: api.myCredits })
   const nowMs = useServerNow()
   const main = applications.data ? pickMain(applications.data) : undefined
   const confirmed = main?.matchStatus === 'CONFIRMED'
@@ -162,6 +163,11 @@ export default function ParticipantHomePage() {
         <Link to="/app/profile" className="flex min-h-[44px] items-center text-[13px] font-bold">
           내 프로필 {profile.data && !profile.data.complete ? '(미완성 · 신청 전에 입력해주세요)' : '보기 · 수정'} →
         </Link>
+        {(credits.data?.activeCount ?? 0) > 0 && (
+          <p className="text-xs text-body">
+            보관 이용권 <b className="text-accent">{credits.data?.activeCount}장</b> · 다음 신청에 추가 결제 없이 쓸 수 있어요
+          </p>
+        )}
         <SessionBar />
       </footer>
     </AppShell>

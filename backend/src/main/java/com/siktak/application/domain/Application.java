@@ -175,6 +175,11 @@ public class Application extends BaseTimeEntity {
         this.paymentDueAt = dueAt;
     }
 
+    /** 크레딧으로 참가 비용을 해결한다 (P1a). 새 결제를 만들지 않는다. */
+    public void linkCredit(Long userPassId) {
+        this.userPassId = userPassId;
+    }
+
     public void assignSlot(Long slotId) {
         this.assignedSlotId = slotId;
     }

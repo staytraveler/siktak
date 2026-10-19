@@ -2,11 +2,13 @@ package com.siktak.payment.application;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.siktak.payment.domain.PassStatus;
 import com.siktak.payment.domain.UserPass;
 import com.siktak.payment.domain.UserPassType;
 import com.siktak.payment.infra.UserPassRepository;
@@ -30,5 +32,17 @@ public class UserPassService {
         return userPassRepository.findByPassTypeAndSourceApplicationId(UserPassType.SINGLE_CREDIT, sourceApplicationId)
                 .orElseGet(() -> userPassRepository.save(
                         UserPass.singleCredit(userId, sourceApplicationId, Instant.now(clock))));
+    }
+
+    /** 가장 오래된 활성 크레딧 하나를 소진한다 (P1a). 없으면 비어 있다. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<UserPass> consumeCredit(Long userId, Long applicationId) {
+        return userPassRepository
+                .findFirstByUserIdAndPassTypeAndPassStatusOrderByIdAsc(userId, UserPassType.SINGLE_CREDIT,
+                        PassStatus.ACTIVE)
+                .map(pass -> {
+                    pass.use(applicationId);
+                    return pass;
+                });
     }
 }

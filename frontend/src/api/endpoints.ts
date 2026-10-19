@@ -56,8 +56,10 @@ export const api = {
   // 참가자
   openSlots: () => get<Slot[]>('/api/v1/slots'),
   myApplications: () => get<ApplicationItem[]>('/api/v1/me/applications'),
-  submitApplication: (slotIds: number[]) =>
-    post<ApplicationItem>('/api/v1/applications', { slotIds, passType: 'SINGLE' }),
+  submitApplication: (slotIds: number[], passType: 'SINGLE' | 'CREDIT' = 'SINGLE') =>
+    post<ApplicationItem>('/api/v1/applications', { slotIds, passType }),
+  // 보관 이용권(매칭 실패 후 보관한 1회권) 개수
+  myCredits: () => get<{ activeCount: number }>('/api/v1/me/credits'),
   mockApprove: (applicationId: number) =>
     post<ApplicationItem>(`/api/v1/applications/${applicationId}/payments/mock-approve`),
   resolution: (applicationId: number) => get<Resolution>(`/api/v1/me/applications/${applicationId}/resolution`),

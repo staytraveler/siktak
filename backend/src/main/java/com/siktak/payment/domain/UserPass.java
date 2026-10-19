@@ -63,4 +63,10 @@ public class UserPass extends BaseTimeEntity {
         pass.sourceApplicationId = sourceApplicationId;
         return pass;
     }
+
+    /** 신청 제출에 크레딧을 쓴다 (P1a). */
+    public void use(Long applicationId) {
+        this.passStatus = PassStatus.USED;
+        this.usedApplicationId = applicationId;
+    }
 }
