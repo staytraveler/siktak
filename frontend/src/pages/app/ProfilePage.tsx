@@ -101,7 +101,7 @@ export default function ProfilePage() {
           value={form.birthYear ?? ''}
           onChange={(e) => set('birthYear', e.target.value ? Number(e.target.value) : null)}
           placeholder="예: 1997"
-          className="min-h-[44px] w-full border-[1.5px] border-ink bg-card px-3 text-sm"
+          className="min-h-[44px] w-full rounded-xl border border-line bg-card px-3 text-sm"
         />
         <Label>성별</Label>
         <Chips options={GENDERS} selected={form.gender ? [form.gender] : []} onToggle={(c) => set('gender', c)} />
@@ -111,7 +111,7 @@ export default function ProfilePage() {
           maxLength={50}
           value={form.job ?? ''}
           onChange={(e) => set('job', e.target.value || null)}
-          className="min-h-[44px] w-full border-[1.5px] border-ink bg-card px-3 text-sm"
+          className="min-h-[44px] w-full rounded-xl border border-line bg-card px-3 text-sm"
         />
       </Section>
 
@@ -145,7 +145,7 @@ export default function ProfilePage() {
           maxLength={200}
           value={form.foodRestrictions ?? ''}
           onChange={(e) => set('foodRestrictions', e.target.value || null)}
-          className="min-h-[44px] w-full border-[1.5px] border-ink bg-card px-3 text-sm"
+          className="min-h-[44px] w-full rounded-xl border border-line bg-card px-3 text-sm"
         />
         <Label>알레르기 (선택)</Label>
         <input
@@ -153,7 +153,7 @@ export default function ProfilePage() {
           maxLength={200}
           value={form.allergies ?? ''}
           onChange={(e) => set('allergies', e.target.value || null)}
-          className="min-h-[44px] w-full border-[1.5px] border-ink bg-card px-3 text-sm"
+          className="min-h-[44px] w-full rounded-xl border border-line bg-card px-3 text-sm"
         />
         <label className="mt-4 flex items-start gap-2 text-sm">
           <input type="checkbox" checked={form.privacyAgreed} onChange={(e) => set('privacyAgreed', e.target.checked)} className="mt-1 h-5 w-5 accent-[#7e2a27]" />
@@ -170,7 +170,7 @@ export default function ProfilePage() {
         type="button"
         disabled={!ready || save.isPending}
         onClick={() => save.mutate()}
-        className="mt-4 w-full min-h-[52px] bg-ink text-[15px] font-bold text-cream disabled:opacity-40"
+        className="mt-4 w-full min-h-[52px] rounded-xl bg-ink text-[15px] font-bold text-cream disabled:opacity-40"
       >
         {save.isPending ? '저장 중…' : '저장하기'}
       </button>
@@ -181,7 +181,7 @@ export default function ProfilePage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-6 space-y-2">
-      <h2 className="border-b-[1.5px] border-ink pb-1.5 font-display text-[17px] italic">{title}</h2>
+      <h2 className="border-b border-line pb-1.5 font-display text-[17px] italic">{title}</h2>
       {children}
     </section>
   )
@@ -207,7 +207,7 @@ function Chips({
           key={o.code}
           type="button"
           onClick={() => onToggle(o.code)}
-          className={`min-h-[44px] border-[1.5px] border-ink px-3 text-sm font-bold ${
+          className={`min-h-[44px] rounded-xl border border-line px-3 text-sm font-bold ${
             selected.includes(o.code) ? 'bg-ink text-cream' : 'bg-card'
           }`}
         >

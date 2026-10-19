@@ -86,7 +86,7 @@ function Composer({ tableId, chatRoomId }: { tableId: number; chatRoomId: number
   const content = text.trim()
   return (
     <form
-      className="sticky bottom-0 border-t-[1.5px] border-ink bg-paper px-4 py-3"
+      className="sticky bottom-0 border-t border-line bg-paper px-4 py-3"
       onSubmit={(e) => {
         e.preventDefault()
         if (content && !send.isPending) send.mutate(content)
@@ -99,12 +99,12 @@ function Composer({ tableId, chatRoomId }: { tableId: number; chatRoomId: number
           onChange={(e) => setText(e.target.value)}
           maxLength={500}
           placeholder="동석자에게 메시지 보내기"
-          className="min-w-0 flex-1 border-[1.5px] border-ink bg-card px-3 py-2.5 text-sm outline-none"
+          className="min-w-0 flex-1 rounded-xl border border-line bg-card px-3 py-2.5 text-sm outline-none"
         />
         <button
           type="submit"
           disabled={!content || send.isPending}
-          className="shrink-0 border-[1.5px] border-ink bg-ink px-4 text-sm font-bold text-cream disabled:opacity-40"
+          className="shrink-0 rounded-xl border border-line bg-ink px-4 text-sm font-bold text-cream disabled:opacity-40"
         >
           보내기
         </button>
@@ -133,7 +133,7 @@ function Message({ m }: { m: ChatMessageItem }) {
         )}
         <div className="flex min-w-0 flex-col gap-0.5">
           <div
-            className={`max-w-[260px] border-[1.5px] border-ink px-3 py-2.5 text-sm leading-normal whitespace-pre-line [overflow-wrap:anywhere] ${m.mine ? 'bg-mustard' : 'bg-card'}`}
+            className={`max-w-[260px] rounded-xl border border-line px-3 py-2.5 text-sm leading-normal whitespace-pre-line [overflow-wrap:anywhere] ${m.mine ? 'bg-mustard' : 'bg-card'}`}
           >
             {m.body}
           </div>
@@ -146,7 +146,7 @@ function Message({ m }: { m: ChatMessageItem }) {
 
   if (m.messageType === 'CURATION') {
     return (
-      <article className="border-[1.5px] border-ink bg-card p-4 shadow-print">
+      <article className="rounded-xl border border-line bg-card p-4 shadow-print">
         <span className="font-display text-base text-accent italic">{MESSAGE_LABEL.CURATION}</span>
         <p className="mt-2 font-serif text-base leading-relaxed font-bold whitespace-pre-line">{m.body}</p>
       </article>
@@ -167,7 +167,7 @@ function Message({ m }: { m: ChatMessageItem }) {
             ))}
           </div>
         ) : (
-          <p className="border-[1.5px] border-ink bg-card p-3 text-sm leading-relaxed whitespace-pre-line">{m.body}</p>
+          <p className="rounded-xl border border-line bg-card p-3 text-sm leading-relaxed whitespace-pre-line">{m.body}</p>
         )}
       </section>
     )
@@ -183,7 +183,7 @@ function Message({ m }: { m: ChatMessageItem }) {
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink text-[11px] font-bold text-cream">
           {m.senderType === 'SYSTEM' ? '식' : '참'}
         </span>
-        <div className="min-w-0 max-w-[300px] border-[1.5px] border-ink bg-card px-3 py-2.5 text-sm leading-normal whitespace-pre-line [overflow-wrap:anywhere]">
+        <div className="min-w-0 max-w-[300px] rounded-xl border border-line bg-card px-3 py-2.5 text-sm leading-normal whitespace-pre-line [overflow-wrap:anywhere]">
           {m.body}
         </div>
       </div>

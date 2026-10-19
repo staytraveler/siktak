@@ -17,7 +17,7 @@ export default function NotificationsPage() {
 
   return (
     <AppShell>
-      <PageTitle kicker="Letters for you." title="알림" right={unread > 0 ? <span className="bg-coral px-2 py-0.5 text-[11px] font-bold">새 알림 {unread}</span> : undefined} />
+      <PageTitle kicker="Letters for you." title="알림" right={unread > 0 ? <span className="rounded-full bg-coral px-2.5 py-0.5 text-[11px] font-bold">새 알림 {unread}</span> : undefined} />
       <div className="flex flex-col gap-2.5 px-[18px]">
         {notifications.isPending && <p className="text-sm text-muted">불러오는 중…</p>}
         {notifications.isError && <ErrorText>{errorMessage(notifications.error)}</ErrorText>}
@@ -27,11 +27,11 @@ export default function NotificationsPage() {
           return (
             <article
               key={n.id}
-              className={`border-[1.5px] border-ink p-3.5 ${n.readAt ? 'bg-card' : 'bg-card shadow-print'}`}
+              className={`rounded-xl border border-line p-3.5 ${n.readAt ? 'bg-card' : 'bg-card shadow-print'}`}
             >
               <div className="flex items-center justify-between text-[10px] tracking-[1.5px] text-muted">
                 <span>{formatDateTime(n.sentAt)}</span>
-                {!n.readAt && <span className="bg-coral px-1.5 py-0.5 font-bold text-ink">NEW</span>}
+                {!n.readAt && <span className="rounded-full bg-coral px-2.5 py-0.5 font-bold text-ink">NEW</span>}
               </div>
               <h2 className="mt-1.5 font-serif text-base font-black">{n.title}</h2>
               <p className="mt-1 text-sm leading-relaxed whitespace-pre-line text-body">{n.body}</p>

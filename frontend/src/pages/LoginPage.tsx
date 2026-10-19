@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { errorMessage } from '../api/client'
 import { api } from '../api/endpoints'
 import { clearSession, homeOf, setSession, type Session } from '../api/session'
-import { ErrorText, HeroBlock, inputCls, PrimaryButton, SectionHeader } from '../components/ui'
+import { ErrorText, HeroBlock, HeroDesc, inputCls, PrimaryButton, SectionHeader } from '../components/ui'
 
 // 테스트 계정 (docs/demo-scenario.md 6장). 심사위원이 버튼 한 번으로 들어가도록 비밀번호를 함께 둔다.
 const TEST_ACCOUNTS = [
@@ -46,16 +46,12 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-md bg-paper text-ink">
-      <HeroBlock
-        kicker="Welcome to the table."
-        height={340}
-        illustration="homeTable"
-        illustrationHeight={210}
-        illustrationOffset={-40}
-        title={<>우연한 식탁에<br />어서 오세요</>}
-      />
+      <header className="px-5 pt-4 pb-3 font-serif text-xl font-black tracking-[-0.5px]">우연한 식탁</header>
+      <HeroBlock kicker="Welcome" title={<>우연한 식탁에<br />어서 오세요</>}>
+        <HeroDesc>로그인하고 이번 주 식탁을 골라보세요</HeroDesc>
+      </HeroBlock>
 
-      <form onSubmit={submit} className="space-y-3 px-[18px] pt-5">
+      <form onSubmit={submit} className="space-y-3 px-4 pt-5">
         <label className="block text-sm">
           <span className="text-[11px] tracking-[1.5px] text-muted">아이디</span>
           <input
@@ -81,7 +77,7 @@ export default function LoginPage() {
         {login.isError && <ErrorText>{errorMessage(login.error)}</ErrorText>}
       </form>
 
-      <section className="flex flex-col gap-2 px-[18px] pt-7 pb-10">
+      <section className="flex flex-col gap-2 px-4 pt-7 pb-10">
         <SectionHeader title="Test accounts" label="테스트 계정" />
         <p className="text-xs text-muted">탭하면 바로 로그인</p>
         {login.isError && <ErrorText>{errorMessage(login.error)}</ErrorText>}
@@ -92,8 +88,8 @@ export default function LoginPage() {
                 type="button"
                 disabled={login.isPending}
                 onClick={() => login.mutate(account)}
-                className={`min-h-[44px] w-full border-[1.5px] border-ink px-4 py-3 text-left text-sm active:translate-y-px active:bg-mustard ${
-                  login.isPending && login.variables?.loginId === account.loginId ? 'bg-mustard' : 'bg-card disabled:opacity-50'
+                className={`min-h-[44px] w-full rounded-xl border border-line px-4 py-3 text-left text-sm active:translate-y-px active:bg-gold-soft ${
+                  login.isPending && login.variables?.loginId === account.loginId ? 'bg-gold-soft' : 'bg-card disabled:opacity-50'
                 }`}
               >
                 <span className="font-serif font-black">{account.label}</span>

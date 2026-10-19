@@ -81,7 +81,7 @@ export default function SlotsPage() {
         })}
 
         <div className="mt-2 flex flex-wrap gap-2 text-sm">
-          <span className="border-[1.5px] border-ink bg-mustard px-3 py-2 font-bold">1회권 9,900원</span>
+          <span className="rounded-xl border border-line bg-mustard px-3 py-2 font-bold">1회권 9,900원</span>
         </div>
         <p className="text-[11px] leading-relaxed text-muted">
           진행 2일 전부터 환불 불가, 당일 취소 및 단체방 퇴장 불가. 노쇼 시 이용이 제한될 수 있어요.
@@ -90,7 +90,7 @@ export default function SlotsPage() {
       </section>
 
       {/* 하단 고정 선택 바: 메뉴 바로 위. 결제 수단은 신청 직후 상세 화면에서 고른다 */}
-      <div className="sticky bottom-[58px] z-20 mt-4 flex items-center justify-between gap-3 border-t-[1.5px] border-ink bg-card px-[18px] py-2.5">
+      <div className="sticky bottom-[58px] z-20 mt-4 flex items-center justify-between gap-3 border-t border-line bg-card px-[18px] py-2.5">
         <span className="text-sm font-bold">{picked.length}개 선택</span>
         <PrimaryButton className="!w-auto min-w-[120px]" disabled={picked.length === 0 || submit.isPending} onClick={() => submit.mutate()}>
           {submit.isPending ? '신청 중…' : '다음 →'}

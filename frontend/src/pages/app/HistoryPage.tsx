@@ -32,7 +32,7 @@ export default function HistoryPage() {
             stampTone="ink"
             badge={
               !h.feedbackSubmitted && h.attendanceStatus === 'ATTENDED' ? (
-                <span className="shrink-0 bg-mustard px-2 py-0.5 text-[11px] font-bold">피드백</span>
+                <span className="shrink-0 rounded-full bg-mustard px-2.5 py-0.5 text-[11px] font-bold">피드백</span>
               ) : undefined
             }
           />
@@ -52,7 +52,7 @@ export default function HistoryPage() {
               [r.sameRegion && '자주 간 지역', r.sameTimeSlot && '비슷한 요일·시간대'].filter(Boolean).join(' · ') ||
               '가까운 일정'
             }
-            badge={<span className="shrink-0 bg-sage px-2 py-0.5 text-[11px] font-bold">추천</span>}
+            badge={<span className="shrink-0 rounded-full bg-sage px-2.5 py-0.5 text-[11px] font-bold">추천</span>}
           />
         ))}
         <Link to="/app/slots" className="flex min-h-[44px] items-center justify-end text-sm font-bold text-accent">

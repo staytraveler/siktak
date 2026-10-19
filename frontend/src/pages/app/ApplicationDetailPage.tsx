@@ -76,7 +76,7 @@ function Detail({ application }: { application: ApplicationItem }) {
                     selected={application.assignedSlotId === c.slot.id}
                     badge={
                       application.assignedSlotId === c.slot.id ? (
-                        <span className="bg-sage px-2 py-0.5 text-[11px] font-bold">확정</span>
+                        <span className="rounded-full bg-sage px-2.5 py-0.5 text-[11px] font-bold">확정</span>
                       ) : undefined
                     }
                   />
@@ -106,7 +106,7 @@ function Detail({ application }: { application: ApplicationItem }) {
           </>
         )}
 
-        <div className="border-t-[1.5px] border-ink pt-3">
+        <div className="border-t border-line pt-3">
           <SessionBar />
         </div>
       </div>
@@ -146,7 +146,7 @@ function AttendanceSection({ applicationId }: { applicationId: number }) {
       <section className="flex flex-col gap-2.5 text-sm">
         <SectionHeader title="Check-in" label="체크인" />
         {a.attendanceStatus === 'ATTENDED' ? (
-          <p className="border-[1.5px] border-ink bg-sage px-3 py-3 font-bold">체크인 완료 · {formatDateTime(a.checkedInAt)}</p>
+          <p className="rounded-xl border border-line bg-sage px-3 py-3 font-bold">체크인 완료 · {formatDateTime(a.checkedInAt)}</p>
         ) : a.attendanceStatus === 'SCHEDULED' ? (
           <>
             <p className="text-body">
@@ -215,7 +215,7 @@ function FeedbackSection({ applicationId }: { applicationId: number }) {
                     type="button"
                     onClick={() => setRatings((r) => ({ ...r, [f.key]: n }))}
                     aria-pressed={ratings[f.key] === n}
-                    className={`min-h-[44px] min-w-[36px] flex-1 border-[1.5px] border-ink text-sm font-bold ${
+                    className={`min-h-[44px] min-w-[36px] flex-1 rounded-xl border border-line text-sm font-bold ${
                       ratings[f.key] === n ? 'bg-ink text-cream' : 'bg-card'
                     }`}
                   >
@@ -290,7 +290,7 @@ function PreferenceSection({ applicationId }: { applicationId: number }) {
                   type="button"
                   onClick={() => setDraft({ ...current, [c.companionId]: o.value })}
                   aria-pressed={current[c.companionId] === o.value}
-                  className={`min-h-[44px] border-[1.5px] border-ink px-3 text-xs font-bold ${
+                  className={`min-h-[44px] rounded-xl border border-line px-3 text-xs font-bold ${
                     current[c.companionId] === o.value ? 'bg-ink text-cream' : 'bg-card'
                   }`}
                 >
@@ -349,7 +349,7 @@ function SafetyActions({ applicationId, companionId }: { applicationId: number; 
         {report.isSuccess ? '신고를 접수했어요' : '신고'}
       </button>
       {reporting && (
-        <div className="mt-1 flex flex-col gap-2 border-[1.5px] border-ink bg-card p-2">
+        <div className="mt-1 flex flex-col gap-2 rounded-xl border border-line bg-card p-2">
           <select value={reason} onChange={(e) => setReason(e.target.value as ReportReason)} className={inputCls}>
             {REPORT_REASONS.map((r) => (
               <option key={r.value} value={r.value}>
@@ -460,7 +460,7 @@ function ResolutionSection({ applicationId }: { applicationId: number }) {
           {choose.isError && <ErrorText>{errorMessage(choose.error)}</ErrorText>}
         </>
       ) : (
-        <p className="border-[1.5px] border-ink bg-card p-3 text-sm text-ink">
+        <p className="rounded-xl border border-line bg-card p-3 text-sm text-ink">
           {r.resolutionStatus === 'AUTO_KEPT'
             ? '기한까지 선택하지 않아 이용권으로 보관했어요.'
             : `${CHOICE_LABEL[r.choice!]}을 선택했어요.`}

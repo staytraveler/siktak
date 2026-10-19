@@ -6,7 +6,7 @@ import type { ApplicationItem } from '../../api/types'
 import ApplicationHero from '../../components/ApplicationHero'
 import SessionBar from '../../components/SessionBar'
 import StatusBadges from '../../components/StatusBadges'
-import { AppShell, Chip, EmptyState, HeroBlock, LinkButton, SectionHeader, SlotTicket, TicketCard } from '../../components/ui'
+import { AppHeader, AppShell, Chip, EmptyState, HeroBlock, HeroDesc, LinkButton, SectionHeader, SlotTicket, TicketCard } from '../../components/ui'
 import { durationLabel, mainSlot, RESOLUTION_STATUSES } from '../../lib/design'
 import { useServerNow, useTableInfo } from '../../lib/useTableInfo'
 
@@ -31,23 +31,22 @@ export default function ParticipantHomePage() {
   return (
     <AppShell>
       {applications.isPending && (
-        <HeroBlock kicker="Just a moment." height={230} title={<>식탁을 불러오고<br />있어요</>} />
+        <>
+          <AppHeader />
+          <HeroBlock kicker="Just a moment" title={<>식탁을 불러오고<br />있어요</>} />
+        </>
       )}
       {applications.isError && <p className="px-[22px] pt-6 text-sm font-medium text-accent">{errorMessage(applications.error)}</p>}
 
       {applications.isSuccess && !main && (
         <>
-          <HeroBlock
-            kicker="Welcome."
-            height={270}
-            illustration="homeTable"
-            illustrationHeight={150}
-            illustrationOffset={-10}
-            title={<>첫 식탁을<br />차려볼까요</>}
-          />
-          <div className="flex flex-col gap-3 px-[18px] pt-5">
+          <AppHeader />
+          <HeroBlock kicker="Welcome" title={<>첫 식탁을<br />차려볼까요</>}>
+            <HeroDesc>이번 주 저녁, 새로운 사람들과</HeroDesc>
+          </HeroBlock>
+          <div className="flex flex-col gap-3 px-4 pt-4">
             {profile.data && !profile.data.complete && (
-              <Link to="/app/profile?next=/app/slots" className="flex min-h-[44px] items-center justify-between border-[1.5px] border-ink bg-mustard px-4 py-3 text-sm">
+              <Link to="/app/profile?next=/app/slots" className="flex min-h-[44px] items-center justify-between rounded-2xl bg-gold-soft px-4 py-3 text-sm">
                 <span>
                   <b className="font-serif">프로필 먼저 채우기</b>
                   <span className="block text-xs">신청 전에 프로필이 필요해요</span>
@@ -68,7 +67,7 @@ export default function ParticipantHomePage() {
           <ApplicationHero application={main} nowMs={nowMs} memberCount={table.data?.memberCount} />
 
           {confirmed && slot && (
-            <div className="relative z-10 mx-[18px] -mt-11">
+            <div className="px-4 pt-4">
               <TicketCard
                 raised
                 startsAt={slot.startsAt}
@@ -92,7 +91,7 @@ export default function ParticipantHomePage() {
           )}
 
           {confirmed && table.data && (
-            <section className="flex flex-col gap-2.5 px-[22px] pt-[22px]">
+            <section className="flex flex-col gap-2.5 px-5 pt-6">
               <SectionHeader title="At the table" label={`${table.data.memberCount}명`} />
               {table.data.reasons.length > 0 && (
                 <p className="font-serif text-[15px] leading-relaxed font-bold">{table.data.reasons.join(' · ')}</p>
@@ -103,7 +102,7 @@ export default function ParticipantHomePage() {
             </section>
           )}
 
-          <div className="px-[18px] pt-5">
+          <div className="px-4 pt-4">
             {confirmed ? (
               <LinkButton to={`/app/applications/${main.id}/table`}>
                 <span>단체방 입장하기</span>
@@ -124,8 +123,8 @@ export default function ParticipantHomePage() {
         </>
       )}
 
-      <section className="flex flex-col gap-2.5 px-[22px] pt-7">
-        <SectionHeader title="My tables" label="내 신청" />
+      <section className="flex flex-col gap-3 px-5 pt-7">
+        <SectionHeader title="My tables" to="/app/history" />
         {applications.data?.length === 0 && (
           <EmptyState>
             아직 신청한 식사가 없어요.
@@ -136,23 +135,20 @@ export default function ParticipantHomePage() {
         )}
         {applications.data?.map((a) => {
           const s = mainSlot(a)
-          return (
-            <div key={a.id} className="flex flex-col gap-1">
-              {s ? (
-                <SlotTicket
-                  to={`/app/applications/${a.id}`}
-                  startsAt={s.startsAt}
-                  title={s.regionName}
-                  sub={a.slotChoices.length > 1 ? `후보 ${a.slotChoices.length}개 일정` : undefined}
-                  stampTone={a.id === main?.id ? 'accent' : 'ink'}
-                />
-              ) : (
-                <Link to={`/app/applications/${a.id}`} className="border-[1.5px] border-ink bg-card p-3 text-sm">
-                  신청 #{a.id}
-                </Link>
-              )}
-              <StatusBadges application={a} />
-            </div>
+          return s ? (
+            <SlotTicket
+              key={a.id}
+              to={`/app/applications/${a.id}`}
+              startsAt={s.startsAt}
+              title={s.regionName}
+              sub={a.slotChoices.length > 1 ? `후보 ${a.slotChoices.length}개 일정` : '함께할 사람을 기다리고 있어요'}
+              pills={<StatusBadges application={a} />}
+              stampTone="accent"
+            />
+          ) : (
+            <Link key={a.id} to={`/app/applications/${a.id}`} className="rounded-2xl border border-line bg-card p-3 text-sm">
+              신청 #{a.id}
+            </Link>
           )
         })}
         {!!applications.data?.length && (
@@ -162,9 +158,9 @@ export default function ParticipantHomePage() {
         )}
       </section>
 
-      <footer className="mt-4 flex flex-col gap-1 border-t-[1.5px] border-ink px-[22px] pt-3">
-        <Link to="/app/profile" className="flex min-h-[44px] items-center text-sm font-bold">
-          내 프로필 {profile.data && !profile.data.complete ? '(미완성 · 신청 전에 입력해주세요)' : '보기·수정'} →
+      <footer className="mx-5 mt-4 flex flex-col gap-2 border-t border-line pt-3">
+        <Link to="/app/profile" className="flex min-h-[44px] items-center text-[13px] font-bold">
+          내 프로필 {profile.data && !profile.data.complete ? '(미완성 · 신청 전에 입력해주세요)' : '보기 · 수정'} →
         </Link>
         <SessionBar />
       </footer>

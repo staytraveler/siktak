@@ -2,10 +2,9 @@ import type { ReactNode } from 'react'
 import type { ApplicationItem } from '../api/types'
 import { dateParts, dayPart, daysUntil, mainSlot, RESOLUTION_STATUSES, weekdayKo } from '../lib/design'
 import { formatDateTime } from '../lib/format'
-import { HeroBlock, Sticker } from './ui'
+import { AppHeader, HeroBlock, HeroDate, HeroDesc, Sticker } from './ui'
 
-
-// 홈·신청 상세 맨 위 히어로. 상태마다 색과 문구가 바뀐다.
+// 홈·신청 상세 맨 위 (헤더 + 히어로). 상태마다 라벨·제목·설명이 바뀐다.
 export default function ApplicationHero({
   application,
   nowMs,
@@ -17,6 +16,17 @@ export default function ApplicationHero({
   memberCount?: number
   children?: ReactNode
 }) {
+  return (
+    <>
+      <AppHeader />
+      <Hero application={application} nowMs={nowMs} memberCount={memberCount}>
+        {children}
+      </Hero>
+    </>
+  )
+}
+
+function Hero({ application, nowMs, memberCount, children }: { application: ApplicationItem; nowMs: number; memberCount?: number; children?: ReactNode }) {
   const slot = mainSlot(application)
   const match = application.matchStatus
 
@@ -25,12 +35,8 @@ export default function ApplicationHero({
     const n = daysUntil(slot.startsAt, nowMs)
     return (
       <HeroBlock
-        kicker="Your table is ready."
-        height={440}
-        illustration="homeTable"
-        illustrationHeight={300}
-        illustrationOffset={-60}
-        sticker={<Sticker top={n > 0 ? `D-${n}` : n === 0 ? 'D-DAY' : '다녀옴'} bottom="확정" />}
+        kicker="Your table is ready"
+        badge={<Sticker top={n > 0 ? `D-${n}` : n === 0 ? 'D-DAY' : '다녀옴'} bottom="확정" />}
         title={
           <>
             {weekdayKo(d.weekday)}요일 {dayPart(d.hour)},<br />
@@ -40,6 +46,7 @@ export default function ApplicationHero({
           </>
         }
       >
+        <HeroDate>{formatDateTime(slot.startsAt)}</HeroDate>
         {children}
       </HeroBlock>
     )
@@ -49,11 +56,7 @@ export default function ApplicationHero({
     const moved = match === 'TRANSFERRED'
     return (
       <HeroBlock
-        tone="mustard"
-        kicker={moved ? 'Moved over.' : 'Saving your seat.'}
-        height={330}
-        illustration="resolveTable"
-        illustrationHeight={170}
+        kicker={moved ? 'Moved over' : 'Saving your seat'}
         title={
           moved ? (
             <>
@@ -65,11 +68,12 @@ export default function ApplicationHero({
             <>
               이번엔 꼭 맞는
               <br />
-              자리를 찾지 못했어요
+              자리가 없었어요
             </>
           )
         }
       >
+        <HeroDesc>{moved ? '옮긴 일정에서 새 인연을 기다려요' : '다음 선택지를 골라주세요'}</HeroDesc>
         {children}
       </HeroBlock>
     )
@@ -78,9 +82,7 @@ export default function ApplicationHero({
   if (application.paymentStatus === 'PENDING') {
     return (
       <HeroBlock
-        tone="mustard"
-        kicker="One more step."
-        height={250}
+        kicker="One more step"
         title={
           <>
             결제만 하면
@@ -89,7 +91,7 @@ export default function ApplicationHero({
           </>
         }
       >
-        <p className="mt-3 text-[13px] leading-relaxed">결제 기한 {formatDateTime(application.paymentDueAt)}</p>
+        <HeroDate>결제 기한 {formatDateTime(application.paymentDueAt)}</HeroDate>
         {children}
       </HeroBlock>
     )
@@ -98,9 +100,7 @@ export default function ApplicationHero({
   if (match === 'WAITING' || match === 'MATCHING' || match === 'REALLOCATING') {
     return (
       <HeroBlock
-        tone="mustard"
-        kicker="Setting the table."
-        height={250}
+        kicker="Setting the table"
         title={
           <>
             테이블을
@@ -109,9 +109,12 @@ export default function ApplicationHero({
           </>
         }
       >
-        <p className="mt-3 text-[13px] leading-relaxed">
-          {match === 'WAITING' && slot ? `매칭 발표 예정 ${formatDateTime(slot.matchRunAt)}` : '조건에 맞는 분들을 찾고 있어요.'}
-        </p>
+        <HeroDesc>새로운 인연을 기다리고 있어요</HeroDesc>
+        {match === 'WAITING' && slot ? (
+          <HeroDate>매칭 발표 {formatDateTime(slot.matchRunAt)}</HeroDate>
+        ) : (
+          <HeroDesc>조건에 맞는 분들을 찾고 있어요.</HeroDesc>
+        )}
         {children}
       </HeroBlock>
     )
@@ -119,9 +122,7 @@ export default function ApplicationHero({
 
   return (
     <HeroBlock
-      tone="mustard"
-      kicker="Hold on."
-      height={230}
+      kicker="Hold on"
       title={
         <>
           신청 내용을
