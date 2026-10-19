@@ -101,6 +101,9 @@ class DemoSeedSchedulerIntegrationTest {
         // M2 이력: 주체 SCHEDULER, 실행자 admin (states.md actor 표)
         assertThat(count("status_histories WHERE transition_code = 'M2' AND actor_type = 'SCHEDULER' AND actor_id = "
                 + seed.user("admin"))).isPositive();
+        // 10.2: 시계 점프로 돈 실행도 스케줄러 경로라 매칭 모니터에는 SCHEDULER(자동)로 보인다. OPERATOR_BUTTON은 버튼 실행만.
+        assertThat(jdbc.queryForObject("SELECT params->>'trigger' FROM match_runs ORDER BY id LIMIT 1",
+                String.class)).isEqualTo("SCHEDULER");
 
         // --- 서버가 꺼진 사이 S3 매칭 시각이 지났다고 가정 → 재기동 시 catch-up
         EventSlot s3 = eventSlotRepository.findById(seed.slot("S3")).orElseThrow();

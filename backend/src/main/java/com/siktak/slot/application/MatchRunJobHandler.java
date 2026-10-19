@@ -43,6 +43,7 @@ public class MatchRunJobHandler implements ScheduledJobHandler {
 
     @Override
     public void execute(long slotId, JobTrigger trigger) {
-        matchingService.runForSlot(slotId, trigger.triggeredBy());
+        // 스케줄러 경로: 데모 시계 점프도 같은 경로라 버튼 실행이 아니다. 점프한 운영자는 actor_id에만 남긴다.
+        matchingService.runForSlot(slotId, trigger.triggeredBy(), false);
     }
 }

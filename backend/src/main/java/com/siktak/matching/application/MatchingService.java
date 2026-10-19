@@ -78,8 +78,14 @@ public class MatchingService {
      */
     @Transactional
     public MatchRun runForSlot(Long slotId, Long operatorId) {
+        return runForSlot(slotId, operatorId, operatorId != null);
+    }
+
+    /** @param byButton 운영자가 매칭 모니터에서 직접 누른 실행이면 true, 스케줄러 경로(데모 시계 점프 포함)면 false */
+    @Transactional
+    public MatchRun runForSlot(Long slotId, Long operatorId, boolean byButton) {
         if (!"simple".equals(engineMode)) {
-            return engineMatchingService.runForSlot(slotId, operatorId);
+            return engineMatchingService.runForSlot(slotId, operatorId, byButton);
         }
         EventSlot slot = eventSlotRepository.findById(slotId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "회차를 찾을 수 없습니다."));
@@ -98,7 +104,7 @@ public class MatchingService {
         // operatorId가 null이면 스케줄러 자동 실행 (2.4 시간 기반 작업 실행기)
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("slotId", slotId);
-        params.put("trigger", operatorId == null ? "SCHEDULER" : "OPERATOR_BUTTON");
+        params.put("trigger", byButton ? "OPERATOR_BUTTON" : "SCHEDULER");
         params.put("operatorId", operatorId);
         MatchRun run = matchRunRepository.save(MatchRun.start(runKey,
                 slot.getStartsAt().atZone(ZONE).toLocalDate(), tableMatcher.algorithmVersion(),
@@ -111,7 +117,7 @@ public class MatchingService {
         Map<Long, Application> byId = candidates.stream()
                 .collect(Collectors.toMap(Application::getId, Function.identity()));
         TransitionContext scheduler = new TransitionContext(ActorType.SCHEDULER, operatorId,
-                operatorId == null ? "회차 매칭 마감 시각 도래 (자동 실행)" : "회차 매칭 실행 (운영자가 앞당겨 실행)",
+                byButton ? "회차 매칭 실행 (운영자가 앞당겨 실행)" : "회차 매칭 마감 시각 도래 (자동 실행)",
                 run.getId());
         TransitionContext system = new TransitionContext(ActorType.SYSTEM, null, "필수 조건 충족, 자동 확정", run.getId());
 

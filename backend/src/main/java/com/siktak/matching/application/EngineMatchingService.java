@@ -128,6 +128,15 @@ public class EngineMatchingService {
      */
     @Transactional
     public MatchRun runForSlot(Long slotId, Long operatorId) {
+        return runForSlot(slotId, operatorId, operatorId != null);
+    }
+
+    /**
+     * @param operatorId 실행을 일으킨 운영자 ID (데모 시계 점프 포함), 없으면 {@code null}
+     * @param byButton   운영자가 매칭 모니터에서 직접 누른 실행이면 true. 시계 점프로 스케줄러 경로가 돈 것이면 false
+     */
+    @Transactional
+    public MatchRun runForSlot(Long slotId, Long operatorId, boolean byButton) {
         Instant now = Instant.now(clock);
         List<EventSlot> allSlots = eventSlotRepository.findAllByOrderByStartsAtAscIdAsc();
         Map<Long, EventSlot> slotById = allSlots.stream()
@@ -181,7 +190,7 @@ public class EngineMatchingService {
 
         MatchRun run = matchRunRepository.save(MatchRun.start(runKey,
                 slotInfos.stream().map(SlotInfo::date).min(LocalDate::compareTo).orElse(dateOf(trigger)),
-                ALGORITHM, params(targetIds, operatorId, config), candidates.size(), now));
+                ALGORITHM, params(targetIds, operatorId, byButton, config), candidates.size(), now));
         Context ctx = new Context(run, operatorId, now,
                 applications.stream().collect(Collectors.toMap(Application::getId, Function.identity())));
 
@@ -194,7 +203,7 @@ public class EngineMatchingService {
         Set<Long> excludedIds = result.excluded().stream().map(ExcludedCandidate::applicationId)
                 .collect(Collectors.toSet());
         TransitionContext scheduler = new TransitionContext(ActorType.SCHEDULER, operatorId,
-                operatorId == null ? "매칭 마감 시각 도래, 자동 매칭 실행" : "운영자가 매칭 실행 (스케줄러 대신)", run.getId());
+                byButton ? "운영자가 매칭 실행 (스케줄러 대신)" : "매칭 마감 시각 도래, 자동 매칭 실행", run.getId());
         for (Candidate c : candidates) {
             if (!excludedIds.contains(c.applicationId())) {
                 transitionService.apply(ctx.app(c.applicationId()), Transition.M2, scheduler);
@@ -289,10 +298,11 @@ public class EngineMatchingService {
         return s != null && pending(s) && s.getMatchRunAt().isAfter(now);
     }
 
-    private static Map<String, Object> params(List<Long> slotIds, Long operatorId, MatchingConfig config) {
+    private static Map<String, Object> params(List<Long> slotIds, Long operatorId, boolean byButton,
+            MatchingConfig config) {
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("slotIds", slotIds);
-        params.put("trigger", operatorId == null ? "SCHEDULER" : "OPERATOR_BUTTON");
+        params.put("trigger", byButton ? "OPERATOR_BUTTON" : "SCHEDULER");
         params.put("operatorId", operatorId);
         params.put("config", JSON.convertValue(config, Map.class));
         return params;
