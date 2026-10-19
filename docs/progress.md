@@ -160,3 +160,9 @@
   - `pdftotext`로는 PRD 한글이 깨져서, 킥오프 때 받은 동일 PRD(12쪽) 텍스트로 옮기고 기능 ID·상태 enum·수치를 PDF에서 추출한 값과 대조했다
   - `vite-plugin-pwa`, OpenAPI 타입 생성(`src/api/generated/`), `vercel.json` SPA rewrite, CI는 이번 범위 밖이라 아직 없다
 - 다음: Neon 개발 브랜치 연결과 로컬 기동 확인 → 첫 도메인 작업(ERD 기반 V2 마이그레이션, 상태 전이 + audit log)
+
+## 2026-10-20 (V1, 10.4)
+- 완료: 9.2 push(`4102734`, health UP), `docs/submission.md`(P0 기능 ID↔구현 매핑·자동화 지표·확장성·제약), README 링크
+- 변경: 9.2 리베이스 시 `MyTableController` 충돌을 10.2 문구 + 9.2 식당 필드로 병합
+- 이슈: 지표 값은 기록 기반(실측 아님), INF-01·APP-04·RET-02는 △ 표기
+- 다음: V2 10.3 → 스크린샷은 PM 지시 대기
