@@ -14,6 +14,7 @@ import com.siktak.chat.application.ChatService;
 import com.siktak.common.error.BusinessException;
 import com.siktak.common.error.ErrorCode;
 import com.siktak.common.security.AuthUser;
+import com.siktak.matching.application.MatchQueryService;
 import com.siktak.matching.application.MatchingService;
 import com.siktak.matching.domain.DiningTable;
 import com.siktak.matching.domain.TableMember;
@@ -39,7 +40,7 @@ public class MyTableController {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "확정된 테이블이 없습니다."));
         DiningTable table = matchingService.findTable(membership.getDiningTableId()).orElseThrow();
         Long chatRoomId = chatService.findByTable(table.getId()).map(r -> r.getId()).orElse(null);
-        List<String> reasons = List.of("신청 순서에 따라 배치되었습니다 (임시 매칭)");
+        List<String> reasons = List.of(MatchQueryService.CRITERIA_TEXT);
         return new MyTableResponse(table.getId(), table.getEventSlotId(), table.getMemberCount(),
                 table.getConfirmedAt(), chatRoomId, reasons);
     }
