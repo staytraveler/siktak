@@ -111,8 +111,17 @@ public class TableGuidanceService {
             payload.put("tableId", tableId);
             payload.put("chatRoomId", room.getId());
             payload.put("link", "/app/applications/" + m.getApplicationId());
-            notificationService.enqueue(m.getUserId(), "MATCH_CONFIRMED", vars, payload,
-                    "MATCH_CONFIRMED:app-" + m.getApplicationId());
+            String confirmKey = "MATCH_CONFIRMED:app-" + m.getApplicationId();
+            boolean confirmedBefore = notificationService.exists(confirmKey);
+            notificationService.enqueue(m.getUserId(), "MATCH_CONFIRMED", vars, payload, confirmKey);
+            if (venue != null && confirmedBefore) {
+                // 재배정으로 장소가 뒤늦게 정해진 경우: 확정 알림은 "확정 후 안내"였으므로 장소 알림을 추가로 보낸다.
+                // [해석] 알림 유형이 PRD에 없어 MATCH_CONFIRMED 템플릿을 재사용 (decisions.md). 멱등 키: tableId+venueAssigned.
+                vars.put("venueLine", venue.getName() + " (" + venue.getAddress() + ")"
+                        + (t.table.getReservationName() == null ? "" : " · 예약명: " + t.table.getReservationName()));
+                notificationService.enqueue(m.getUserId(), "MATCH_CONFIRMED", vars, payload,
+                        "MATCH_CONFIRMED:table-" + tableId + ":venueAssigned:app-" + m.getApplicationId());
+            }
         }
 
         // 리마인드(1일 전)와 대화 콘텐츠(시작 시각)는 작업으로 예약한다 (DB 폴링 금지)

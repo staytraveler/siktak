@@ -9,4 +9,7 @@ import com.siktak.application.domain.status.StatusHistory;
 public interface StatusHistoryRepository extends JpaRepository<StatusHistory, Long> {
 
     List<StatusHistory> findByTargetTypeAndTargetIdOrderByIdAsc(String targetType, Long targetId);
+
+    List<StatusHistory> findByTargetTypeAndTargetIdInOrderByIdAsc(String targetType,
+            java.util.Collection<Long> targetIds);
 }

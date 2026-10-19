@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,18 +44,20 @@ public class NotificationService {
     private final NotificationSender sender;
     private final ExceptionCaseService exceptionCaseService;
     private final ScheduledJobRegistry jobRegistry;
+    private final JdbcTemplate jdbc;
     private final Clock clock;
     private final int retryMax;
 
     public NotificationService(NotificationRepository notificationRepository,
             NotificationTemplateRepository templateRepository, NotificationSender sender,
-            ExceptionCaseService exceptionCaseService, ScheduledJobRegistry jobRegistry, Clock clock,
+            ExceptionCaseService exceptionCaseService, ScheduledJobRegistry jobRegistry, JdbcTemplate jdbc, Clock clock,
             @Value("${siktak.policy.notification-retry-max:3}") int retryMax) {
         this.notificationRepository = notificationRepository;
         this.templateRepository = templateRepository;
         this.sender = sender;
         this.exceptionCaseService = exceptionCaseService;
         this.jobRegistry = jobRegistry;
+        this.jdbc = jdbc;
         this.clock = clock;
         this.retryMax = retryMax;
     }
@@ -70,6 +73,8 @@ public class NotificationService {
     @Transactional
     public Notification enqueue(Long userId, String templateCode, Map<String, String> vars, Map<String, Object> payload,
             Instant scheduledAt, String dedupKey) {
+        // 같은 키의 동시 요청이 확인-저장 사이에 끼어 유니크 제약 위반(500)이 나지 않게, 키 단위로 트랜잭션 끝까지 직렬화한다.
+        jdbc.queryForObject("select pg_advisory_xact_lock(hashtext(?))::text", String.class, "notification:" + dedupKey);
         Optional<Notification> existing = notificationRepository.findByDedupKey(dedupKey);
         if (existing.isPresent()) {
             return existing.get();
@@ -85,6 +90,11 @@ public class NotificationService {
             jobRegistry.schedule(new ScheduledJob(SEND_JOB, n.getId(), scheduledAt));
         }
         return n;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean exists(String dedupKey) {
+        return notificationRepository.findByDedupKey(dedupKey).isPresent();
     }
 
     /** 작업 실행기가 부른다. 이미 보냈거나 취소된 알림이면 아무것도 하지 않는다 (멱등). */

@@ -29,6 +29,7 @@ export default function AdminTableDetailPage() {
   const id = Number(useParams().id)
   const table = useQuery({ queryKey: ['admin-table', id], queryFn: () => api.adminTable(id) })
   const messages = useQuery({ queryKey: ['admin-table-messages', id], queryFn: () => api.tableMessages(id) })
+  const history = useQuery({ queryKey: ['admin-table-history', id], queryFn: () => api.tableHistory(id) })
   const notifications = useQuery({
     queryKey: ['admin-table-notifications', id],
     queryFn: () => api.tableNotifications(id),
@@ -151,6 +152,27 @@ export default function AdminTableDetailPage() {
               </Link>
             </p>
           )}
+        </Card>
+
+        <Card title="상태 이력">
+          {history.isError && <p className="text-sm text-red-700">{errorMessage(history.error)}</p>}
+          {history.data && history.data.length === 0 && <p className="text-sm text-gray-500">이력이 없어요.</p>}
+          {history.data && history.data.length > 0 && !history.data.some((h) => h.actorType === 'OPERATOR') && (
+            <p className="mb-2 text-sm text-emerald-700">운영자 개입 없이 처리됐어요 (주체: 시스템·스케줄러).</p>
+          )}
+          <ol className="max-h-96 space-y-1 overflow-y-auto border-l-2 border-gray-200 pl-3 text-sm">
+            {history.data?.map((h, i) => (
+              <li key={i}>
+                <span className="text-xs text-gray-500">{formatDateTime(h.at)}</span> <b>{h.target}</b> ·{' '}
+                {h.from ? `${h.from} → ` : ''}
+                {h.to}{' '}
+                <span className={`rounded px-1 text-xs ${h.actorType === 'OPERATOR' ? 'bg-amber-100' : 'bg-gray-100'}`}>
+                  {h.actorType}
+                </span>
+                {h.reason && <span className="text-xs text-gray-600"> · {h.reason}</span>}
+              </li>
+            ))}
+          </ol>
         </Card>
 
         <div className="grid gap-5 lg:grid-cols-2">

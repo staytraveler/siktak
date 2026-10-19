@@ -108,6 +108,9 @@ public class DemoSeedService {
         ids.put("S3", slot("성수", d, 1, -1));
         ids.put("S4", slot("성수", d, 7, 5));
         ids.put("S5", slot("강남", d, 7, 5));
+        // 3회차용 모집 중 회차: J6 이후에도 OPEN이라 다음 일정 추천(RET-02)이 비지 않는다 (10.3)
+        ids.put("S6", slot("성수", d, 14, 12));
+        ids.put("S7", slot("홍대/합정", d, 14, 12));
         return ids;
     }
 

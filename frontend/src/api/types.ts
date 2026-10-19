@@ -418,6 +418,18 @@ export interface TableMessage {
   createdAt: string
 }
 
+export interface TableHistoryEntry {
+  at: string
+  target: string
+  axis: string
+  from: string | null
+  to: string
+  code: string
+  actorType: string
+  actorId: number | null
+  reason: string | null
+}
+
 export interface TableNotification {
   id: number
   userId: number

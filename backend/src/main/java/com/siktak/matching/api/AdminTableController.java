@@ -15,7 +15,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.siktak.application.domain.status.StatusHistory;
+import com.siktak.application.infra.StatusHistoryRepository;
 import com.siktak.chat.application.ChatService;
+import com.siktak.feedback.domain.Attendance;
+import com.siktak.feedback.infra.AttendanceRepository;
 import com.siktak.common.security.AuthUser;
 import com.siktak.matching.application.MatchQueryService;
 import com.siktak.matching.application.TableVenueService;
@@ -44,6 +48,8 @@ public class AdminTableController {
     private final VenueRepository venueRepository;
     private final ProfileRepository profileRepository;
     private final NotificationRepository notificationRepository;
+    private final StatusHistoryRepository statusHistoryRepository;
+    private final AttendanceRepository attendanceRepository;
 
     @GetMapping
     public TableDetailResponse detail(@PathVariable Long tableId) {
@@ -72,6 +78,55 @@ public class AdminTableController {
                         n.getTemplateCode(), n.getSendStatus().name(), n.getAttempts(), n.getLastError(),
                         n.getScheduledAt(), n.getSentAt()))
                 .toList();
+    }
+
+    /**
+     * 테이블·구성원 상태 변경 이력 (시각 순). 구성원 신청의 매칭·참석 상태 전이(status_histories)에 테이블 자체 사건
+     * (확정·식당 배정)을 더한다. 주체(SYSTEM·SCHEDULER·OPERATOR 등)와 원인을 함께 보여 "운영자 개입 없음"을 확인하게 한다.
+     */
+    @GetMapping("/history")
+    public List<HistoryEntry> history(@PathVariable Long tableId) {
+        DiningTable table = queryService.table(tableId);
+        List<TableMember> members = queryService.members(tableId);
+        Map<Long, User> users = userRepository.findAllById(members.stream().map(TableMember::getUserId).toList())
+                .stream().collect(Collectors.toMap(User::getId, Function.identity()));
+        Map<Long, String> nameByApplication = members.stream().collect(Collectors.toMap(TableMember::getApplicationId,
+                m -> users.get(m.getUserId()) == null ? "#" + m.getUserId() : users.get(m.getUserId()).getName(),
+                (a, b) -> a));
+        List<HistoryEntry> entries = new java.util.ArrayList<>();
+        for (StatusHistory h : statusHistoryRepository.findByTargetTypeAndTargetIdInOrderByIdAsc(
+                StatusHistory.TARGET_APPLICATION, nameByApplication.keySet())) {
+            // 매칭·참석 축만. 신청·결제 전이는 테이블과 무관하다.
+            if (h.getAxis().name().equals("MATCH") || h.getAxis().name().equals("ATTENDANCE")) {
+                entries.add(entry(h, nameByApplication.get(h.getTargetId())));
+            }
+        }
+        Map<Long, String> nameByAttendance = new java.util.HashMap<>();
+        for (Attendance a : attendanceRepository.findByDiningTableIdOrderByIdAsc(tableId)) {
+            nameByAttendance.put(a.getId(), nameByApplication.getOrDefault(a.getApplicationId(), "#" + a.getUserId()));
+        }
+        if (!nameByAttendance.isEmpty()) {
+            for (StatusHistory h : statusHistoryRepository.findByTargetTypeAndTargetIdInOrderByIdAsc("ATTENDANCE",
+                    nameByAttendance.keySet())) {
+                entries.add(entry(h, nameByAttendance.get(h.getTargetId())));
+            }
+        }
+        // [해석] 테이블 자체 사건은 별도 이력 테이블이 없어 확정·식당 배정 시각 컬럼에서 만든다 (주체: 시스템. 운영자 재배정은 예외 처리 기록 참조).
+        if (table.getConfirmedAt() != null) {
+            entries.add(new HistoryEntry(table.getConfirmedAt(), "테이블", "TABLE", null, table.getTableStatus().name(),
+                    "TABLE_CONFIRMED", "SYSTEM", null, "자동 확정"));
+        }
+        if (table.getVenueAssignedAt() != null) {
+            entries.add(new HistoryEntry(table.getVenueAssignedAt(), "테이블", "TABLE", null, "VENUE_ASSIGNED",
+                    "VENUE_ASSIGNED", "SYSTEM", null, "식당 배정 (예약명 " + table.getReservationName() + ")"));
+        }
+        entries.sort(java.util.Comparator.comparing(HistoryEntry::at));
+        return entries;
+    }
+
+    private static HistoryEntry entry(StatusHistory h, String who) {
+        return new HistoryEntry(h.getCreatedAt(), who, h.getAxis().name(), h.getFromStatus(), h.getToStatus(),
+                h.getTransitionCode(), h.getActorType().name(), h.getActorId(), h.getReason());
     }
 
     /** 식당 부족 예외 처리: 수용량을 늘린 뒤 다시 배정한다. 이미 배정됐으면 그대로 (멱등). 사유는 예외 기록에 남는다. */
@@ -116,6 +171,10 @@ public class AdminTableController {
         return new MemberResponse(m.getApplicationId(), m.getUserId(), u == null ? null : u.getName(),
                 u == null ? null : u.getLoginId(), p == null ? null : p.getBirthYear(), p == null ? null : p.getGender(),
                 p == null ? null : p.getMbti(), p == null ? List.of() : p.getInterests());
+    }
+
+    public record HistoryEntry(Instant at, String target, String axis, String from, String to, String code,
+            String actorType, Long actorId, String reason) {
     }
 
     public record AssignVenueRequest(String reason) {

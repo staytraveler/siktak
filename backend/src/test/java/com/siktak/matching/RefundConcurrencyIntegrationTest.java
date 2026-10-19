@@ -107,6 +107,7 @@ class RefundConcurrencyIntegrationTest {
                 jdbc.update("delete from match_resolutions where application_id = ?", appId);
             }
             jdbc.update("delete from user_passes where user_id = ?", userId);
+            jdbc.update("delete from notifications where user_id = ?", userId);
             for (Long appId : appIds) {
                 jdbc.update("delete from application_slot_choices where application_id = ?", appId);
             }

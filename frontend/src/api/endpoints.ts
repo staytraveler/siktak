@@ -6,6 +6,7 @@ import type {
   MatchRunDetail,
   MatchRunItem,
   TableMessage,
+  TableHistoryEntry,
   TableNotification,
   AdminReport,
   AdminTable,
@@ -132,7 +133,8 @@ export const api = {
   matchRun: (id: number) => get<MatchRunDetail>(`/api/v1/admin/match-runs/${id}`),
   adminTable: (id: number) => get<AdminTableDetail>(`/api/v1/admin/tables/${id}`),
   tableMessages: (id: number) => get<TableMessage[]>(`/api/v1/admin/tables/${id}/messages`),
-  tableNotifications: (id: number) => get<TableNotification[]>(`/api/v1/admin/tables/${id}/notifications`),
+  tableHistory: (id: number) => get<TableHistoryEntry[]>(`/api/v1/admin/tables/${id}/history`),
+  tableNotifications:(id: number) => get<TableNotification[]>(`/api/v1/admin/tables/${id}/notifications`),
 
   // 데모 도구
   demoStatus: () => get<DemoStatus>('/api/v1/admin/demo'),
