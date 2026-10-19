@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../../api/endpoints'
 import type { ChatMessageItem } from '../../api/types'
@@ -18,7 +19,7 @@ const MESSAGE_LABEL: Record<string, string> = {
 }
 
 // 오늘의 테이블 (/app/applications/:id/table): 확정 후 단체방. 시스템 안내 메시지를 읽는다. (Table.html)
-// [해석] 메시지 보내기 API가 아직 없어 입력창은 두지 않았다 (읽기 전용).
+// 하단 입력창으로 구성원이 메시지를 보낸다 (POST /tables/{id}/messages).
 export default function TablePage() {
   const id = Number(useParams().id)
   const applications = useQuery({ queryKey: ['my-applications'], queryFn: api.myApplications })
@@ -66,9 +67,49 @@ export default function TablePage() {
         )}
         {messages.data?.length === 0 && <p className="text-sm text-muted">아직 도착한 안내가 없어요.</p>}
         {messages.data?.map((m) => <Message key={m.id} m={m} />)}
-        <p className="pt-2 text-center text-[11px] text-muted">단체방은 안내를 읽는 공간이에요. 메시지 보내기는 준비 중이에요.</p>
       </div>
+      {table.data && <Composer tableId={table.data.tableId} chatRoomId={table.data.chatRoomId} />}
     </div>
+  )
+}
+
+function Composer({ tableId, chatRoomId }: { tableId: number; chatRoomId: number | null }) {
+  const queryClient = useQueryClient()
+  const [text, setText] = useState('')
+  const send = useMutation({
+    mutationFn: (content: string) => api.sendTableMessage(tableId, content),
+    onSuccess: () => {
+      setText('')
+      return queryClient.invalidateQueries({ queryKey: ['chat', chatRoomId] })
+    },
+  })
+  const content = text.trim()
+  return (
+    <form
+      className="sticky bottom-0 border-t-[1.5px] border-ink bg-paper px-4 py-3"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (content && !send.isPending) send.mutate(content)
+      }}
+    >
+      {send.isError && <p className="mb-1.5 text-[11px] text-accent">메시지를 보내지 못했어요. 이용 제한 상태인지 확인해주세요.</p>}
+      <div className="flex gap-2">
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          maxLength={500}
+          placeholder="동석자에게 메시지 보내기"
+          className="min-w-0 flex-1 border-[1.5px] border-ink bg-card px-3 py-2.5 text-sm outline-none"
+        />
+        <button
+          type="submit"
+          disabled={!content || send.isPending}
+          className="shrink-0 border-[1.5px] border-ink bg-ink px-4 text-sm font-bold text-cream disabled:opacity-40"
+        >
+          보내기
+        </button>
+      </div>
+    </form>
   )
 }
 
@@ -82,6 +123,25 @@ function Person({ label, caption, index, me }: { label: string; caption: string;
 }
 
 function Message({ m }: { m: ChatMessageItem }) {
+  if (m.senderType === 'USER') {
+    return (
+      <div className={`flex items-end gap-2 ${m.mine ? 'flex-row-reverse' : ''}`}>
+        {!m.mine && (
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sage text-[11px] font-bold">
+            {m.senderLabel ?? '?'}
+          </span>
+        )}
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <div
+            className={`max-w-[260px] border-[1.5px] border-ink px-3 py-2.5 text-sm leading-normal whitespace-pre-line [overflow-wrap:anywhere] ${m.mine ? 'bg-mustard' : 'bg-card'}`}
+          >
+            {m.body}
+          </div>
+          <span className={`text-[10px] text-muted ${m.mine ? 'text-right' : ''}`}>{formatDateTime(m.createdAt)}</span>
+        </div>
+      </div>
+    )
+  }
   const topics = Array.isArray(m.payload?.topics) ? (m.payload.topics as { title: string; body?: string }[]) : []
 
   if (m.messageType === 'CURATION') {

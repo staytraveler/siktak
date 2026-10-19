@@ -251,7 +251,7 @@ public class TableGuidanceService {
     }
 
     /** [해석] 식당에 지도 링크가 없으면 식당명+주소 검색 링크로 대신한다 (INF-03 지도 링크 필수). */
-    static String mapUrl(Venue venue) {
+    public static String mapUrl(Venue venue) {
         if (venue.getMapUrl() != null && !venue.getMapUrl().isBlank()) {
             return venue.getMapUrl();
         }

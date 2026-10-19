@@ -38,12 +38,18 @@ export interface MyTable {
   confirmedAt: string
   chatRoomId: number | null
   reasons: string[]
+  venueName: string | null
+  venueAddress: string | null
+  reservationName: string | null
+  mapUrl: string | null
 }
 
 export interface ChatMessageItem {
   id: number
   senderType: 'USER' | 'SYSTEM'
   senderId: number | null
+  senderLabel: string | null
+  mine: boolean
   messageType: string
   body: string
   payload: Record<string, unknown> | null

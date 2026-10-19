@@ -25,15 +25,20 @@ public class ChatController {
 
     @GetMapping("/{chatRoomId}/messages")
     public List<ChatMessageResponse> messages(@AuthenticationPrincipal AuthUser user, @PathVariable Long chatRoomId) {
-        return chatService.messagesFor(chatRoomId, user.id()).stream().map(ChatMessageResponse::from).toList();
+        List<ChatMessage> messages = chatService.messagesFor(chatRoomId, user.id());
+        Map<Long, String> initials = chatService.senderInitials(messages);
+        return messages.stream().map(m -> ChatMessageResponse.from(m, user.id(), initials)).toList();
     }
 
-    public record ChatMessageResponse(Long id, String senderType, Long senderId, String messageType, String body,
-            Map<String, Object> payload, Instant createdAt) {
+    /** senderId는 내 메시지일 때만 내려준다. senderLabel은 이니셜뿐이다 (실명·연락처 비노출). */
+    public record ChatMessageResponse(Long id, String senderType, Long senderId, String senderLabel, boolean mine,
+            String messageType, String body, Map<String, Object> payload, Instant createdAt) {
 
-        static ChatMessageResponse from(ChatMessage m) {
-            return new ChatMessageResponse(m.getId(), m.getSenderType().name(), m.getSenderId(),
-                    m.getMessageType().name(), m.getBody(), m.getPayload(), m.getCreatedAt());
+        public static ChatMessageResponse from(ChatMessage m, Long viewerId, Map<Long, String> initials) {
+            boolean mine = m.getSenderId() != null && m.getSenderId().equals(viewerId);
+            return new ChatMessageResponse(m.getId(), m.getSenderType().name(), mine ? m.getSenderId() : null,
+                    m.getSenderId() == null ? null : initials.get(m.getSenderId()), mine, m.getMessageType().name(),
+                    m.getBody(), m.getPayload(), m.getCreatedAt());
         }
     }
 }
