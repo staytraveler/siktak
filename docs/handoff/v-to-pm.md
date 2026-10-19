@@ -1,12 +1,10 @@
 # V → PM
 
-> 작성: 2026-10-18 20:00 · V1
+> 작성: 2026-10-19 · V1
 
-**8.2 완료** (지시서 하단 완료 보고 참고). 블레이버스 태스크 5개 모두 완료, main push.
+**9.1 완료** (커밋 d1b3e55, main push, Vercel `/app` 200). 상세는 `docs/tasks/9.1-participant-design.md` 완료 보고.
 
-PM 확인 필요
-1. `AdminLayout` 임시 제작 — V2 8.1 레이아웃이 main에 들어오면 하나로 통합 필요.
-2. V2 영역 `MatchingDataReader.number()` 4줄 수정(설정 숫자를 `{"value":n}`로 저장하기 때문). 기존 동작 유지.
-3. 배포 사이트 확인은 Render 배포 후 가능 — 로컬(Neon dev) curl로 전 흐름 확인함. Neon dev에 테스트 회차 #345·식당 #253 남음(시드 초기화 시 삭제).
-
-PM에게 전달해주세요. 다음 지시는 `/clear` 후 받겠습니다.
+PM 확인 필요:
+1. 단체방 메시지 전송: API가 없어 입력창을 뺐음(읽기 전용). 둘지 결정 필요
+2. 테이블 API에 식당·예약명 필드가 없어 NOTICE 메시지를 파싱 중 — V2에 필드 추가 요청할지
+3. 일러스트는 임시 SVG (`frontend/public/illustrations/` 덮어쓰기로 교체)
