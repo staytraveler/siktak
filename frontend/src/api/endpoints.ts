@@ -163,6 +163,7 @@ export const api = {
   // 데모 도구
   // 헤더의 테스트용 시간 (참가자·운영자 공통)
   demoClock: () => get<{ enabled: boolean; now: string; offsetSeconds: number }>('/api/v1/demo/clock'),
+  demoResetAll: () => post<{ enabled: boolean; now: string; offsetSeconds: number }>('/api/v1/demo/clock/reset'),
   demoSetClock: (at: string) => post<{ enabled: boolean; now: string; offsetSeconds: number }>('/api/v1/demo/clock', { at }),
   // 운영자: 참석 관리 · 결제·환불 · 자동 메시지 관리 (PRD 11장)
   adminAttendances: (slotId: number) => get<AdminAttendance[]>(`/api/v1/admin/slots/${slotId}/attendances`),

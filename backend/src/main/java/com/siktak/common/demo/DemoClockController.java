@@ -38,6 +38,16 @@ public class DemoClockController {
         return new ClockResponse(clockService.isEnabled(), clockService.now(), clockService.offset().toSeconds());
     }
 
+    /**
+     * 처음 상태로 초기화: 모든 데이터를 지우고 시드를 다시 넣으며 시계를 실제 현재 시각으로 되돌린다 (데모 도구와 같은 동작).
+     * 시간은 앞으로만 갈 수 있으므로, 되돌리는 유일한 방법이다. 모든 사용자 데이터가 시드 상태로 돌아간다.
+     */
+    @PostMapping("/reset")
+    public ClockResponse reset(@AuthenticationPrincipal AuthUser user) {
+        demoService.reset(user.id());
+        return get();
+    }
+
     /** 지정한 시각으로 옮기고, 그 시각까지 도래한 시간 기반 작업(매칭·확정·안내 등)을 실행한다. 과거로는 안 된다. */
     @PostMapping
     public ClockResponse set(@AuthenticationPrincipal AuthUser user, @Valid @RequestBody SetClockRequest request) {

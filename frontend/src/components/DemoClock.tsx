@@ -46,8 +46,24 @@ export default function DemoClock() {
     },
   })
 
+  const reset = useMutation({
+    mutationFn: () => api.demoResetAll(),
+    onSuccess: () => {
+      setOpen(false)
+      // 데이터가 시드로 돌아가 계정 ID가 바뀔 수 있다 — 캐시를 비우고 다시 불러온다 (로그인이 무효면 로그인 화면으로 이동)
+      queryClient.clear()
+      window.location.reload()
+    },
+  })
+
   if (!clock.data?.enabled) return null
   const nowMs = Date.parse(clock.data.now)
+  // 실제 현재 시각보다 얼마나 앞서 있는지 (offsetSeconds)
+  const aheadMin = Math.round(clock.data.offsetSeconds / 60)
+  const aheadText =
+    aheadMin <= 0
+      ? '지금은 실제 현재 시각이에요.'
+      : `실제 현재 시각보다 ${Math.floor(aheadMin / 1440) > 0 ? `${Math.floor(aheadMin / 1440)}일 ` : ''}${Math.floor((aheadMin % 1440) / 60)}시간 ${aheadMin % 60}분 앞서 있어요.`
 
   const openPanel = () => {
     move.reset()
@@ -73,9 +89,13 @@ export default function DemoClock() {
       {open && (
         <div className="absolute left-1/2 top-full z-50 mt-2 w-[280px] -translate-x-1/2 rounded-2xl border border-line bg-card p-3 shadow-lg">
           <b className="text-sm">테스트용 시간 이동</b>
+          <p className="mt-1 rounded-lg border border-accent bg-gold-soft px-2 py-1 text-[11px] font-bold text-accent">
+            ⚠ 시간은 앞으로만 갈 수 있어요. 되돌릴 수 없어요.
+          </p>
+          <p className="mt-1 text-[11px] font-bold text-ink">{aheadText}</p>
           <p className="mt-1 text-[11px] leading-relaxed text-muted">
             실제 시간 대신 이 시간으로 서비스가 동작해요. 옮기면 그 시각까지의 매칭·확정·안내가 자동 실행돼요.
-            과거로는 되돌릴 수 없어요(초기화는 운영자 데모 도구).
+            서버 전체 공통 시간이라 모든 사용자에게 적용돼요.
           </p>
           <input
             type="datetime-local"
@@ -98,7 +118,23 @@ export default function DemoClock() {
             ))}
           </div>
           {move.isError && <p className="mt-2 text-xs text-accent">{errorMessage(move.error)}</p>}
-          <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            disabled={reset.isPending}
+            onClick={() => {
+              if (
+                window.confirm(
+                  '처음 상태로 초기화할까요?\n\n· 시간이 실제 현재 시각으로 돌아가요.\n· 모든 신청·매칭·알림 데이터가 처음 시드 상태로 돌아가요.\n· 다른 사용자의 화면에도 똑같이 적용돼요.',
+                )
+              )
+                reset.mutate()
+            }}
+            className="mt-3 min-h-[40px] w-full rounded-xl border border-red-300 bg-paper text-sm font-bold text-red-700 disabled:opacity-50"
+          >
+            {reset.isPending ? '초기화하는 중…' : '↺ 실제 현재 시각으로 초기화 (데이터도 처음 상태로)'}
+          </button>
+          {reset.isError && <p className="mt-2 text-xs text-accent">{errorMessage(reset.error)}</p>}
+          <div className="mt-2 flex gap-2">
             <button
               type="button"
               onClick={() => setOpen(false)}

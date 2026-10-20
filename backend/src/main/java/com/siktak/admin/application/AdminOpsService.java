@@ -37,7 +37,7 @@ public class AdminOpsService {
                 from applications a
                 join users u on u.id = a.user_id
                 left join payments p on p.id = a.payment_id
-                where (? is null or a.payment_status = ?)
+                where (cast(? as text) is null or a.payment_status = cast(? as text))
                 order by a.id desc
                 limit 500
                 """, (rs, i) -> new PaymentRow(rs.getLong("application_id"), rs.getString("login_id"),
@@ -92,7 +92,7 @@ public class AdminOpsService {
                 select n.id, u.login_id, u.name, n.template_code, n.channel, n.send_status, n.attempts, n.last_error,
                        n.push_status, n.scheduled_at, n.sent_at
                 from notifications n join users u on u.id = n.user_id
-                where (? is null or n.send_status = ?)
+                where (cast(? as text) is null or n.send_status = cast(? as text))
                 order by n.id desc
                 limit 300
                 """, (rs, i) -> new HistoryRow(rs.getLong("id"), rs.getString("login_id"), rs.getString("name"),
