@@ -23,11 +23,20 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 
     private final AuthService authService;
+    private final com.siktak.user.application.GuestService guestService;
 
     /** 로그인 → Access 토큰(24시간). 이후 요청은 {@code Authorization: Bearer <accessToken>}. */
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         AuthService.LoginResult result = authService.login(request.loginId(), request.password());
+        return new LoginResponse(result.token().accessToken(), "Bearer", result.token().expiresAt(),
+                MeResponse.of(result.user()));
+    }
+
+    /** 시연용: 새 참가자 계정을 만들고 바로 로그인시킨다 (데모 모드에서만). */
+    @PostMapping("/guest")
+    public LoginResponse guest() {
+        AuthService.LoginResult result = guestService.start();
         return new LoginResponse(result.token().accessToken(), "Bearer", result.token().expiresAt(),
                 MeResponse.of(result.user()));
     }

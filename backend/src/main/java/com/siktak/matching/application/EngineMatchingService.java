@@ -439,6 +439,8 @@ public class EngineMatchingService {
         }
         Instant now = Instant.now(clock);
         EventSlot slot = eventSlotRepository.findById(table.getEventSlotId()).orElseThrow();
+        // STA-07: 빈 자리에 조건에 맞는 대기자가 있으면 먼저 자동 충원한다. 충원되면 아래에서 인원 4명 이상이라 테이블이 유지된다.
+        fillFromWaitlist(table, slot, now);
         List<EventSlot> allSlots = eventSlotRepository.findAllByOrderByStartsAtAscIdAsc();
 
         List<TableMember> remainingMembers = tableMemberRepository.findByDiningTableIdAndActiveTrue(tableId);
@@ -497,6 +499,7 @@ public class EngineMatchingService {
             for (TableMember m : remainingMembers) {
                 Application a = applications.get(m.getApplicationId());
                 m.leave(now);
+                tableMemberRepository.saveAndFlush(m);
                 Long target = toTable.get(a.getId());
                 if (target != null) {
                     transitionService.apply(a, Transition.M10, ctx.system("동석자 취소로 테이블이 성립하지 않아 재배치 시도"));
@@ -541,6 +544,69 @@ public class EngineMatchingService {
         run.complete(summary, now);
     }
 
+    /**
+     * 확정 후 취소로 빈 자리를 대기자로 채운다 (STA-07, PRD 15장). 대기자 = 이 회차를 선택했고 아직 매칭 대기 중인 결제 완료 신청.
+     * 필수 조건·최소 점수를 통과한 대기자 한 명을 엔진이 고른다.
+     * [해석] PRD는 "참가 의사를 확인하고 응답 기한 후 다음 대기자로 넘어간다"고 했지만, MVP는 의사 확인 없이 바로 확정하고
+     * 새 동석자에게 확정 알림을 보낸다 (참가자가 원하지 않으면 취소할 수 있다).
+     * @return 충원했으면 true
+     */
+    private boolean fillFromWaitlist(DiningTable table, EventSlot slot, Instant now) {
+        List<TableMember> members = tableMemberRepository.findByDiningTableIdAndActiveTrue(table.getId());
+        if (members.isEmpty() || members.size() >= MatchingEngine.TABLE_MAX_SIZE) {
+            return false;
+        }
+        Set<Long> memberUserIds = members.stream().map(TableMember::getUserId).collect(Collectors.toSet());
+        List<Application> waiting = applicationQuery.findCandidates(List.of(slot.getId())).stream()
+                .filter(a -> !memberUserIds.contains(a.getUserId()))
+                .sorted((a, b) -> Long.compare(a.getId(), b.getId())).toList();
+        if (waiting.isEmpty()) {
+            return false;
+        }
+        List<Long> ids = new ArrayList<>();
+        members.forEach(m -> ids.add(m.getApplicationId()));
+        waiting.forEach(a -> ids.add(a.getId()));
+        Map<Long, Application> applications = applicationRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Application::getId, Function.identity()));
+        Map<Long, UserProfile> profiles = dataReader.profiles(
+                applications.values().stream().map(Application::getUserId).distinct().toList());
+        Map<Long, EventSlot> slotById = Map.of(slot.getId(), slot);
+        List<Long> targetIds = List.of(slot.getId());
+        List<Candidate> memberCands = new ArrayList<>();
+        for (TableMember m : members) {
+            UserProfile p = profiles.get(m.getUserId());
+            if (p != null && p.complete()) {
+                memberCands.add(toCandidate(applications.get(m.getApplicationId()), p, targetIds, slotById, now));
+            }
+        }
+        List<Candidate> waiterCands = new ArrayList<>();
+        for (Application a : waiting) {
+            UserProfile p = profiles.get(a.getUserId());
+            if (p != null && p.complete()) {
+                waiterCands.add(toCandidate(a, p, targetIds, slotById, now));
+            }
+        }
+        List<Long> userIds = applications.values().stream().map(Application::getUserId).distinct().toList();
+        Set<UserPair> wantAgain = dataReader.wantAgainPairs(userIds);
+        java.util.OptionalLong picked = engine.pickWaiter(memberCands, waiterCands, dataReader.blockedPairs(userIds),
+                cancelEncounters(userIds, wantAgain), wantAgain, dataReader.config());
+        if (picked.isEmpty()) {
+            return false;
+        }
+        Application w = applications.get(picked.getAsLong());
+        transitionService.apply(w, Transition.M2,
+                TransitionContext.of(ActorType.SCHEDULER, null, "동석자 취소로 빈 자리가 생겨 대기자 자동 충원 시도"));
+        transitionService.apply(w, Transition.M3, TransitionContext.system("대기자 자동 충원: 필수 조건·최소 점수 충족, 자동 확정"));
+        w.assignSlot(slot.getId());
+        tableMemberRepository.save(TableMember.join(table.getId(), w.getId(), w.getUserId(), now));
+        events.publishEvent(new TableMemberConfirmedEvent(table.getId(), w.getId(), w.getUserId()));
+        ChatRoom room = chatService.openForTable(table.getId(), List.of(w.getUserId()));
+        chatService.postSystemMessage(room.getId(), ChatMessage.MessageType.NOTICE,
+                "자리가 나서 대기 중이던 새 동석자 1명이 합류했어요.", "table-" + table.getId() + ":waitlist-" + w.getId(), null);
+        eventPublisher.publishEvent(new TableGuidanceRequested(table.getId()));
+        return true;
+    }
+
     /** 이전 만남 쌍에서 재회 희망 쌍은 뺀다 (감점하지 않는다). */
     private Set<UserPair> cancelEncounters(List<Long> userIds, Set<UserPair> wantAgain) {
         Set<UserPair> encounters = new java.util.HashSet<>(dataReader.encounters(userIds));
@@ -553,6 +619,151 @@ public class EngineMatchingService {
         table.updateComposition(update.members().size(),
                 BigDecimal.valueOf(update.scoreDetail().total()).setScale(2, RoundingMode.HALF_UP),
                 scoreDetail(update.scoreDetail()), JSON.convertValue(update.summary(), Map.class));
+    }
+
+    // ------------------------------------------------------------------ 운영자 긴급 수정 (MAT-14, P1)
+
+    /**
+     * 운영자가 확정된 참가자를 같은 회차의 다른 확정 테이블로 옮긴다 (MAT-14 "참가자 이동"). 확정 후 취소·안전 문제 같은 예외 상황
+     * 전용이라 사유가 필수다. 옮긴 뒤에도 필수 조건(최대 6명·연령 차 8살·차단·피하고 싶음)을 다시 검증하고, 원래 테이블이 4명
+     * 미만이 되면 거절한다(그때는 테이블 해제를 쓴다). 변경은 예외 처리함에 "처리 완료 + 사유 + 운영자"로 남는다.
+     */
+    @Transactional
+    public void operatorMove(Long operatorId, Long applicationId, Long toTableId, String reason) {
+        requireReason(reason);
+        TableMember member = tableMemberRepository.findByApplicationIdAndActiveTrue(applicationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "확정된 테이블 구성원이 아닙니다."));
+        DiningTable from = diningTableRepository.findById(member.getDiningTableId()).orElseThrow();
+        DiningTable to = diningTableRepository.findById(toTableId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "옮길 테이블을 찾을 수 없습니다."));
+        if (from.getId().equals(to.getId()) || !from.getEventSlotId().equals(to.getEventSlotId())
+                || from.getTableStatus() != TableStatus.CONFIRMED || to.getTableStatus() != TableStatus.CONFIRMED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "같은 회차의 다른 확정 테이블로만 옮길 수 있습니다.");
+        }
+        List<TableMember> fromMembers = tableMemberRepository.findByDiningTableIdAndActiveTrue(from.getId());
+        List<TableMember> toMembers = tableMemberRepository.findByDiningTableIdAndActiveTrue(to.getId());
+        if (fromMembers.size() - 1 < 4) {
+            throw new BusinessException(ErrorCode.CONFLICT, "원래 테이블이 4명 미만이 돼요. 대신 테이블 해제를 써 주세요.");
+        }
+        if (toMembers.size() + 1 > MatchingEngine.TABLE_MAX_SIZE) {
+            throw new BusinessException(ErrorCode.CONFLICT, "옮길 테이블이 이미 6명이에요.");
+        }
+        Instant now = Instant.now(clock);
+        EventSlot slot = eventSlotRepository.findById(from.getEventSlotId()).orElseThrow();
+        List<Long> appIds = new ArrayList<>();
+        fromMembers.forEach(m -> appIds.add(m.getApplicationId()));
+        toMembers.forEach(m -> appIds.add(m.getApplicationId()));
+        Map<Long, Application> applications = applicationRepository.findAllById(appIds).stream()
+                .collect(Collectors.toMap(Application::getId, Function.identity()));
+        Map<Long, UserProfile> profiles = dataReader.profiles(
+                applications.values().stream().map(Application::getUserId).distinct().toList());
+        Map<Long, EventSlot> slotById = Map.of(slot.getId(), slot);
+        List<Long> targetIds = List.of(slot.getId());
+        Function<TableMember, Candidate> toCand = m -> toCandidate(applications.get(m.getApplicationId()),
+                profiles.get(m.getUserId()), targetIds, slotById, now);
+        Candidate moving = toCand.apply(member);
+        List<Candidate> fromAfter = fromMembers.stream().filter(m -> !m.getApplicationId().equals(applicationId))
+                .map(toCand).toList();
+        List<Candidate> toAfter = new ArrayList<>(toMembers.stream().map(toCand).toList());
+        toAfter.add(moving);
+        List<Long> userIds = applications.values().stream().map(Application::getUserId).distinct().toList();
+        Set<UserPair> blocked = dataReader.blockedPairs(userIds);
+        // 필수 조건 재검증: 옮겨 가는 쪽만 새 조합이다 (원래 테이블은 사람이 빠질 뿐이라 조건이 더 나빠지지 않는다)
+        if (!engine.compatible(toAfter, blocked)) {
+            throw new BusinessException(ErrorCode.CONFLICT,
+                    "연령 차(8살 이내) 또는 차단·피하고 싶음 관계 때문에 그 테이블로 옮길 수 없어요. (필수 조건은 완화하지 않아요)");
+        }
+        Set<UserPair> wantAgain = dataReader.wantAgainPairs(userIds);
+        Set<UserPair> encounters = cancelEncounters(userIds, wantAgain);
+        MatchingConfig config = dataReader.config();
+        SlotInfo slotInfo = new SlotInfo(slot.getId(), dateOf(slot), slot.getRegion().getId());
+
+        member.leave(now);
+        // 예전 소속을 먼저 DB에 반영해야 "신청당 활성 소속 1개" 제약에 걸리지 않는다 (insert가 update보다 먼저 나가는 것을 막는다)
+        tableMemberRepository.saveAndFlush(member);
+        tableMemberRepository.save(TableMember.join(to.getId(), applicationId, member.getUserId(), now));
+        events.publishEvent(new TableMemberMovedEvent(applicationId, from.getId(), to.getId()));
+        chatService.removeMember(from.getId(), member.getUserId());
+        ChatRoom toRoom = chatService.openForTable(to.getId(), List.of(member.getUserId()));
+        String stamp = String.valueOf(now.toEpochMilli());
+        chatService.postSystemMessage(toRoom.getId(), ChatMessage.MessageType.NOTICE,
+                "운영자 조정으로 새 동석자 1명이 합류했어요.", "table-" + to.getId() + ":op-join-" + applicationId + "-" + stamp, null);
+        chatService.postSystemMessage(chatService.openForTable(from.getId(), List.of()).getId(),
+                ChatMessage.MessageType.NOTICE, "운영자 조정으로 동석자 1명이 다른 테이블로 옮겨 갔어요.",
+                "table-" + from.getId() + ":op-leave-" + applicationId + "-" + stamp, null);
+        applyUpdate(from, engine.describe(slotInfo, from.getId(), fromAfter, encounters, blocked, wantAgain, config));
+        applyUpdate(to, engine.describe(slotInfo, to.getId(), toAfter, encounters, blocked, wantAgain, config));
+        eventPublisher.publishEvent(new TableGuidanceRequested(to.getId()));
+        recordOperatorEdit(operatorId, applicationId, to.getId(), "참가자 이동", reason,
+                Map.of("fromTableId", from.getId(), "toTableId", to.getId()));
+    }
+
+    /**
+     * 운영자가 확정 테이블을 해제한다 (MAT-14 "테이블 해제"). 구성원은 대체 일정·보관·환불 선택으로 넘어가고 단체방은 닫힌다.
+     * 사유 필수, 변경은 예외 처리함에 처리 완료로 남는다.
+     */
+    @Transactional
+    public void operatorDissolve(Long operatorId, Long tableId, String reason) {
+        requireReason(reason);
+        DiningTable table = diningTableRepository.findById(tableId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "테이블을 찾을 수 없습니다."));
+        if (table.getTableStatus() != TableStatus.CONFIRMED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "확정된 테이블만 해제할 수 있습니다.");
+        }
+        Instant now = Instant.now(clock);
+        EventSlot slot = eventSlotRepository.findById(table.getEventSlotId()).orElseThrow();
+        List<EventSlot> allSlots = eventSlotRepository.findAllByOrderByStartsAtAscIdAsc();
+        List<TableMember> members = tableMemberRepository.findByDiningTableIdAndActiveTrue(tableId);
+        Map<Long, Application> applications = applicationRepository
+                .findAllById(members.stream().map(TableMember::getApplicationId).toList()).stream()
+                .collect(Collectors.toMap(Application::getId, Function.identity()));
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("slotIds", List.of(slot.getId()));
+        params.put("trigger", "OPERATOR_DISSOLVE");
+        params.put("tableId", tableId);
+        params.put("operatorId", operatorId);
+        MatchRun run = matchRunRepository.save(MatchRun.start("operator-dissolve-" + tableId, dateOf(slot), ALGORITHM,
+                params, members.size(), now));
+        Context ctx = new Context(run, operatorId, now, applications);
+        MatchingConfig config = dataReader.config();
+        for (TableMember m : members) {
+            m.leave(now);
+            Application a = applications.get(m.getApplicationId());
+            failApplication(ctx, new UnplacedCandidate(a.getId(), a.getUserId(), slot.getId(), ReasonCode.UNDER_MIN_SIZE,
+                    ReasonCode.UNDER_MIN_SIZE), allSlots, config, true);
+            ctx.failReasons.put(a.getId(), "운영자가 안전·운영상 사유로 테이블을 조정해 이 일정에서 매칭되지 못했어요");
+            events.publishEvent(new TableMemberDroppedEvent(a.getId(), tableId));
+        }
+        chatService.postSystemMessage(chatService.openForTable(tableId, List.of()).getId(),
+                ChatMessage.MessageType.NOTICE, "운영자 조정으로 이 테이블이 해제됐어요. 안내 알림을 확인해 주세요.",
+                "table-" + tableId + ":op-dissolved", null);
+        table.dissolve();
+        chatService.closeRoom(tableId);
+        writeFailReasons(ctx);
+        for (TableMember m : members) {
+            eventPublisher.publishEvent(new MatchFailureRecorded(m.getApplicationId()));
+        }
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("outcome", "OPERATOR_DISSOLVED");
+        summary.put("tableId", tableId);
+        summary.put("members", members.size());
+        run.complete(summary, now);
+        recordOperatorEdit(operatorId, null, tableId, "테이블 해제", reason, Map.of("tableId", tableId));
+    }
+
+    private static void requireReason(String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "긴급 수정 사유를 입력해 주세요.");
+        }
+    }
+
+    /** 변경 이력: 예외 처리함에 처리 완료 건으로 남긴다 (누가·왜·무엇을). */
+    private void recordOperatorEdit(Long operatorId, Long applicationId, Long tableId, String what, String reason,
+            Map<String, Object> detail) {
+        String key = "OPERATOR_EDIT:" + what + ":" + tableId + ":" + System.nanoTime();
+        exceptionCaseService.open(CaseType.MATCH_CONFLICT, key, applicationId, tableId,
+                "운영자 긴급 수정(" + what + ")", detail);
+        exceptionCaseService.resolve(key, operatorId, what + " — " + reason.trim());
     }
 
     /** 연령·차단·점수 기준 등 "조건" 때문에 못 배치된 경우 (인원 부족과 구분한다). */

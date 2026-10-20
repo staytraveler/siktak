@@ -324,6 +324,39 @@ function buildSteps(p: Progress): Step[] {
   ]
 }
 
+const EXTRAS: { title: string; body: string; view: View }[] = [
+  {
+    title: '신청·참석 취소와 환불',
+    body: '확정 전 취소는 자동 환불, 보관 이용권은 복원돼요. 행사 2일 전 이후의 취소는 환불이 없고 이용 제한 검토 대상이 돼요.',
+    view: { label: '내 신청에서 취소 안내 보기', as: 'demo01', to: '/app' },
+  },
+  {
+    title: '취소 시 대기자 자동 충원·재배치',
+    body: '확정 테이블에서 1명이 취소하면 조건에 맞는 대기자가 자동으로 들어오고, 인원이 4명 미만이 되면 다른 테이블로 옮기거나 대체 일정을 안내해요.',
+    view: { label: '운영자: 매칭 모니터에서 취소 실행 기록 보기', as: 'admin', to: '/admin/matching' },
+  },
+  {
+    title: '운영자 긴급 수정',
+    body: '확정 후 안전 문제 같은 예외에서만, 사유를 적고 참가자를 다른 테이블로 옮기거나 테이블을 해제할 수 있어요. 필수 조건은 다시 검증하고, 변경은 예외 처리함에 남아요.',
+    view: { label: '운영자: 테이블 상세에서 보기', as: 'admin', to: '/admin/matching' },
+  },
+  {
+    title: '멤버십·보관 이용권',
+    body: '1·3·6개월 멤버십을 모의 결제로 구매해 결제 없이 신청하고, 매칭에 실패해 보관한 이용권도 다음 신청에 쓸 수 있어요.',
+    view: { label: '일정에서 이용권 보기', as: 'demo01', to: '/app/slots' },
+  },
+  {
+    title: '앱 푸시·자동 메시지 관리',
+    body: '알림은 앱 안에 쌓이고 푸시도 함께 발송돼요. 운영자는 템플릿을 고치거나 끄고, 발송 성공·실패·재시도 이력을 볼 수 있어요. 피드백 미응답 리마인드는 행사 하루 뒤 한 번만 나가요.',
+    view: { label: '운영자: 자동 메시지 보기', as: 'admin', to: '/admin/messages' },
+  },
+  {
+    title: '개인정보 삭제·탈퇴',
+    body: '로그인 화면의 "새 참가자로 시작하기"로 만든 계정은 프로필 화면에서 실제로 탈퇴(개인정보 삭제)해 볼 수 있어요. 보관·삭제 정책도 같은 화면에 있어요.',
+    view: { label: '내 프로필에서 정책 보기', as: 'demo01', to: '/app/profile' },
+  },
+]
+
 const stepDone = (step: Step) => step.subs.length > 0 && step.subs.every((s) => s.done)
 
 export default function GuidePage() {
@@ -385,7 +418,7 @@ export default function GuidePage() {
       </header>
       <h1 className="mt-2 font-serif text-[26px] leading-tight font-black tracking-[-1px]">시연 가이드</h1>
       <p className="mt-1 text-sm text-body">
-        <b>위에서부터 한 단계씩, 노란 버튼만 누르면</b> 됩니다. 사람이 하는 일은 거의 없고, 시스템이 스스로 돌아가는 모습을 단계마다 숫자로 보여 드려요.
+        <b>위에서부터 한 단계씩, 노란 버튼만 누르면</b> 됩니다. (직접 해보고 싶다면 로그인 화면의 <b>"새 참가자로 시작하기"</b>로 나만의 계정을 만들 수 있어요.) 사람이 하는 일은 거의 없고, 시스템이 스스로 돌아가는 모습을 단계마다 숫자로 보여 드려요.
       </p>
 
       {p && (
@@ -519,6 +552,29 @@ export default function GuidePage() {
           )
         })}
       </ol>
+
+      {allDone && (
+        <section className="mt-5 rounded-2xl border border-line bg-card p-4">
+          <h2 className="font-serif text-base font-black">더 둘러보기 — PRD가 요구한 나머지 자동화</h2>
+          <p className="mt-1 text-xs text-muted">12단계 시나리오 밖의 기능이에요. 시간 칩의 "+1일"을 쓰면 하루 뒤에 일어나는 일도 볼 수 있어요.</p>
+          <ul className="mt-3 flex flex-col gap-3 text-sm">
+            {EXTRAS.map((x) => (
+              <li key={x.title}>
+                <b>{x.title}</b>
+                <p className="text-xs text-body">{x.body}</p>
+                <button
+                  type="button"
+                  disabled={busy != null}
+                  onClick={() => view(x.view)}
+                  className="mt-1 min-h-[34px] rounded-lg border border-line bg-paper px-2.5 text-xs font-bold disabled:opacity-50"
+                >
+                  {x.view.label} →
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <p className="mt-6 text-xs leading-relaxed text-muted">
         참가자·운영자 화면 버튼을 누르면 해당 계정으로 로그인한 화면이 열려요. 돌아올 때는 화면 아래의 <b>"시연 가이드"</b> 알약을 누르세요.

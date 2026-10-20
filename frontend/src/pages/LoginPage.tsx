@@ -15,6 +15,8 @@ const TEST_ACCOUNTS = [
   { loginId: 'user23', password: 'siktak1234', label: '참가자 user23', note: 'S3 매칭 실패 → 환불 선택' },
 ]
 
+const GUEST = '__guest__'
+
 // 로그인 (/login)
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -26,7 +28,8 @@ export default function LoginPage() {
   const login = useMutation({
     mutationFn: (account: { loginId: string; password: string }) => {
       clearSession()
-      return api.login(account.loginId, account.password)
+      // loginId가 비어 있고 guest 표시면 새 참가자 계정을 만든다 (시연용)
+      return account.loginId === GUEST ? api.guestStart() : api.login(account.loginId, account.password)
     },
     onSuccess: (session: Session) => {
       setSession(session)
@@ -93,6 +96,17 @@ export default function LoginPage() {
       </div>
 
       <section className="flex flex-col gap-2 px-4 pt-7 pb-10">
+        <button
+          type="button"
+          disabled={login.isPending}
+          onClick={() => login.mutate({ loginId: GUEST, password: '' })}
+          className="mb-3 min-h-[52px] w-full rounded-xl border border-accent bg-gold-soft px-4 py-3 text-left text-sm font-black text-accent disabled:opacity-60"
+        >
+          {login.isPending && login.variables?.loginId === GUEST ? '계정 만드는 중…' : '✨ 새 참가자로 시작하기'}
+          <span className="block text-xs font-normal text-body">
+            나만의 참가자 계정이 바로 만들어져요. 신청부터 처음부터 직접 해볼 수 있어요. (심사위원용)
+          </span>
+        </button>
         <SectionHeader title="Test accounts" />
         <p className="text-xs text-muted">탭하면 바로 로그인</p>
         {login.isError && <ErrorText>{errorMessage(login.error)}</ErrorText>}

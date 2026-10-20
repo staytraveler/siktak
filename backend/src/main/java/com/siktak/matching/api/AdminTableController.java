@@ -42,6 +42,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminTableController {
 
     private final MatchQueryService queryService;
+    private final com.siktak.matching.application.EngineMatchingService matchingService;
     private final TableVenueService tableVenueService;
     private final ChatService chatService;
     private final UserRepository userRepository;
@@ -57,6 +58,33 @@ public class AdminTableController {
     }
 
     /** 단체방 메시지 전체 (운영자용). 단체방이 아직 없으면 빈 목록. */
+    /**
+     * 운영자 긴급 수정 — 참가자 이동 (MAT-14, P1). 확정 후 취소·안전 문제 같은 예외 상황 전용이라 사유가 필수이고,
+     * 필수 조건을 다시 검증한다. 변경은 예외 처리함에 처리 완료로 남는다.
+     */
+    @PostMapping("/move-member")
+    public Map<String, Object> moveMember(@AuthenticationPrincipal AuthUser operator, @PathVariable Long tableId,
+            @jakarta.validation.Valid @RequestBody MoveMemberRequest request) {
+        matchingService.operatorMove(operator.id(), request.applicationId(), request.toTableId(), request.reason());
+        return Map.of("ok", true);
+    }
+
+    /** 운영자 긴급 수정 — 테이블 해제 (MAT-14, P1). 구성원은 대체 일정·보관·환불 선택으로 넘어간다. */
+    @PostMapping("/dissolve")
+    public Map<String, Object> dissolve(@AuthenticationPrincipal AuthUser operator, @PathVariable Long tableId,
+            @jakarta.validation.Valid @RequestBody ReasonBody request) {
+        matchingService.operatorDissolve(operator.id(), tableId, request.reason());
+        return Map.of("ok", true);
+    }
+
+    public record MoveMemberRequest(@jakarta.validation.constraints.NotNull Long applicationId,
+            @jakarta.validation.constraints.NotNull Long toTableId,
+            @jakarta.validation.constraints.NotBlank String reason) {
+    }
+
+    public record ReasonBody(@jakarta.validation.constraints.NotBlank String reason) {
+    }
+
     @GetMapping("/messages")
     public List<MessageResponse> messages(@PathVariable Long tableId) {
         queryService.table(tableId);

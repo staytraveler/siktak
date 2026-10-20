@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
@@ -34,6 +35,28 @@ export default function AdminTableDetailPage() {
     queryKey: ['admin-table-notifications', id],
     queryFn: () => api.tableNotifications(id),
     refetchInterval: 15000,
+  })
+
+  const queryClient = useQueryClient()
+  const slotTables = useQuery({
+    queryKey: ['admin-slot-tables', table.data?.slotId],
+    queryFn: () => api.slotTables(table.data!.slotId),
+    enabled: !!table.data,
+  })
+  const [moveApp, setMoveApp] = useState<number | ''>('')
+  const [moveTo, setMoveTo] = useState<number | ''>('')
+  const [reason, setReason] = useState('')
+  const edit = useMutation({
+    mutationFn: (kind: 'move' | 'dissolve') =>
+      kind === 'move'
+        ? api.moveTableMember(id, Number(moveApp), Number(moveTo), reason.trim())
+        : api.dissolveTable(id, reason.trim()),
+    onSuccess: () => {
+      setReason('')
+      setMoveApp('')
+      setMoveTo('')
+      queryClient.invalidateQueries()
+    },
   })
 
   if (table.isError) return <p className="text-sm text-red-700">{errorMessage(table.error)}</p>
@@ -153,6 +176,59 @@ export default function AdminTableDetailPage() {
             </p>
           )}
         </Card>
+
+        {t.tableStatus === 'CONFIRMED' && (
+          <Card title="운영자 긴급 수정 (확정 후 취소·안전 문제 등 예외 상황에서만)">
+            <p className="text-xs text-gray-500">
+              정상 흐름에서는 쓰지 않아요. 옮긴 뒤에도 필수 조건(최대 6명·연령 차 8살·차단·피하고 싶음)을 다시 검증하고, 모든 변경은
+              사유와 함께 예외 처리함에 남아요.
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+              <select className="rounded border border-gray-300 bg-white px-2 py-1" value={moveApp} onChange={(e) => setMoveApp(e.target.value ? Number(e.target.value) : '')}>
+                <option value="">옮길 참가자</option>
+                {t.members.map((m) => (
+                  <option key={m.applicationId} value={m.applicationId}>
+                    {m.name ?? '#' + m.userId}
+                  </option>
+                ))}
+              </select>
+              <span>→</span>
+              <select className="rounded border border-gray-300 bg-white px-2 py-1" value={moveTo} onChange={(e) => setMoveTo(e.target.value ? Number(e.target.value) : '')}>
+                <option value="">옮길 테이블</option>
+                {slotTables.data
+                  ?.filter((x) => x.id !== t.id && x.tableStatus === 'CONFIRMED' && x.memberCount < 6)
+                  .map((x) => (
+                    <option key={x.id} value={x.id}>
+                      테이블 #{x.id} ({x.memberCount}명)
+                    </option>
+                  ))}
+              </select>
+              <input
+                className="min-w-[200px] flex-1 rounded border border-gray-300 px-2 py-1"
+                placeholder="사유 (필수)"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+              <button
+                type="button"
+                disabled={edit.isPending || !reason.trim() || moveApp === '' || moveTo === ''}
+                className="rounded border border-gray-300 bg-white px-3 py-1 disabled:opacity-40"
+                onClick={() => edit.mutate('move')}
+              >
+                참가자 이동
+              </button>
+              <button
+                type="button"
+                disabled={edit.isPending || !reason.trim()}
+                className="rounded border border-red-300 bg-white px-3 py-1 text-red-700 disabled:opacity-40"
+                onClick={() => window.confirm('이 테이블을 해제할까요? 구성원은 대체 일정 선택으로 넘어가고 단체방은 닫혀요.') && edit.mutate('dissolve')}
+              >
+                테이블 해제
+              </button>
+            </div>
+            {edit.isError && <p className="mt-2 text-sm text-red-700">{errorMessage(edit.error)}</p>}
+          </Card>
+        )}
 
         <Card title="상태 이력">
           {history.isError && <p className="text-sm text-red-700">{errorMessage(history.error)}</p>}

@@ -56,6 +56,14 @@ public class User extends BaseTimeEntity {
         }
     }
 
+    /** 탈퇴: 개인정보(이름·연락처·비밀번호)를 지우고 로그인을 막는다. 결제·매칭·신고 기록은 식별 정보 없이 남는다 (16장 보관 정책). */
+    public void withdraw() {
+        this.name = "탈퇴한 회원";
+        this.phone = null;
+        this.passwordHash = null;
+        this.accountStatus = AccountStatus.BANNED;
+    }
+
     /** 이름·연락처 수정 (ACC-02). */
     public void changeContact(String name, String phone) {
         this.name = name;

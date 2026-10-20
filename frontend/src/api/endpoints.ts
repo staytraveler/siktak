@@ -53,10 +53,14 @@ const post = async <T,>(url: string, body?: unknown) => (await apiClient.post<T>
 export const api = {
   // 인증
   login: (loginId: string, password: string) => post<Session>('/api/v1/auth/login', { loginId, password }),
+  // 시연용: 새 참가자 계정을 만들고 바로 로그인 (데모 모드에서만)
+  guestStart: () => post<Session>('/api/v1/auth/guest'),
   me: () => get<SessionUser>('/api/v1/auth/me'),
 
   regions: () => get<Region[]>('/api/v1/regions'),
   myProfile: () => get<Profile>('/api/v1/me/profile'),
+  // 탈퇴·개인정보 삭제 (16장): 진행 중인 신청이 없을 때, 새 참가자로 시작한 계정만
+  withdraw: () => post<{ ok: boolean }>('/api/v1/me/profile/withdraw'),
   saveProfile: async (body: ProfileInput) => (await apiClient.put<Profile>('/api/v1/me/profile', body)).data,
 
   // 참가자
@@ -158,6 +162,11 @@ export const api = {
   matchRuns: () => get<MatchRunItem[]>('/api/v1/admin/match-runs'),
   matchRun: (id: number) => get<MatchRunDetail>(`/api/v1/admin/match-runs/${id}`),
   adminTable: (id: number) => get<AdminTableDetail>(`/api/v1/admin/tables/${id}`),
+  // 운영자 긴급 수정 (MAT-14, P1): 확정 후 취소·안전 문제 등 예외 상황 전용. 사유 필수, 변경 이력은 예외 처리함에 남는다.
+  moveTableMember: (tableId: number, applicationId: number, toTableId: number, reason: string) =>
+    post<{ ok: boolean }>(`/api/v1/admin/tables/${tableId}/move-member`, { applicationId, toTableId, reason }),
+  dissolveTable: (tableId: number, reason: string) =>
+    post<{ ok: boolean }>(`/api/v1/admin/tables/${tableId}/dissolve`, { reason }),
   tableMessages: (id: number) => get<TableMessage[]>(`/api/v1/admin/tables/${id}/messages`),
   tableHistory: (id: number) => get<TableHistoryEntry[]>(`/api/v1/admin/tables/${id}/history`),
   tableNotifications:(id: number) => get<TableNotification[]>(`/api/v1/admin/tables/${id}/notifications`),

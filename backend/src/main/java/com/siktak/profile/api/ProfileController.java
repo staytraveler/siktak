@@ -27,10 +27,18 @@ public class ProfileController {
 
     private final ProfileService profileService;
     private final ContactService contactService;
+    private final com.siktak.user.application.WithdrawalService withdrawalService;
 
     @GetMapping
     public ProfileResponse get(@AuthenticationPrincipal AuthUser user) {
         return ProfileResponse.from(profileService.get(user.id()), contactService.get(user.id()));
+    }
+
+    /** 탈퇴·개인정보 삭제 (16장). 진행 중인 신청이 없을 때만, 새 참가자로 시작한 계정만. */
+    @org.springframework.web.bind.annotation.PostMapping("/withdraw")
+    public java.util.Map<String, Object> withdraw(@AuthenticationPrincipal AuthUser user) {
+        withdrawalService.withdraw(user.id());
+        return java.util.Map.of("ok", true);
     }
 
     @PutMapping

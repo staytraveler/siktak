@@ -18,6 +18,9 @@ export default function SplashScreen() {
       onAnimationEnd={() => setVisible(false)}
     >
       <img src="/illustrations/splash.jpg" alt="" className="h-full w-full max-w-[520px] object-cover" />
+      <p className="absolute top-5 left-0 right-0 text-center text-xs tracking-[2px] text-white/80 [text-shadow:0_1px_4px_rgba(0,0,0,0.8)]">
+        제작자 : 김용현
+      </p>
     </div>
   )
 }

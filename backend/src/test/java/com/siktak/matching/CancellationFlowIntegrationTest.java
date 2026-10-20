@@ -189,6 +189,37 @@ class CancellationFlowIntegrationTest extends DemoScenarioDbTestSupport {
         assertThat(after.stream().mapToInt(DiningTable::getMemberCount).sum()).isEqualTo(total - victimOriginal + placed);
     }
 
+    /** STA-07: 확정 테이블에서 취소가 나면 조건에 맞는 대기자가 자동으로 그 자리에 들어가 테이블이 유지된다. */
+    @Test
+    void 확정_후_취소로_빈_자리에_조건에_맞는_대기자가_자동_충원된다() {
+        // 매칭 시각에는 결제 전이라 후보에서 빠졌다가, 매칭 뒤에 결제해 대기자가 된 신청자
+        Long waiterUser = rawParticipant("w" + System.nanoTime() % 100000, 91, 1996, "FEMALE");
+        Application waiter = applicationService.submit(waiterUser, List.of(s1.getId()), PassType.SINGLE);
+        clock.set(s1.getMatchRunAt());
+        matchingService.runForSlot(s1.getId(), null);
+        applicationService.approvePayment(waiterUser, waiter.getId());
+        assertThat(waiter.getMatchStatus()).isEqualTo(MatchStatus.WAITING);
+
+        // S1의 확정 테이블 하나에서 1명 취소 → 대기자 충원
+        DiningTable table = diningTableRepository.findByEventSlotIdOrderByIdAsc(s1.getId()).stream()
+                .filter(t -> t.getTableStatus() == TableStatus.CONFIRMED && t.getMemberCount() >= 5).findFirst()
+                .orElseThrow();
+        List<TableMember> members = tableMemberRepository.findByDiningTableIdAndActiveTrue(table.getId());
+        int before = members.size();
+        Long canceledApp = members.get(0).getApplicationId();
+        Application canceled = app.values().stream().filter(a -> a.getId().equals(canceledApp)).findFirst().orElseThrow();
+        cancellationService.cancel(canceled.getUserId(), canceled.getId());
+
+        assertThat(waiter.getMatchStatus()).isEqualTo(MatchStatus.CONFIRMED);
+        assertThat(tableMemberRepository.findByApplicationIdAndActiveTrue(waiter.getId()))
+                .hasValueSatisfying(m -> assertThat(m.getDiningTableId()).isEqualTo(table.getId()));
+        assertThat(attendanceRepository.findByApplicationId(waiter.getId())).isPresent();
+        // 취소 1명, 충원 1명 → 인원 그대로, 테이블 유지
+        assertThat(tableMemberRepository.findByDiningTableIdAndActiveTrue(table.getId())).hasSize(before);
+        assertThat(diningTableRepository.findById(table.getId()).orElseThrow().getTableStatus())
+                .isEqualTo(TableStatus.CONFIRMED);
+    }
+
     @Test
     void 행사_2일_전_이후_참석_취소는_환불이_없고_이용_제한_검토_예외가_올라가며_단체방에는_남는다() {
         clock.set(s1.getMatchRunAt());

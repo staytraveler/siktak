@@ -51,6 +51,7 @@ class AuthSecurityTest {
 
     @MockitoBean private UserRepository userRepository;
     @MockitoBean private Clock clock;
+    @MockitoBean private com.siktak.user.application.GuestService guestService;
 
     @Test
     void 로그인하면_Bearer_토큰과_사용자_정보를_돌려주고_me로_조회된다() throws Exception {

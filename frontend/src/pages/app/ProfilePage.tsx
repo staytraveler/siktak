@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
+import { clearSession } from '../../api/session'
 import type { ProfileInput } from '../../api/types'
 import SessionBar from '../../components/SessionBar'
 
@@ -56,6 +57,15 @@ export default function ProfilePage() {
     }
   }, [profile.data])
 
+  const withdraw = useMutation({
+    mutationFn: () => api.withdraw(),
+    onSuccess: () => {
+      clearSession()
+      queryClient.clear()
+      navigate('/login', { replace: true })
+    },
+  })
+
   const save = useMutation({
     mutationFn: () => api.saveProfile(form),
     onSuccess: () => {
@@ -92,6 +102,26 @@ export default function ProfilePage() {
       )}
       {profile.isPending && <p className="mt-4 text-sm text-muted">불러오는 중…</p>}
       {profile.isError && <p className="mt-4 text-sm font-medium text-accent">{errorMessage(profile.error)}</p>}
+
+      <Section title="개인정보 보관·삭제 정책">
+        <p className="text-xs leading-relaxed text-body">
+          · 신청·매칭·안내에 꼭 필요한 정보만 받아요. 다른 참가자에게는 매칭 전에 아무것도 보이지 않고, 선호·차단·신고 내용은 상대에게 절대 공개하지 않아요.
+          <br />· 탈퇴하면 이름·연락처·프로필이 <b>즉시 삭제</b>되고 로그인이 막혀요.
+          <br />· 결제·환불·참석·피드백·신고 기록은 분쟁 대응과 안전을 위해 <b>식별 정보 없이</b> 보관해요.
+          <br />· 진행 중인 신청이 있으면 먼저 취소하거나 끝나야 탈퇴할 수 있어요.
+        </p>
+        <button
+          type="button"
+          disabled={withdraw.isPending}
+          onClick={() => {
+            if (window.confirm('탈퇴하고 개인정보를 삭제할까요?\n이름·연락처·프로필이 삭제되고 다시 로그인할 수 없어요.')) withdraw.mutate()
+          }}
+          className="mt-2 min-h-[40px] rounded-xl border border-red-300 bg-card px-3 text-sm font-bold text-red-700 disabled:opacity-50"
+        >
+          탈퇴·개인정보 삭제 요청
+        </button>
+        {withdraw.isError && <p className="mt-1 text-sm font-medium text-accent">{errorMessage(withdraw.error)}</p>}
+      </Section>
 
       <Section title="1. 기본 정보">
         <Label>이름</Label>
