@@ -6,6 +6,7 @@ import type { ReactNode } from 'react'
 // 운영자 웹 공통 레이아웃: 좌측 메뉴 + 본문. 데스크톱 우선.
 // [해석] 8.1(V2)의 레이아웃이 main에 들어오면 이 컴포넌트를 그쪽으로 합친다 (메뉴 항목만 맞추면 된다).
 const MENU = [
+  { to: '/guide', label: '📋 시연 가이드' },
   { to: '/admin', label: '대시보드', end: true },
   { to: '/admin/exceptions', label: '예외 처리함' },
   { to: '/admin/matching', label: '매칭 모니터' },

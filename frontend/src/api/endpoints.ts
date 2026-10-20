@@ -179,6 +179,12 @@ export const api = {
     (await apiClient.put<AdminTemplate>(`/api/v1/admin/message-templates/${code}`, { title, body, active })).data,
   adminMessageHistory: (sendStatus?: string) =>
     get<AdminMessageHistory[]>(`/api/v1/admin/message-history${sendStatus ? `?sendStatus=${sendStatus}` : ''}`),
+  // 시연 가이드(/guide): 참가자·운영자 모두 쓰는 진행 API
+  guideStatus: () => get<DemoStatus>('/api/v1/demo/guide'),
+  guideJump: (code: string) => post<DemoStatus>(`/api/v1/demo/jump/${code}`),
+  guideCheckInAll: () => post<DemoActionResult>('/api/v1/demo/check-in-all'),
+  guideFeedbackAll: () => post<DemoActionResult>('/api/v1/demo/feedback-all'),
+  guideRound2: () => post<DemoActionResult>('/api/v1/demo/round2-applications'),
   demoStatus: () => get<DemoStatus>('/api/v1/admin/demo'),
   demoReset: () => post<DemoStatus>('/api/v1/admin/demo/reset'),
   demoJump: (code: string) => post<DemoStatus>(`/api/v1/admin/demo/jump/${code}`),

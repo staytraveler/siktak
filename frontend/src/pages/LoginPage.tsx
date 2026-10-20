@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { errorMessage } from '../api/client'
 import { api } from '../api/endpoints'
 import { clearSession, homeOf, setSession, type Session } from '../api/session'
@@ -46,7 +46,12 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-md bg-paper text-ink">
-      <header className="px-5 pt-4 pb-3 font-serif text-xl font-black tracking-[-0.5px]">우연한 식탁</header>
+      <header className="flex items-center justify-between px-5 pt-4 pb-3">
+        <span className="font-serif text-xl font-black tracking-[-0.5px]">우연한 식탁</span>
+        <Link to="/guide" className="rounded-full border border-accent bg-gold-soft px-3 py-1 text-xs font-bold text-accent">
+          📋 시연 가이드
+        </Link>
+      </header>
       <HeroBlock kicker="Welcome" title={<>우연한 식탁에<br />어서 오세요</>}>
         <HeroDesc>로그인하고 이번 주 식탁을 골라보세요</HeroDesc>
       </HeroBlock>

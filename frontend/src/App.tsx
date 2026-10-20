@@ -21,12 +21,14 @@ import ParticipantHomePage from './pages/app/ParticipantHomePage'
 import ProfilePage from './pages/app/ProfilePage'
 import SlotsPage from './pages/app/SlotsPage'
 import TablePage from './pages/app/TablePage'
+import GuidePage from './pages/GuidePage'
 import LoginPage from './pages/LoginPage'
 import SplashScreen from './components/SplashScreen'
 
 const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/app" replace /> },
   { path: '/login', element: <LoginPage /> },
+  { path: '/guide', element: <GuidePage /> },
   { path: '/app', element: <RequireAuth><ParticipantHomePage /></RequireAuth> },
   { path: '/app/notifications', element: <RequireAuth><NotificationsPage /></RequireAuth> },
   { path: '/app/applications/:id', element: <RequireAuth><ApplicationDetailPage /></RequireAuth> },

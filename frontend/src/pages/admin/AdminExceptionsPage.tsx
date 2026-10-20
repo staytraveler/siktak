@@ -37,6 +37,11 @@ export default function AdminExceptionsPage() {
   return (
     <AdminLayout title="예외 처리함">
       <div className="space-y-4">
+        <p className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs leading-relaxed text-gray-600">
+          <b>예외 처리함이란?</b> 정상 흐름(신청 → 결제 → 매칭 → 확정 → 안내)은 시스템이 알아서 처리해서 여기에 올라오지 않아요.
+          자동으로 해결하지 못한 건만 올라옵니다. 시연 중에는 <b>식당 부족 1건</b>(일부러 만든 예외 — 식당 재고를 늘려 해결)과{' '}
+          <b>행사 종료까지 체크인하지 않은 노쇼 후보</b>가 보일 수 있어요. 시연 순서는 <a href="/guide" className="font-bold underline">시연 가이드</a>를 보세요.
+        </p>
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <label>
             유형{' '}

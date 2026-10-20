@@ -174,6 +174,9 @@ export default function ParticipantHomePage() {
             보관 이용권 <b className="text-accent">{passes.data?.creditCount}장</b> · 다음 신청에 추가 결제 없이 쓸 수 있어요
           </p>
         )}
+        <Link to="/guide" className="flex min-h-[44px] items-center text-[13px] font-bold text-accent">
+          📋 시연 가이드 보기 →
+        </Link>
         <SessionBar />
       </footer>
     </AppShell>

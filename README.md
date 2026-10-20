@@ -14,6 +14,7 @@
 |---|---|
 | 참가자 앱 (모바일 우선) | https://siktak-rho.vercel.app/app |
 | 운영자 웹 | https://siktak-rho.vercel.app/admin |
+| 시연 가이드 (12단계 안내) | https://siktak-rho.vercel.app/guide |
 | API 문서 (Swagger) | https://siktak.onrender.com/swagger-ui.html |
 
 > **첫 접속 안내**: 백엔드가 Render Free 인스턴스라 한동안 요청이 없으면 잠듭니다. **첫 요청은 최대 1분** 걸릴 수 있으니 로그인 화면이 늦게 반응해도 잠시 기다려 주세요. 시연 직전에는 `https://siktak.onrender.com/api/v1/health` 를 먼저 열어 깨워 두세요.

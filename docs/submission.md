@@ -15,6 +15,7 @@
 |---|---|
 | 참가자 앱 (모바일 우선) | https://siktak-rho.vercel.app/app |
 | 운영자 웹 | https://siktak-rho.vercel.app/admin |
+| **시연 가이드 (12단계 안내)** | https://siktak-rho.vercel.app/guide |
 | API 문서 (Swagger) | https://siktak.onrender.com/swagger-ui.html |
 | GitHub | 비공개 저장소 — 요청 시 초대 |
 

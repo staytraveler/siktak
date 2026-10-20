@@ -31,7 +31,7 @@ const QUICK = [
 
 // 헤더 가운데의 테스트용 임시 시간. 눌러서 날짜·시간을 옮기면 서버 시계가 바뀌고,
 // 그 시각까지 도래한 시간 기반 작업(매칭·확정·안내 등)이 실행된다. 서버 데모 모드가 꺼져 있으면 보이지 않는다.
-export default function DemoClock() {
+export default function DemoClock({ align = 'center' }: { align?: 'center' | 'right' }) {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState('')
@@ -87,8 +87,11 @@ export default function DemoClock() {
       </button>
 
       {open && (
-        <div className="absolute left-1/2 top-full z-50 mt-2 w-[280px] -translate-x-1/2 rounded-2xl border border-line bg-card p-3 shadow-lg">
+        <div className={`absolute top-full z-50 mt-2 w-[280px] max-w-[calc(100vw-24px)] rounded-2xl border border-line bg-card p-3 shadow-lg ${align === 'right' ? 'right-0' : 'left-1/2 -translate-x-1/2'}`}>
           <b className="text-sm">테스트용 시간 이동</b>
+          <a href="/guide" className="ml-2 text-[11px] font-bold text-accent underline">
+            시연 가이드 열기
+          </a>
           <p className="mt-1 rounded-lg border border-accent bg-gold-soft px-2 py-1 text-[11px] font-bold text-accent">
             ⚠ 시간은 앞으로만 갈 수 있어요. 되돌릴 수 없어요.
           </p>
