@@ -66,7 +66,7 @@ class DemoSeedSchedulerIntegrationTest {
 
         // --- 시드 (demo-scenario 2·3·6장)
         assertThat(count("users")).isEqualTo(31); // admin + user01~29 + demo01
-        assertThat(count("event_slots")).isEqualTo(5);
+        assertThat(count("event_slots")).isEqualTo(7); // S1~S7 (S6·S7은 3회차용 모집 중 회차, 10.3)
         assertThat(count("applications")).isEqualTo(27); // 신청 없는 user25·26·demo01 제외
         assertThat(count("applications WHERE payment_status = 'PAID' AND match_status = 'WAITING'")).isEqualTo(26);
         assertThat(jdbc.queryForObject("""

@@ -86,9 +86,11 @@ public class TableGuidanceService {
         Venue venue = t.venue;
 
         // 시간·장소 (INF-03·05). 식당이 아직 없으면 "확정 후 안내"로 먼저 알리고, 배정되면 장소 공지를 추가로 올린다.
+        // 장소 공지를 이번에 처음 올렸는지: 같은 안내를 다시 요청했을 때 장소 알림이 또 나가지 않게 한다
+        boolean venuePostedNow = false;
         if (venue != null) {
-            chatService.postSystemMessage(room.getId(), MessageType.NOTICE, venueNotice(slot, venue, t.table),
-                    key(tableId, "guide:venue"), venuePayload(slot, venue, t.table));
+            venuePostedNow = chatService.postSystemMessage(room.getId(), MessageType.NOTICE,
+                    venueNotice(slot, venue, t.table), key(tableId, "guide:venue"), venuePayload(slot, venue, t.table));
         } else {
             chatService.postSystemMessage(room.getId(), MessageType.NOTICE,
                     "모임 안내\n일시: " + GuidanceFormat.dateTime(slot.getStartsAt()) + " ~ "
@@ -114,7 +116,7 @@ public class TableGuidanceService {
             String confirmKey = "MATCH_CONFIRMED:app-" + m.getApplicationId();
             boolean confirmedBefore = notificationService.exists(confirmKey);
             notificationService.enqueue(m.getUserId(), "MATCH_CONFIRMED", vars, payload, confirmKey);
-            if (venue != null && confirmedBefore) {
+            if (venue != null && venuePostedNow && confirmedBefore) {
                 // 재배정으로 장소가 뒤늦게 정해진 경우: 확정 알림은 "확정 후 안내"였으므로 장소 알림을 추가로 보낸다.
                 // [해석] 알림 유형이 PRD에 없어 MATCH_CONFIRMED 템플릿을 재사용 (decisions.md). 멱등 키: tableId+venueAssigned.
                 vars.put("venueLine", venue.getName() + " (" + venue.getAddress() + ")"
