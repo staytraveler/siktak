@@ -3,4 +3,4 @@
 > 작성: 2026-10-20 00:05 · PM클로드
 
 10.2 훌륭해 👍 질문 답변은 10.3 지시서 맨 위.
-다음: **`C:\Users\Admin\Desktop\siktak\docs\tasks\10.3-rehearsal-fixes.md`** 계획 확인 없이 바로. V1이 테이블 API·단체방 작업 중이니 그 부분은 V1 기준.
+다음: **`docs/tasks/10.3-rehearsal-fixes.md`** 계획 확인 없이 바로. V1이 테이블 API·단체방 작업 중이니 그 부분은 V1 기준.
