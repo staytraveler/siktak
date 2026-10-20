@@ -33,6 +33,13 @@ public class NotificationTemplate {
     @Column(nullable = false)
     private boolean active;
 
+    /** 운영자가 제목·본문·사용 여부를 고친다 (자동 메시지 관리, PRD 11장). */
+    public void update(String title, String body, boolean active) {
+        this.titleTemplate = title;
+        this.bodyTemplate = body;
+        this.active = active;
+    }
+
     public String renderTitle(Map<String, String> vars) {
         return render(titleTemplate, vars);
     }

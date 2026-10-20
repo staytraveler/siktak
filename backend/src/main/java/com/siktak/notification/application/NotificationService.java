@@ -83,8 +83,12 @@ public class NotificationService {
             return existing.get();
         }
         NotificationTemplate template = templateRepository.findById(templateCode)
-                .filter(NotificationTemplate::isActive)
-                .orElseThrow(() -> new IllegalStateException("알림 템플릿이 없거나 꺼져 있다: " + templateCode));
+                .orElseThrow(() -> new IllegalStateException("알림 템플릿이 없다: " + templateCode));
+        if (!template.isActive()) {
+            // 운영자가 자동 메시지 관리에서 끈 템플릿: 알림을 만들지 않는다 (흐름은 계속 진행)
+            log.info("Notification template {} is turned off; skipping for user {}", templateCode, userId);
+            return null;
+        }
         Notification n = notificationRepository.save(
                 Notification.pending(userId, template, vars, payload, scheduledAt, dedupKey));
         if (!scheduledAt.isAfter(Instant.now(clock))) {

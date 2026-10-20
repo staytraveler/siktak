@@ -168,6 +168,67 @@ export type ProfileInput = Omit<Profile, 'complete' | 'privacyAgreedAt' | 'polic
   policyAgreed: boolean
 }
 
+// 운영자 화면 (PRD 11장)
+export interface AdminAttendance {
+  id: number
+  applicationId: number
+  diningTableId: number
+  userId: number
+  loginId: string
+  name: string
+  attendanceStatus: string
+  noShowCandidate: boolean
+  checkedInAt: string | null
+}
+
+export interface AdminPaymentRow {
+  applicationId: number
+  loginId: string
+  name: string
+  passType: string
+  applicationStatus: string
+  paymentStatus: string | null
+  matchStatus: string | null
+  amount: number | null
+  txStatus: string | null
+  lastError: string | null
+  userPassId: number | null
+  submittedAt: string | null
+}
+
+export interface AdminPassRow {
+  id: number
+  loginId: string
+  name: string
+  passType: string
+  passStatus: string
+  startsAt: string
+  expiresAt: string | null
+  sourceApplicationId: number | null
+  usedApplicationId: number | null
+}
+
+export interface AdminTemplate {
+  code: string
+  title: string
+  body: string
+  active: boolean
+}
+
+export interface AdminMessageHistory {
+  id: number
+  loginId: string
+  name: string
+  templateCode: string
+  channel: string
+  sendStatus: string
+  attempts: number
+  lastError: string | null
+  pushStatus: string | null
+  scheduledAt: string
+  sentAt: string | null
+}
+
 export interface NotificationItem {
   id: number
   templateCode: string

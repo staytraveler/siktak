@@ -10,6 +10,9 @@ import AdminVenuesPage from './pages/admin/AdminVenuesPage'
 import AdminSettingsPage from './pages/admin/AdminSettingsPage'
 import AdminApplicantsPage from './pages/admin/AdminApplicantsPage'
 import AdminFeedbackPage from './pages/admin/AdminFeedbackPage'
+import AdminAttendancePage from './pages/admin/AdminAttendancePage'
+import AdminMessagesPage from './pages/admin/AdminMessagesPage'
+import AdminPaymentsPage from './pages/admin/AdminPaymentsPage'
 import AdminReportsPage from './pages/admin/AdminReportsPage'
 import ApplicationDetailPage from './pages/app/ApplicationDetailPage'
 import NotificationsPage from './pages/app/NotificationsPage'
@@ -36,6 +39,9 @@ const router = createBrowserRouter([
   { path: '/admin/venues', element: <RequireAuth role="OPERATOR"><AdminVenuesPage /></RequireAuth> },
   { path: '/admin/settings', element: <RequireAuth role="OPERATOR"><AdminSettingsPage /></RequireAuth> },
   { path: '/admin/applicants', element: <RequireAuth role="OPERATOR"><AdminApplicantsPage /></RequireAuth> },
+  { path: '/admin/payments', element: <RequireAuth role="OPERATOR"><AdminPaymentsPage /></RequireAuth> },
+  { path: '/admin/attendance', element: <RequireAuth role="OPERATOR"><AdminAttendancePage /></RequireAuth> },
+  { path: '/admin/messages', element: <RequireAuth role="OPERATOR"><AdminMessagesPage /></RequireAuth> },
   { path: '/admin/feedback', element: <RequireAuth role="OPERATOR"><AdminFeedbackPage /></RequireAuth> },
   { path: '/admin/reports', element: <RequireAuth role="OPERATOR"><AdminReportsPage /></RequireAuth> },
   { path: '/admin/demo', element: <RequireAuth role="OPERATOR"><AdminDemoPage /></RequireAuth> },

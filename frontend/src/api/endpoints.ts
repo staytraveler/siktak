@@ -23,6 +23,11 @@ import type {
   NotificationItem,
   PreferenceChoice,
   Profile,
+  AdminAttendance,
+  AdminMessageHistory,
+  AdminPassRow,
+  AdminPaymentRow,
+  AdminTemplate,
   ProfileInput,
   Recommendation,
   Region,
@@ -159,6 +164,20 @@ export const api = {
   // 헤더의 테스트용 시간 (참가자·운영자 공통)
   demoClock: () => get<{ enabled: boolean; now: string; offsetSeconds: number }>('/api/v1/demo/clock'),
   demoSetClock: (at: string) => post<{ enabled: boolean; now: string; offsetSeconds: number }>('/api/v1/demo/clock', { at }),
+  // 운영자: 참석 관리 · 결제·환불 · 자동 메시지 관리 (PRD 11장)
+  adminAttendances: (slotId: number) => get<AdminAttendance[]>(`/api/v1/admin/slots/${slotId}/attendances`),
+  confirmNoShowById: (attendanceId: number, reason: string) =>
+    post<unknown>(`/api/v1/admin/attendances/${attendanceId}/confirm-no-show`, { reason }),
+  dismissNoShowById: (attendanceId: number, reason: string) =>
+    post<unknown>(`/api/v1/admin/attendances/${attendanceId}/dismiss-no-show`, { reason }),
+  adminPayments: (paymentStatus?: string) =>
+    get<AdminPaymentRow[]>(`/api/v1/admin/payments${paymentStatus ? `?paymentStatus=${paymentStatus}` : ''}`),
+  adminPasses: () => get<AdminPassRow[]>('/api/v1/admin/passes'),
+  adminTemplates: () => get<AdminTemplate[]>('/api/v1/admin/message-templates'),
+  updateTemplate: async (code: string, title: string, body: string, active: boolean) =>
+    (await apiClient.put<AdminTemplate>(`/api/v1/admin/message-templates/${code}`, { title, body, active })).data,
+  adminMessageHistory: (sendStatus?: string) =>
+    get<AdminMessageHistory[]>(`/api/v1/admin/message-history${sendStatus ? `?sendStatus=${sendStatus}` : ''}`),
   demoStatus: () => get<DemoStatus>('/api/v1/admin/demo'),
   demoReset: () => post<DemoStatus>('/api/v1/admin/demo/reset'),
   demoJump: (code: string) => post<DemoStatus>(`/api/v1/admin/demo/jump/${code}`),
