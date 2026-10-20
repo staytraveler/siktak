@@ -409,13 +409,34 @@ export default function GuidePage() {
   return (
     <main className="mx-auto min-h-screen max-w-2xl bg-paper px-4 pb-24 text-ink">
       <header className="flex items-center justify-between pt-4 pb-2">
-        <Link to="/login" className="font-serif text-xl font-black tracking-[-0.5px]">
+        <Link to="/app" className="font-serif text-xl font-black tracking-[-0.5px]">
           우연한 식탁
         </Link>
         <button type="button" onClick={reset} disabled={busy != null} className="text-xs font-bold text-muted underline disabled:opacity-40">
           ↺ 처음부터 다시 시작
         </button>
       </header>
+      <div className="mt-1 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={busy != null}
+          onClick={() => view({ label: '참가자 홈', as: 'demo01', to: '/app' })}
+          className="min-h-[38px] rounded-full border border-line bg-card px-3.5 text-xs font-bold disabled:opacity-50"
+        >
+          🏠 참가자 홈으로
+        </button>
+        <button
+          type="button"
+          disabled={busy != null}
+          onClick={() => view({ label: '운영자 홈', as: 'admin', to: '/admin' })}
+          className="min-h-[38px] rounded-full border border-line bg-card px-3.5 text-xs font-bold disabled:opacity-50"
+        >
+          🛠 운영자 대시보드로
+        </button>
+        <Link to="/login" className="inline-flex min-h-[38px] items-center rounded-full border border-line bg-card px-3.5 text-xs font-bold">
+          로그인 화면
+        </Link>
+      </div>
       <h1 className="mt-2 font-serif text-[26px] leading-tight font-black tracking-[-1px]">시연 가이드</h1>
       <p className="mt-1 text-sm text-body">
         <b>위에서부터 한 단계씩, 노란 버튼만 누르면</b> 됩니다. (직접 해보고 싶다면 로그인 화면의 <b>"새 참가자로 시작하기"</b>로 나만의 계정을 만들 수 있어요.) 사람이 하는 일은 거의 없고, 시스템이 스스로 돌아가는 모습을 단계마다 숫자로 보여 드려요.
