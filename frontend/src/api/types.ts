@@ -229,6 +229,21 @@ export interface AdminMessageHistory {
   sentAt: string | null
 }
 
+export interface ChatRoomSummary {
+  chatRoomId: number
+  diningTableId: number
+  applicationId: number | null
+  roomStatus: 'ACTIVE' | 'CLOSED'
+  startsAt: string
+  regionName: string
+  venueName: string | null
+  memberCount: number
+  lastMessage: string | null
+  lastMessageType: string | null
+  lastMessageAt: string | null
+  messageCount: number
+}
+
 export interface NotificationItem {
   id: number
   templateCode: string

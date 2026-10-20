@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.siktak.chat.application.ChatRoomListService;
 import com.siktak.chat.application.ChatService;
 import com.siktak.chat.domain.ChatMessage;
 import com.siktak.common.security.AuthUser;
@@ -22,6 +23,13 @@ import lombok.RequiredArgsConstructor;
 public class ChatController {
 
     private final ChatService chatService;
+    private final ChatRoomListService chatRoomListService;
+
+    /** 내가 참여 중인 단체방 목록 ("대화" 탭). */
+    @GetMapping
+    public List<ChatRoomListService.ChatRoomSummary> mine(@AuthenticationPrincipal AuthUser user) {
+        return chatRoomListService.mine(user.id());
+    }
 
     @GetMapping("/{chatRoomId}/messages")
     public List<ChatMessageResponse> messages(@AuthenticationPrincipal AuthUser user, @PathVariable Long chatRoomId) {

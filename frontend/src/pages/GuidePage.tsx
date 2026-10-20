@@ -1,374 +1,529 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import axios from 'axios'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { setSession, type Session } from '../api/session'
 import { errorMessage } from '../api/client'
-import { api } from '../api/endpoints'
-import { getSession, setSession, type Session } from '../api/session'
-import DemoClock from '../components/DemoClock'
 import { formatDateTime } from '../lib/format'
 
-// 시연 가이드 (/guide): PRD 18장 "해커톤 완료 조건" 12단계를 누르는 순서대로 따라가게 한다.
-// 로그인 없이도 읽을 수 있고, 로그인하면 단계에 필요한 시간 이동·일괄 실행 버튼이 켜진다.
+// 시연 가이드 (/guide): PRD 18장 "해커톤 완료 조건"을 7단계로 묶어 한 단계씩 따라가게 한다.
+// - 지금 누를 버튼은 하나만 켜진다. 끝난 단계는 ✓로 접히고 다음 단계는 잠겨 있다.
+// - 완료 여부는 클릭이 아니라 서버(DB) 상태로 판정한다 → 중간에 실패하거나 꼬여도 정확한 곳에서 이어진다.
+// - 시연 계정(demo01·user14·user23·admin)의 동작은 가이드가 대신 실행한다 (로그인 계정을 바꿀 필요 없음).
 
-type Account = { loginId: string; password: string; label: string }
-const DEMO: Account = { loginId: 'demo01', password: 'siktak1234', label: '심사위원 참가자 (demo01)' }
-const ADMIN: Account = { loginId: 'admin', password: 'siktak-admin!', label: '운영자 (admin)' }
-const USER14: Account = { loginId: 'user14', password: 'siktak1234', label: 'user14 (대기→일정 이동)' }
-const USER23: Account = { loginId: 'user23', password: 'siktak1234', label: 'user23 (환불)' }
-const USER24: Account = { loginId: 'user24', password: 'siktak1234', label: 'user24 (미응답→보관)' }
+const http = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL })
+const tokens: Record<string, string> = {}
+const PASSWORDS: Record<string, string> = {
+  demo01: 'siktak1234',
+  user14: 'siktak1234',
+  user23: 'siktak1234',
+  admin: 'siktak-admin!',
+}
 
-type Action =
-  | { kind: 'link'; to: string; label: string }
-  | { kind: 'jump'; code: string; label: string }
-  | { kind: 'bulk'; id: 'checkin' | 'feedback' | 'round2'; label: string }
-  | { kind: 'login'; account: Account }
+async function login(loginId: string): Promise<Session> {
+  const res = await http.post<Session>('/api/v1/auth/login', { loginId, password: PASSWORDS[loginId] })
+  tokens[loginId] = res.data.accessToken
+  return res.data
+}
+async function call<T = unknown>(as: string, method: 'get' | 'post' | 'put', path: string, data?: unknown): Promise<T> {
+  if (!tokens[as]) await login(as)
+  try {
+    return (await http.request<T>({ method, url: path, data, headers: { Authorization: `Bearer ${tokens[as]}` } })).data
+  } catch (e) {
+    if (axios.isAxiosError(e) && e.response?.status === 401) {
+      // 초기화 등으로 토큰이 무효가 되면 한 번 다시 로그인한다
+      delete tokens[as]
+      await login(as)
+      return (await http.request<T>({ method, url: path, data, headers: { Authorization: `Bearer ${tokens[as]}` } })).data
+    }
+    throw e
+  }
+}
 
+interface Progress {
+  now: string
+  offsetSeconds: number
+  jumps: { code: string; label: string; at: string; reached: boolean }[]
+  demoApplicationId: number | null
+  demoPayment: string | null
+  demoMatch: string | null
+  demoAttendance: string | null
+  demoFeedback: boolean
+  demoAvoid: boolean
+  user14Offered: boolean
+  user14Transferred: boolean
+  user23Offered: boolean
+  user23Refunded: boolean
+  round2Applied: boolean
+  stats: {
+    autoActions: number
+    operatorActions: number
+    participantActions: number
+    matchRuns: number
+    tablesConfirmed: number
+    venuesAssigned: number
+    chatRooms: number
+    notificationsSent: number
+    remindersSent: number
+    contentsPosted: number
+    refundsDone: number
+    reallocated: number
+    openExceptions: number
+    venueExceptions: number
+    noShowCandidates: number
+    applicants: number
+    paid: number
+  }
+}
+
+const fetchProgress = () => call<Progress>('demo01', 'get', '/api/v1/demo/progress')
+const jump = (code: string) => call('demo01', 'post', `/api/v1/demo/jump/${code}`)
+
+// ---- 단계에서 대신 실행하는 동작들 ----
+
+async function applyAndPay(p: Progress) {
+  let appId = p.demoApplicationId
+  if (appId == null) {
+    const slots = await call<{ id: number; regionName: string; startsAt: string }[]>('demo01', 'get', '/api/v1/slots')
+    const s1 = slots.filter((s) => s.regionName === '성수').sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0]
+    if (!s1) throw new Error('신청할 수 있는 성수 회차가 없어요. 위의 "처음부터 다시 시작"을 눌러 주세요.')
+    appId = (await call<{ id: number }>('demo01', 'post', '/api/v1/applications', { slotIds: [s1.id], passType: 'SINGLE' })).id
+  }
+  await call('demo01', 'post', `/api/v1/applications/${appId}/payments/mock-approve`)
+}
+
+async function resolveFailed() {
+  // user14: 추천 일정으로 이동, user23: 환불. user24는 일부러 아무것도 하지 않는다 (기한이 지나면 자동 보관).
+  const apps14 = await call<{ id: number; matchStatus: string | null }[]>('user14', 'get', '/api/v1/me/applications')
+  const a14 = apps14.find((a) => a.matchStatus === 'ALTERNATIVE_OFFERED')
+  if (a14) {
+    const r = await call<{ offeredSlots: { slot: { id: number }; available: boolean }[] }>(
+      'user14', 'get', `/api/v1/me/applications/${a14.id}/resolution`)
+    const target = r.offeredSlots.find((o) => o.available)
+    if (!target) throw new Error('user14에게 이동할 수 있는 추천 일정이 없어요.')
+    await call('user14', 'post', `/api/v1/me/applications/${a14.id}/resolution`, { choice: 'TRANSFER', slotId: target.slot.id })
+  }
+  const apps23 = await call<{ id: number; matchStatus: string | null }[]>('user23', 'get', '/api/v1/me/applications')
+  const a23 = apps23.find((a) => a.matchStatus === 'ALTERNATIVE_OFFERED')
+  if (a23) await call('user23', 'post', `/api/v1/me/applications/${a23.id}/resolution`, { choice: 'REFUND' })
+}
+
+async function checkIn(p: Progress) {
+  if (p.demoApplicationId == null) throw new Error('신청 정보가 없어요.')
+  await call('demo01', 'post', `/api/v1/me/applications/${p.demoApplicationId}/check-in`)
+  await call('demo01', 'post', '/api/v1/demo/check-in-all')
+}
+
+async function giveFeedback(p: Progress) {
+  const id = p.demoApplicationId
+  if (id == null) throw new Error('신청 정보가 없어요.')
+  await call('demo01', 'post', '/api/v1/feedbacks', {
+    applicationId: id, tableRating: 5, conversationRating: 4, venueRating: 4, rejoinIntent: 5, recommendScore: 9,
+    comment: '시연 가이드가 대신 입력한 피드백',
+  })
+  const companions = await call<{ companionId: number }[]>('demo01', 'get', `/api/v1/me/applications/${id}/companions`)
+  if (companions.length > 0) {
+    const choices = [{ companionId: companions[0].companionId, preference: 'AVOID' }]
+    if (companions.length > 1) choices.push({ companionId: companions[1].companionId, preference: 'WANT_AGAIN' })
+    await call('demo01', 'put', `/api/v1/me/applications/${id}/person-preferences`, { choices })
+  }
+  await call('demo01', 'post', '/api/v1/demo/feedback-all')
+}
+
+// ---- 단계 정의 ----
+
+interface Sub {
+  label: string
+  explain: string
+  done: boolean
+  run: () => Promise<unknown>
+}
+interface View {
+  label: string
+  as: 'demo01' | 'admin' | 'user14' | 'user23'
+  to: string
+}
 interface Step {
   n: number
   title: string
   prd: string
-  who: string
-  todo: string[]
-  expect: string
-  actions: Action[]
-  /** 이 단계가 끝났다고 볼 수 있는 점프 코드 (도달했으면 "지나감" 표시) */
-  doneAfter?: string
+  intro: string
+  subs: Sub[]
+  /** 이 단계에서 순서가 꼬였을 때의 안내 (있으면 버튼 대신 초기화를 권한다) */
+  blocked?: string
+  result: string[]
+  views: View[]
 }
 
-const STEPS: Step[] = [
-  {
-    n: 1,
-    title: '참가자가 날짜·지역을 골라 신청한다',
-    prd: 'APP-01~04 · PAY-01·02',
-    who: '참가자 (일반 창)',
-    todo: [
-      '참가자(demo01)로 로그인합니다.',
-      '"일정"에서 성수(S1)를 고르고 [다음 →] → [결제하기]를 누릅니다. (결제는 모의라 버튼 한 번이면 완료돼요)',
-    ],
-    expect: '"결제 완료 · 매칭 대기"와 매칭 예정 시각, 환불 규정(2일 전 이후 환불 불가)이 보입니다.',
-    actions: [
-      { kind: 'login', account: DEMO },
-      { kind: 'link', to: '/app/slots', label: '일정 고르러 가기 →' },
-    ],
-  },
-  {
-    n: 2,
-    title: '매칭 마감 시각이 되면 자동으로 매칭이 실행된다',
-    prd: 'MAT-01',
-    who: '운영자 (시크릿 창) 또는 아무 계정',
-    todo: [
-      '[1회차 매칭 마감으로 이동]을 누르면 서버 시간이 매칭 마감 시각으로 옮겨지고, 운영자가 아무것도 누르지 않아도 매칭이 실행돼요.',
-    ],
-    expect: '매칭 모니터에 실행 1건이 "스케줄러(자동)"로 생겼습니다.',
-    doneAfter: 'J1',
-    actions: [
-      { kind: 'jump', code: 'J1', label: '⏩ 1회차 매칭 마감으로 이동' },
-      { kind: 'link', to: '/admin/matching', label: '매칭 모니터 보기 →' },
-    ],
-  },
-  {
-    n: 3,
-    title: '필수 조건과 우선순위로 4~6인 테이블이 만들어진다',
-    prd: 'MAT-02~07 · MAT-09',
-    who: '운영자',
-    todo: ['매칭 모니터에서 실행을 열고, 테이블 상세에서 구성원·연령 차·성비·MBTI·공통 관심사·점수를 봅니다.'],
-    expect: 'S1에 테이블 3개, S2에 1개. 연령 차 8살 이내, user05와 user06은 서로 다른 테이블.',
-    actions: [{ kind: 'link', to: '/admin/matching', label: '매칭 모니터 →' }],
-  },
-  {
-    n: 4,
-    title: '4명 미만·조건 미충족은 해제하고 다른 테이블로 재배치한다',
-    prd: 'STA-03 · MAT-08 · MAT-12',
-    who: '운영자',
-    todo: ['매칭 모니터 실행 상세의 "배치 로그"에서 재배치된 사람을 봅니다.'],
-    expect: 'user15가 연령 조건으로 S2에서 S1로 재배치, user14는 대기 복귀, user16은 미결제라 제외.',
-    actions: [{ kind: 'link', to: '/admin/matching', label: '배치 로그 보기 →' }],
-  },
-  {
-    n: 5,
-    title: '조건을 통과한 테이블은 운영자 승인 없이 자동 확정된다',
-    prd: 'MAT-10',
-    who: '운영자',
-    todo: ['대시보드의 자동 확정률·운영자 개입률을 봅니다.'],
-    expect: '모든 테이블이 확정 상태이고, 확정에 운영자가 개입한 건은 0%입니다.',
-    actions: [{ kind: 'link', to: '/admin', label: '운영 대시보드 →' }],
-  },
-  {
-    n: 6,
-    title: '식당을 자동 배정하고 단체방을 자동 생성한다',
-    prd: 'INF-02·04 · MAT-13',
-    who: '운영자',
-    todo: [
-      '테이블 상세에서 배정된 식당·예약명과 단체방 메시지를 봅니다.',
-      '예외 처리함의 "식당 부족 1건"은 시연을 위해 일부러 만든 예외예요. 식당 재고에서 수용 수를 올리면 해결돼요.',
-    ],
-    expect: '식당이 자동 배정되고, 식당이 부족한 테이블 1개만 예외로 올라옵니다(운영자가 해결하는 유일한 예외).',
-    actions: [
-      { kind: 'link', to: '/admin/exceptions', label: '예외 처리함 →' },
-      { kind: 'link', to: '/admin/venues', label: '식당 재고 →' },
-    ],
-  },
-  {
-    n: 7,
-    title: '참가자가 단체방에서 결과·식당·큐레이션·안내를 확인한다',
-    prd: 'INF-01·03·05·06',
-    who: '참가자',
-    todo: ['참가자(demo01)로 알림에서 "테이블이 확정됐어요"를 열고 단체방에 들어갑니다.'],
-    expect: '식당·집합 시간·예약명, 큐레이션(연령대·성비·공통 관심사), 취소 정책 공지. 다른 참가자의 상세 정보와 점수는 보이지 않아요.',
-    actions: [
-      { kind: 'login', account: DEMO },
-      { kind: 'link', to: '/app/notifications', label: '알림 →' },
-      { kind: 'link', to: '/app', label: '내 신청(단체방) →' },
-    ],
-  },
-  {
-    n: 8,
-    title: '매칭 실패자에게 대체 일정을 추천하고 이동·환불을 자동 처리한다',
-    prd: 'MAT-11 · STA-04~06 · PAY-03',
-    who: '참가자 3명 (user14·23·24)',
-    todo: [
-      '[S3 매칭 마감으로 이동]을 누릅니다.',
-      'user14로 로그인해 추천 일정(강남)으로 [이동], user23으로 [환불], user24는 아무것도 하지 않습니다.',
-    ],
-    expect: 'user14는 결제 유지·추가 결제 없이 새 일정 대기, user23은 운영자 승인 없이 환불 완료, user24는 선택 대기(기한이 지나면 이용권으로 자동 보관).',
-    doneAfter: 'J2',
-    actions: [
-      { kind: 'jump', code: 'J2', label: '⏩ S3 매칭 마감으로 이동' },
-      { kind: 'login', account: USER14 },
-      { kind: 'login', account: USER23 },
-      { kind: 'login', account: USER24 },
-      { kind: 'link', to: '/app', label: '내 신청 보기 →' },
-    ],
-  },
-  {
-    n: 9,
-    title: '행사 전 리마인드와 행사 중 대화 콘텐츠가 자동 게시된다',
-    prd: 'INF-07·08 · CON-01~03',
-    who: '참가자',
-    todo: ['[행사 1일 전]과 [행사 시작]으로 차례로 이동한 뒤 참가자(demo01) 알림과 단체방을 봅니다.'],
-    expect: '리마인드(시간·장소·예약명·취소 정책) 알림, 단체방에 대화 주제 3개 + 아이스브레이킹 게시.',
-    doneAfter: 'J4',
-    actions: [
-      { kind: 'jump', code: 'J3', label: '⏩ 행사 1일 전으로 이동' },
-      { kind: 'jump', code: 'J4', label: '⏩ 행사 시작으로 이동' },
-      { kind: 'login', account: DEMO },
-      { kind: 'link', to: '/app/notifications', label: '알림 →' },
-    ],
-  },
-  {
-    n: 10,
-    title: '행사 후 참가자가 체크인하고 만족도·사람별 선호를 입력한다',
-    prd: 'FDB-01~04',
-    who: '참가자 + 운영자',
-    todo: [
-      '참가자(demo01) 신청 상세에서 [체크인]을 누릅니다.',
-      '[체크인 일괄] → [행사 종료로 이동] 후, 참가자가 피드백(테이블·대화·식당 만족도)과 동석자 선호(다시 만나고 싶지 않은 사람 1명)를 입력합니다.',
-      '[피드백 일괄]로 나머지 참석자의 기본 피드백을 채웁니다.',
-    ],
-    expect: '체크인하지 않은 user13은 노쇼 "후보"로만 표시되고 운영자가 확정합니다. 선호 선택은 상대에게 보이지 않아요.',
-    doneAfter: 'J5',
-    actions: [
-      { kind: 'login', account: DEMO },
-      { kind: 'bulk', id: 'checkin', label: '체크인 일괄' },
-      { kind: 'jump', code: 'J5', label: '⏩ 행사 종료로 이동' },
-      { kind: 'bulk', id: 'feedback', label: '피드백 일괄' },
-      { kind: 'link', to: '/app', label: '내 신청(피드백) →' },
-      { kind: 'link', to: '/admin/feedback', label: '피드백 요약 →' },
-    ],
-  },
-  {
-    n: 11,
-    title: '다음 매칭에서 이전 만남과 피드백이 반영된다',
-    prd: 'MAT-05·06 · RET-01·02',
-    who: '운영자 + 참가자',
-    todo: [
-      '[2회차 신청 투입] 후 [2회차 매칭 마감으로 이동]을 누릅니다. (demo01은 1회차 참석자라 자동 포함돼요)',
-      '매칭 모니터에서 S4 테이블을 열어 "피하고 싶은 사람" 쌍이 다른 테이블인지 봅니다.',
-    ],
-    expect: '"다시 만나고 싶지 않음" 쌍이 분리되고 1회차 동석자가 분산됩니다. 참가 이력과 다음 식탁 추천(S6·S7)도 보여요.',
-    doneAfter: 'J6',
-    actions: [
-      { kind: 'bulk', id: 'round2', label: '2회차 신청 투입' },
-      { kind: 'jump', code: 'J6', label: '⏩ 2회차 매칭 마감으로 이동' },
-      { kind: 'link', to: '/admin/matching', label: '매칭 모니터 →' },
-      { kind: 'link', to: '/app/history', label: '참가 이력·추천 →' },
-    ],
-  },
-  {
-    n: 12,
-    title: '정상 흐름은 운영자 개입 없이 끝나고, 해결되지 않은 예외만 운영자 화면에 나타난다',
-    prd: 'MAT-13',
-    who: '운영자',
-    todo: ['대시보드의 자동화 지표와 예외 처리함을 봅니다.'],
-    expect: '예외 처리함에는 식당 부족(6단계에서 처리)과 체크인하지 않은 노쇼 후보만 있습니다. 매칭·확정·환불·안내는 사람이 건드리지 않았어요.',
-    actions: [
-      { kind: 'link', to: '/admin', label: '운영 대시보드 →' },
-      { kind: 'link', to: '/admin/exceptions', label: '예외 처리함 →' },
-    ],
-  },
-]
+function buildSteps(p: Progress): Step[] {
+  const reached = (code: string) => p.jumps.find((j) => j.code === code)?.reached ?? false
+  const paid = p.demoPayment === 'PAID'
+  const s = p.stats
+  return [
+    {
+      n: 1,
+      title: '참가자가 일정을 골라 신청하고 결제한다',
+      prd: 'PRD 1 · APP-01~04 · PAY-01·02',
+      intro: '참가자 "심사위원(demo01)"이 성수 회차에 신청하고 모의 결제까지 마칩니다. (결제는 버튼 한 번)',
+      blocked: !paid && reached('J1') ? '이미 매칭 시간이 지나 신청할 수 없어요.' : undefined,
+      subs: [
+        {
+          label: '성수 회차에 신청하고 결제하기',
+          explain: 'demo01이 [일정 선택 → 신청 → 모의 결제]를 한 번에 진행해 드려요.',
+          done: paid,
+          run: () => applyAndPay(p),
+        },
+      ],
+      result: paid ? ['신청과 결제가 완료되어 "매칭 대기" 상태가 됐어요.', `신청자 ${s.applicants}명 · 결제 완료 ${s.paid}건`] : [],
+      views: [{ label: '내 신청 보기', as: 'demo01', to: '/app' }],
+    },
+    {
+      n: 2,
+      title: '마감 시각이 되면 시스템이 자동으로 매칭·확정·식당 배정·단체방 생성까지 한다',
+      prd: 'PRD 2~7 · MAT-01~13 · INF-01~06',
+      intro: '여기서는 사람이 아무것도 하지 않아요. 시간만 매칭 마감 시각으로 옮기면, 시스템이 스스로 돌아갑니다.',
+      subs: [
+        {
+          label: '시간을 매칭 마감 시각으로 옮기기',
+          explain: '운영자가 "매칭 시작"을 누르지 않아도 마감 시각이 되면 자동으로 실행돼요.',
+          done: reached('J1'),
+          run: () => jump('J1'),
+        },
+      ],
+      result: reached('J1')
+        ? [
+            `자동 매칭 ${s.matchRuns}회 실행 → 테이블 ${s.tablesConfirmed}개를 운영자 승인 없이 자동 확정`,
+            `조건이 안 맞아 다른 테이블로 자동 재배치된 사람 ${s.reallocated}명`,
+            `식당 자동 배정 ${s.venuesAssigned}/${s.tablesConfirmed}개 테이블 · 단체방 ${s.chatRooms}개 자동 생성 · 알림 ${s.notificationsSent}건 발송`,
+            s.venueExceptions > 0
+              ? `식당이 부족했던 테이블 ${s.venueExceptions}개만 예외 처리함에 올라갔어요 (시연을 위해 일부러 만든 예외)`
+              : '예외 없이 모두 자동 처리됐어요.',
+          ]
+        : [],
+      views: [
+        { label: '내 단체방 보기 (참가자)', as: 'demo01', to: '/app/chats' },
+        { label: '매칭 모니터 보기 (운영자)', as: 'admin', to: '/admin/matching' },
+        { label: '예외 처리함 (운영자)', as: 'admin', to: '/admin/exceptions' },
+      ],
+    },
+    {
+      n: 3,
+      title: '매칭되지 못한 참가자에게 다른 일정을 추천하고, 이동·환불을 자동 처리한다',
+      prd: 'PRD 8 · MAT-11 · STA-04~06 · PAY-03',
+      intro: '성수 3회차(S3)는 신청자가 부족해 매칭되지 않아요. 실패한 참가자에게 대체 일정이 제안되고, 선택은 자동 처리됩니다.',
+      subs: [
+        {
+          label: '3회차 매칭 마감 시각으로 옮기기',
+          explain: '신청자가 부족한 회차의 참가자 3명(user14·23·24)이 "매칭 실패 → 대체 일정 제안" 상태가 돼요.',
+          done: reached('J2'),
+          run: () => jump('J2'),
+        },
+        {
+          label: 'user14는 일정 이동, user23은 환불 선택하기',
+          explain: '두 사람이 각자 선택한 것으로 가이드가 대신 눌러 드려요. user24는 일부러 선택하지 않아요(기한 후 이용권 자동 보관).',
+          done: p.user14Transferred && p.user23Refunded,
+          run: resolveFailed,
+        },
+      ],
+      result:
+        p.user14Transferred && p.user23Refunded
+          ? [
+              'user14: 결제를 유지한 채 새 일정의 매칭 대기로 자동 전환 (추가 결제 없음)',
+              `user23: 운영자 승인 없이 원결제수단으로 자동 환불 완료 (환불 ${s.refundsDone}건)`,
+              'user24: 선택하지 않아도 기한이 지나면 이용권으로 자동 보관돼요.',
+            ]
+          : [],
+      views: [
+        { label: 'user14 화면 보기', as: 'user14', to: '/app' },
+        { label: 'user23 화면 보기', as: 'user23', to: '/app' },
+        { label: '결제·환불 내역 (운영자)', as: 'admin', to: '/admin/payments' },
+      ],
+    },
+    {
+      n: 4,
+      title: '행사 전 리마인드와 행사 중 대화 콘텐츠가 자동으로 올라온다',
+      prd: 'PRD 9 · INF-07·08 · CON-01~03',
+      intro: '시간을 행사 하루 전, 행사 시작으로 차례로 옮기면 안내가 알아서 게시돼요.',
+      subs: [
+        { label: '행사 1일 전으로 옮기기', explain: '시간·장소·예약명·취소 정책 리마인드가 자동 발송돼요.', done: reached('J3'), run: () => jump('J3') },
+        { label: '행사 시작 시각으로 옮기기', explain: '단체방에 대화 주제 3개와 아이스브레이킹이 자동 게시돼요.', done: reached('J4'), run: () => jump('J4') },
+      ],
+      result: reached('J4')
+        ? [`리마인드 알림 ${s.remindersSent}건 자동 발송`, `대화 주제·아이스브레이킹 ${s.contentsPosted}개 단체방에 자동 게시`]
+        : reached('J3')
+          ? [`리마인드 알림 ${s.remindersSent}건 자동 발송`]
+          : [],
+      views: [
+        { label: '알림 보기 (참가자)', as: 'demo01', to: '/app/notifications' },
+        { label: '내 단체방 보기 (참가자)', as: 'demo01', to: '/app/chats' },
+      ],
+    },
+    {
+      n: 5,
+      title: '행사 후 참가자가 체크인하고 만족도와 사람별 선호를 입력한다',
+      prd: 'PRD 10 · FDB-01~04',
+      intro: '체크인 → 행사 종료 → 피드백 순서예요. 입력은 가이드가 대신 해 드립니다.',
+      subs: [
+        {
+          label: '체크인하기',
+          explain: 'demo01과 다른 참석자가 앱에서 체크인해요. (user13은 일부러 안 해서 노쇼 "후보"가 돼요)',
+          done: p.demoAttendance === 'ATTENDED',
+          run: () => checkIn(p),
+        },
+        { label: '행사 종료 시각으로 옮기기', explain: '체크인하지 않은 사람은 노쇼 "후보"로만 표시되고, 운영자가 확정해요.', done: reached('J5'), run: () => jump('J5') },
+        {
+          label: '만족도·사람별 선호 입력하기',
+          explain: '테이블·대화·식당 만족도와, 같은 테이블 1명은 "다시 만나고 싶지 않음", 1명은 "다시 만나고 싶음"으로 비공개 저장해요.',
+          done: p.demoFeedback && p.demoAvoid,
+          run: () => giveFeedback(p),
+        },
+      ],
+      result:
+        p.demoFeedback && p.demoAvoid
+          ? [`피드백 저장 완료 · 선호는 상대에게 보이지 않아요`, `체크인하지 않은 노쇼 후보 ${s.noShowCandidates}명이 예외 처리함에 올라갔어요 (운영자는 후보만 확인)`]
+          : [],
+      views: [
+        { label: '내 신청(피드백) 보기 (참가자)', as: 'demo01', to: '/app' },
+        { label: '피드백 요약 (운영자)', as: 'admin', to: '/admin/feedback' },
+      ],
+    },
+    {
+      n: 6,
+      title: '다음 매칭에서 이전 만남과 피드백이 반영된다',
+      prd: 'PRD 11 · MAT-05·06 · RET-01·02',
+      intro: '1회차 참석자들이 2회차에 다시 신청하면, 앞에서 남긴 "피하고 싶음"과 이전 만남이 다음 매칭에 반영돼요.',
+      subs: [
+        { label: '2회차 신청 넣기', explain: '1회차 참석자 전원과 새 참가자 2명이 2회차에 신청·결제해요.', done: p.round2Applied, run: () => call('demo01', 'post', '/api/v1/demo/round2-applications') },
+        { label: '2회차 매칭 마감 시각으로 옮기기', explain: '자동 매칭이 다시 돌아요. 피하고 싶다고 한 쌍은 다른 테이블로, 이전 동석자는 가능한 한 분산돼요.', done: reached('J6'), run: () => jump('J6') },
+      ],
+      result: reached('J6')
+        ? ['2회차 매칭이 자동으로 끝났어요. 피하고 싶다고 한 쌍은 같은 테이블에 앉지 않아요.', '참가 이력과 다음 일정 추천도 자동으로 만들어졌어요.']
+        : [],
+      views: [
+        { label: '2회차 테이블 보기 (운영자)', as: 'admin', to: '/admin/matching' },
+        { label: '참가 이력·다음 식탁 추천 (참가자)', as: 'demo01', to: '/app/history' },
+      ],
+    },
+    {
+      n: 7,
+      title: '정상 흐름은 운영자 개입 없이 끝나고, 해결되지 않은 예외만 운영자에게 남는다',
+      prd: 'PRD 12 · MAT-13',
+      intro: '지금까지 모든 단계를 시스템이 자동으로 처리했어요. 운영자 화면에는 사람이 봐야 하는 예외만 남아요.',
+      subs: [],
+      result: reached('J6')
+        ? [
+            `시스템이 자동으로 처리한 상태 변경 ${s.autoActions}건 · 운영자가 직접 처리한 것 ${s.operatorActions}건`,
+            `처리할 예외 ${s.openExceptions}건: 식당 부족 ${s.venueExceptions}건(일부러 만든 예외), 체크인하지 않은 노쇼 후보 ${s.noShowCandidates}건`,
+          ]
+        : [],
+      views: [
+        { label: '운영 대시보드 보기', as: 'admin', to: '/admin' },
+        { label: '예외 처리함 보기', as: 'admin', to: '/admin/exceptions' },
+      ],
+    },
+  ]
+}
 
-const btn =
-  'inline-flex min-h-[40px] items-center justify-center rounded-xl border border-line px-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40'
+const stepDone = (step: Step) => step.subs.length > 0 && step.subs.every((s) => s.done)
 
 export default function GuidePage() {
   const queryClient = useQueryClient()
-  const [session, setSessionState] = useState<Session | null>(() => getSession())
-  const [message, setMessage] = useState<string | null>(null)
-  const status = useQuery({
-    queryKey: ['guide-status', session?.user.id],
-    queryFn: api.guideStatus,
-    enabled: !!session,
-    retry: false,
-    refetchInterval: 20_000,
-  })
-  const reached = new Set(status.data?.jumps.filter((j) => j.reached).map((j) => j.code))
+  const progress = useQuery({ queryKey: ['guide-progress'], queryFn: fetchProgress, refetchInterval: 8_000, retry: 1 })
+  const [busy, setBusy] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [open, setOpen] = useState<number | null>(null)
 
-  const login = useMutation({
-    mutationFn: (a: Account) => api.login(a.loginId, a.password),
-    onSuccess: (s) => {
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['guide-progress'] })
+  const act = async (key: string, fn: () => Promise<unknown>) => {
+    setBusy(key)
+    setError(null)
+    try {
+      await fn()
+      await refresh()
+    } catch (e) {
+      setError(errorMessage(e))
+      await refresh()
+    } finally {
+      setBusy(null)
+    }
+  }
+  const reset = () =>
+    act('reset', async () => {
+      if (!window.confirm('처음부터 다시 시작할까요?\n시간이 실제 현재 시각으로 돌아가고, 모든 데이터가 처음 시드 상태로 복원돼요.')) return
+      await call('demo01', 'post', '/api/v1/demo/clock/reset')
+      Object.keys(tokens).forEach((k) => delete tokens[k])
+      setOpen(null)
+    })
+  // 해당 계정으로 이 브라우저에 로그인한 뒤 화면을 연다. 돌아올 때는 화면 아래 "시연 가이드" 알약을 누른다.
+  const view = (v: View) =>
+    act('view', async () => {
+      const s = await login(v.as)
       setSession(s)
-      setSessionState(s)
-      queryClient.clear()
-      setMessage(`${s.user.name}(${s.user.loginId})으로 로그인했어요.`)
-    },
-  })
-  const run = useMutation({
-    mutationFn: async (action: Extract<Action, { kind: 'jump' | 'bulk' }>) => {
-      if (action.kind === 'jump') {
-        await api.guideJump(action.code)
-        return `${action.label} 완료`
+      try {
+        localStorage.setItem('siktak.guide.active', '1')
+      } catch {
+        // 저장소를 못 써도 화면 이동은 된다
       }
-      const fn = action.id === 'checkin' ? api.guideCheckInAll : action.id === 'feedback' ? api.guideFeedbackAll : api.guideRound2
-      const r = await fn()
-      return `${action.label}: ${r.message}`
-    },
-    onSuccess: (text) => {
-      setMessage(text)
-      queryClient.invalidateQueries()
-    },
-    onError: (e) => setMessage(errorMessage(e)),
-  })
-  const busy = login.isPending || run.isPending
+      window.location.assign(v.to)
+    })
+
+  const p = progress.data
+  const steps = p ? buildSteps(p) : []
+  const currentIdx = steps.findIndex((st) => !stepDone(st) && st.subs.length > 0)
+  const doneCount = steps.filter(stepDone).length
+  const allDone = p != null && currentIdx === -1
 
   return (
-    <main className="mx-auto min-h-screen max-w-3xl bg-paper px-4 pb-16 text-ink">
-      <header className="flex items-center justify-between gap-2 pt-4 pb-2">
+    <main className="mx-auto min-h-screen max-w-2xl bg-paper px-4 pb-24 text-ink">
+      <header className="flex items-center justify-between pt-4 pb-2">
         <Link to="/login" className="font-serif text-xl font-black tracking-[-0.5px]">
           우연한 식탁
         </Link>
-        {session && <DemoClock align="right" />}
+        <button type="button" onClick={reset} disabled={busy != null} className="text-xs font-bold text-muted underline disabled:opacity-40">
+          ↺ 처음부터 다시 시작
+        </button>
       </header>
       <h1 className="mt-2 font-serif text-[26px] leading-tight font-black tracking-[-1px]">시연 가이드</h1>
       <p className="mt-1 text-sm text-body">
-        PRD 18장 "해커톤 완료 조건" 12단계를 순서대로 따라가는 안내예요. 단계마다 <b>무엇을 누르고 무엇이 보여야 하는지</b> 적어 두었어요.
+        <b>위에서부터 한 단계씩, 노란 버튼만 누르면</b> 됩니다. 사람이 하는 일은 거의 없고, 시스템이 스스로 돌아가는 모습을 단계마다 숫자로 보여 드려요.
       </p>
 
-      <section className="mt-4 rounded-2xl border border-line bg-card p-4 text-sm">
-        <b>시작하기 전에</b>
-        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-body">
-          <li>
-            <b>창을 두 개</b> 쓰세요. 참가자는 일반 창, 운영자는 <b>시크릿 창</b>. 같은 브라우저에서 계정을 바꾸면 다른 창도 같은 계정이 돼요.
-          </li>
-          <li>
-            이 서비스의 시간은 <b>헤더 가운데 점선 칩(테스트용 시간)</b>으로 옮겨요. 매칭 마감·행사 시작 같은 시각을 기다리지 않고 지나가면서
-            그때 자동으로 돌아가는 일들이 실행돼요. <b>시간은 앞으로만 가고, 모든 사용자가 같이 써요.</b>
-          </li>
-          <li>
-            처음부터 다시 보려면 칩을 눌러 <b>"실제 현재 시각으로 초기화"</b>를 누르세요. 시간과 데이터가 처음 상태로 돌아가요.
-          </li>
-          <li>
-            운영자 화면의 "예외 처리함"은 정상 흐름에서는 거의 비어 있어요. 시연 중 보이는 <b>식당 부족 1건</b>(6단계)과{' '}
-            <b>체크인하지 않은 노쇼 후보</b>(10단계)만 예상된 예외예요.
-          </li>
-        </ul>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button type="button" disabled={busy} className={`${btn} bg-paper`} onClick={() => login.mutate(DEMO)}>
-            참가자(demo01)로 시작
-          </button>
-          <button type="button" disabled={busy} className={`${btn} bg-paper`} onClick={() => login.mutate(ADMIN)}>
-            운영자(admin)로 시작
-          </button>
-          <span className="text-xs text-muted">
-            {session ? `현재: ${session.user.name} (${session.user.loginId})` : '로그인 전 — 로그인하면 단계별 실행 버튼이 켜져요'}
-          </span>
-        </div>
-      </section>
-
-      {(message || login.isError || status.isError) && (
-        <p className="mt-3 rounded-xl bg-gold-soft px-3 py-2 text-sm font-bold">
-          {message ?? errorMessage(login.error ?? status.error)}
-        </p>
+      {p && (
+        <section className="mt-4 rounded-2xl border border-line bg-card p-4">
+          <div className="flex items-center justify-between text-sm">
+            <b>{allDone ? '모든 단계 완료 🎉' : `진행 ${doneCount} / ${steps.length - 1}`}</b>
+            <span className="text-xs text-muted">서버 시각 {formatDateTime(p.now)}</span>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-paper">
+            <div className="h-full bg-accent transition-all" style={{ width: `${(doneCount / (steps.length - 1)) * 100}%` }} />
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-center">
+            <div className="rounded-xl bg-sage px-2 py-2">
+              <div className="font-serif text-2xl font-black">{p.stats.autoActions}</div>
+              <div className="text-[11px] font-bold">시스템이 자동 처리한 상태 변경</div>
+            </div>
+            <div className="rounded-xl bg-gold-soft px-2 py-2">
+              <div className="font-serif text-2xl font-black">{p.stats.operatorActions}</div>
+              <div className="text-[11px] font-bold">운영자가 직접 처리한 것</div>
+            </div>
+          </div>
+        </section>
       )}
 
+      {progress.isPending && <p className="mt-4 text-sm text-muted">서버를 깨우는 중이에요… 최대 1분쯤 걸릴 수 있어요.</p>}
+      {progress.isError && (
+        <p className="mt-4 rounded-xl bg-gold-soft px-3 py-2 text-sm font-bold">
+          서버에 연결하지 못했어요. 잠시 뒤 다시 열어 주세요. ({errorMessage(progress.error)})
+        </p>
+      )}
+      {error && <p className="mt-3 rounded-xl bg-gold-soft px-3 py-2 text-sm font-bold text-accent">⚠ {error}</p>}
+
       <ol className="mt-4 flex flex-col gap-3">
-        {STEPS.map((s) => {
-          const done = s.doneAfter ? reached.has(s.doneAfter) : false
+        {steps.map((st, i) => {
+          const done = stepDone(st)
+          const isCurrent = i === currentIdx
+          const locked = currentIdx !== -1 && i > currentIdx
+          const final = st.subs.length === 0
+          const expanded = isCurrent || open === st.n || (final && allDone)
+          const nextSub = st.subs.findIndex((x) => !x.done)
           return (
-            <li key={s.n} className="rounded-2xl border border-line bg-card p-4">
-              <div className="flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent font-serif text-base font-black text-cream">
-                  {s.n}
+            <li
+              key={st.n}
+              className={`rounded-2xl border p-4 ${isCurrent ? 'border-accent bg-card shadow-print' : 'border-line bg-card'} ${locked ? 'opacity-50' : ''}`}
+            >
+              <button
+                type="button"
+                disabled={locked || isCurrent}
+                onClick={() => setOpen(open === st.n ? null : st.n)}
+                className="flex w-full items-start gap-3 text-left"
+              >
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-serif text-base font-black ${
+                    done ? 'bg-sage text-ink' : isCurrent ? 'bg-accent text-cream' : 'bg-paper text-muted'
+                  }`}
+                >
+                  {done ? '✓' : locked ? '🔒' : st.n}
                 </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-serif text-base leading-snug font-black">{s.title}</h2>
-                    {done && <span className="rounded-full bg-sage px-2 py-0.5 text-[11px] font-bold">시간 지나감</span>}
-                  </div>
-                  <p className="mt-0.5 text-[11px] text-muted">
-                    {s.prd} · {s.who}
-                  </p>
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-body">
-                    {s.todo.map((t) => (
-                      <li key={t}>{t}</li>
-                    ))}
-                  </ul>
-                  <p className="mt-2 rounded-lg bg-paper px-3 py-2 text-sm">
-                    <b>이렇게 보여야 해요 </b>
-                    {s.expect}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {s.actions.map((a, i) => {
-                      if (a.kind === 'link') {
+                <span className="min-w-0 flex-1">
+                  <span className="block font-serif text-base leading-snug font-black">{st.title}</span>
+                  <span className="mt-0.5 block text-[11px] text-muted">{st.prd}</span>
+                </span>
+              </button>
+
+              {expanded && (
+                <div className="mt-3 pl-11">
+                  <p className="text-sm text-body">{st.intro}</p>
+
+                  {st.blocked ? (
+                    <div className="mt-3 rounded-xl bg-gold-soft p-3 text-sm">
+                      <b>순서가 맞지 않아요.</b> {st.blocked}
+                      <button type="button" onClick={reset} className="mt-2 block rounded-xl border border-accent px-3 py-2 font-bold text-accent">
+                        ↺ 처음부터 다시 시작
+                      </button>
+                    </div>
+                  ) : (
+                    <ul className="mt-3 flex flex-col gap-2.5">
+                      {st.subs.map((sub, k) => {
+                        const key = `${st.n}-${k}`
+                        const isNext = isCurrent && k === nextSub
                         return (
-                          <Link key={i} to={a.to} className={`${btn} bg-paper`}>
-                            {a.label}
-                          </Link>
+                          <li key={key} className="flex items-start gap-2">
+                            <span className={`mt-0.5 text-sm ${sub.done ? 'text-accent' : 'text-muted'}`}>{sub.done ? '✓' : '•'}</span>
+                            <div className="min-w-0 flex-1">
+                              {isNext ? (
+                                <button
+                                  type="button"
+                                  disabled={busy != null}
+                                  onClick={() => act(key, sub.run)}
+                                  className="min-h-[46px] w-full rounded-xl border border-accent bg-gold-soft px-3 text-left text-sm font-black text-accent disabled:opacity-60"
+                                >
+                                  {busy === key ? '진행 중… 잠시만요' : `▶ ${sub.label}`}
+                                </button>
+                              ) : (
+                                <p className={`text-sm ${sub.done ? 'text-muted line-through' : 'text-muted'}`}>{sub.label}</p>
+                              )}
+                              {(isNext || !sub.done) && <p className="mt-1 text-xs text-muted">{sub.explain}</p>}
+                            </div>
+                          </li>
                         )
-                      }
-                      if (a.kind === 'login') {
-                        return (
-                          <button key={i} type="button" disabled={busy} className={`${btn} bg-paper`} onClick={() => login.mutate(a.account)}>
-                            {a.account.label}로 로그인
+                      })}
+                    </ul>
+                  )}
+
+                  {st.result.length > 0 && (
+                    <div className="mt-3 rounded-xl bg-sage/60 p-3 text-sm">
+                      <b>시스템이 자동으로 한 일</b>
+                      <ul className="mt-1 list-disc space-y-1 pl-5">
+                        {st.result.map((r) => (
+                          <li key={r}>{r}</li>
+                        ))}
+                      </ul>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {st.views.map((v) => (
+                          <button
+                            key={v.label}
+                            type="button"
+                            disabled={busy != null}
+                            onClick={() => view(v)}
+                            className="min-h-[36px] rounded-lg border border-line bg-card px-2.5 text-xs font-bold disabled:opacity-50"
+                          >
+                            {v.label} →
                           </button>
-                        )
-                      }
-                      return (
-                        <button
-                          key={i}
-                          type="button"
-                          disabled={busy || !session}
-                          title={session ? undefined : '먼저 로그인해 주세요'}
-                          className={`${btn} border-accent bg-gold-soft text-accent`}
-                          onClick={() => run.mutate(a)}
-                        >
-                          {a.label}
-                        </button>
-                      )
-                    })}
-                  </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </li>
           )
         })}
       </ol>
 
-      {status.data && (
-        <p className="mt-4 text-xs text-muted">
-          서버 시각 {formatDateTime(status.data.now)} · 이동한 시간 {Math.round(status.data.offsetSeconds / 3600)}시간
-        </p>
-      )}
+      <p className="mt-6 text-xs leading-relaxed text-muted">
+        참가자·운영자 화면 버튼을 누르면 해당 계정으로 로그인한 화면이 열려요. 돌아올 때는 화면 아래의 <b>"시연 가이드"</b> 알약을 누르세요.
+        시간은 앞으로만 가고, 모든 사용자가 같은 시간을 써요.
+      </p>
     </main>
   )
 }

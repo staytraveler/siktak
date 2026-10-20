@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import SessionBar from './SessionBar'
 import DemoClock from './DemoClock'
+import GuidePill from './GuidePill'
 import type { ReactNode } from 'react'
 
 // 운영자 웹 공통 레이아웃: 좌측 메뉴 + 본문. 데스크톱 우선.
@@ -25,6 +26,7 @@ const MENU = [
 export default function AdminLayout({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="flex min-h-screen bg-paper">
+      <GuidePill />
       <nav className="w-48 shrink-0 border-r-[1.5px] border-ink bg-card p-4">
         <p className="mb-4 font-serif text-lg font-black">우연한 식탁 운영</p>
         <ul className="space-y-1 text-sm">

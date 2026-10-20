@@ -25,11 +25,18 @@ public class DemoGuideController {
 
     private final DemoService demoService;
     private final DemoScenarioActions actions;
+    private final DemoProgressService progressService;
 
     /** 현재 시각과 J1~J6 점프 대상(도달 여부). 가이드가 단계별 진행 표시에 쓴다. */
     @GetMapping("/guide")
     public DemoService.DemoStatus guide() {
         return demoService.status();
+    }
+
+    /** 시연 가이드의 단계 완료 판정과 "시스템이 자동으로 한 일" 숫자. DB 상태에서 계산한다. */
+    @GetMapping("/progress")
+    public DemoProgressService.Progress progress() {
+        return progressService.progress();
     }
 
     @PostMapping("/jump/{code}")

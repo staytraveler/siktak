@@ -1,9 +1,10 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import { Bell, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, FileText, House, User, type LucideIcon } from 'lucide-react'
+import { Bell, CalendarCheck, MessageCircle, CalendarDays, ChevronLeft, ChevronRight, FileText, House, User, type LucideIcon } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 import Illustration from './Illustration'
 import DemoClock from '../DemoClock'
 import PushWatcher from '../PushWatcher'
+import GuidePill from '../GuidePill'
 import { dateParts } from '../../lib/design'
 
 export { default as Illustration } from './Illustration'
@@ -15,6 +16,7 @@ export function AppShell({ children, nav = true }: { children: ReactNode; nav?: 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-paper text-ink">
       <PushWatcher />
+      <GuidePill />
       <div className="flex-1 pb-6">{children}</div>
       {nav && <BottomNav />}
     </div>
@@ -291,12 +293,13 @@ export function SlotTicket({
 const TABS: { to: string; label: string; icon: LucideIcon; end?: boolean }[] = [
   { to: '/app', label: '홈', icon: House, end: true },
   { to: '/app/slots', label: '일정', icon: CalendarDays },
+  { to: '/app/chats', label: '대화', icon: MessageCircle },
   { to: '/app/notifications', label: '알림', icon: Bell },
   { to: '/app/history', label: '기록', icon: FileText },
 ]
 export function BottomNav() {
   return (
-    <nav aria-label="하단 메뉴" className="sticky bottom-0 z-30 grid h-[64px] grid-cols-4 border-t border-line bg-card">
+    <nav aria-label="하단 메뉴" className="sticky bottom-0 z-30 grid h-[64px] grid-cols-5 border-t border-line bg-card">
       {TABS.map((t) => (
         <NavLink
           key={t.to}

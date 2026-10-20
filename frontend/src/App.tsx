@@ -16,6 +16,7 @@ import AdminPaymentsPage from './pages/admin/AdminPaymentsPage'
 import AdminReportsPage from './pages/admin/AdminReportsPage'
 import ApplicationDetailPage from './pages/app/ApplicationDetailPage'
 import NotificationsPage from './pages/app/NotificationsPage'
+import ChatListPage from './pages/app/ChatListPage'
 import HistoryPage from './pages/app/HistoryPage'
 import ParticipantHomePage from './pages/app/ParticipantHomePage'
 import ProfilePage from './pages/app/ProfilePage'
@@ -34,6 +35,7 @@ const router = createBrowserRouter([
   { path: '/app/applications/:id', element: <RequireAuth><ApplicationDetailPage /></RequireAuth> },
   { path: '/app/applications/:id/table', element: <RequireAuth><TablePage /></RequireAuth> },
   { path: '/app/slots', element: <RequireAuth><SlotsPage /></RequireAuth> },
+  { path: '/app/chats', element: <RequireAuth><ChatListPage /></RequireAuth> },
   { path: '/app/history', element: <RequireAuth><HistoryPage /></RequireAuth> },
   { path: '/app/profile', element: <RequireAuth><ProfilePage /></RequireAuth> },
   { path: '/admin', element: <RequireAuth role="OPERATOR"><AdminHomePage /></RequireAuth> },

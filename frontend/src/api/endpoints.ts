@@ -24,6 +24,7 @@ import type {
   PreferenceChoice,
   Profile,
   AdminAttendance,
+  ChatRoomSummary,
   AdminMessageHistory,
   AdminPassRow,
   AdminPaymentRow,
@@ -89,6 +90,7 @@ export const api = {
   chatMessages: (chatRoomId: number) => get<ChatMessageItem[]>(`/api/v1/chat-rooms/${chatRoomId}/messages`),
   sendTableMessage: (tableId: number, content: string) =>
     post<ChatMessageItem>(`/api/v1/tables/${tableId}/messages`, { content }),
+  myChatRooms: () => get<ChatRoomSummary[]>('/api/v1/chat-rooms'),
   myNotifications: () => get<NotificationItem[]>('/api/v1/me/notifications'),
   readNotification: (id: number) => post<NotificationItem>(`/api/v1/me/notifications/${id}/read`),
   myFeedbacks: () => get<FeedbackItem[]>('/api/v1/me/feedbacks'),
