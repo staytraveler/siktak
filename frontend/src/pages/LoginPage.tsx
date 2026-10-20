@@ -51,7 +51,10 @@ export default function LoginPage() {
         <HeroDesc>로그인하고 이번 주 식탁을 골라보세요</HeroDesc>
       </HeroBlock>
 
-      <form onSubmit={submit} className="space-y-3 px-4 pt-5">
+      {/* 아이디·비밀번호 로그인은 MVP에서 미연동 (테스트 계정으로만 진입). 오버레이로 막고 입력도 비활성 */}
+      <div className="relative mx-4 mt-5">
+      <form onSubmit={submit} className="space-y-3" aria-disabled="true">
+        <fieldset disabled className="space-y-3 border-0 p-0">
         <label className="block text-sm">
           <span className="text-[11px] tracking-[1.5px] text-muted">아이디</span>
           <input
@@ -74,8 +77,15 @@ export default function LoginPage() {
         <PrimaryButton type="submit" disabled={login.isPending || !loginId || !password}>
           로그인
         </PrimaryButton>
-        {login.isError && <ErrorText>{errorMessage(login.error)}</ErrorText>}
+        </fieldset>
       </form>
+      <div className="absolute -inset-1 flex flex-col items-center justify-center gap-1 rounded-2xl bg-paper/80 text-center backdrop-blur-[2px]">
+        <span className="rounded-full border border-line bg-card px-3 py-1 text-[11px] font-bold tracking-[1.5px] text-accent">
+          MVP 미연동
+        </span>
+        <p className="text-xs text-body">아이디·비밀번호 로그인은 준비 중이에요.<br />아래 테스트 계정으로 들어가 주세요.</p>
+      </div>
+      </div>
 
       <section className="flex flex-col gap-2 px-4 pt-7 pb-10">
         <SectionHeader title="Test accounts" label="테스트 계정" />

@@ -28,3 +28,17 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
+
+/* 스플래시: 페이드인 → 유지 → 페이드아웃 (총 2.6초, SplashScreen.tsx와 맞춘다) */
+@keyframes splash-fade {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.splash-fade {
+  animation: splash-fade 2.6s ease-in-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash-fade { animation-duration: 1.2s; }
+}

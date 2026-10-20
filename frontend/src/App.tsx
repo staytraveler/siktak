@@ -19,6 +19,7 @@ import ProfilePage from './pages/app/ProfilePage'
 import SlotsPage from './pages/app/SlotsPage'
 import TablePage from './pages/app/TablePage'
 import LoginPage from './pages/LoginPage'
+import SplashScreen from './components/SplashScreen'
 
 const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/app" replace /> },
@@ -44,5 +45,10 @@ const router = createBrowserRouter([
 ])
 
 export default function App() {
-  return <RouterProvider router={router} />
+  return (
+    <>
+      <RouterProvider router={router} />
+      <SplashScreen />
+    </>
+  )
 }
