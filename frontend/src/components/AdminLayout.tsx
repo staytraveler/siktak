@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import SessionBar from './SessionBar'
+import DemoClock from './DemoClock'
 import type { ReactNode } from 'react'
 
 // 운영자 웹 공통 레이아웃: 좌측 메뉴 + 본문. 데스크톱 우선.
@@ -41,6 +42,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
       <main className="min-w-0 flex-1 p-6 [&_h2]:font-serif [&_h3]:font-serif">
         <header className="flex items-center justify-between">
           <h1 className="font-serif text-2xl font-black">{title}</h1>
+          <DemoClock />
           <SessionBar />
         </header>
         {children}

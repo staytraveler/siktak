@@ -2,6 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { Bell, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, FileText, House, User, type LucideIcon } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 import Illustration from './Illustration'
+import DemoClock from '../DemoClock'
 import { dateParts } from '../../lib/design'
 
 export { default as Illustration } from './Illustration'
@@ -25,6 +26,7 @@ export function AppHeader({ right }: { right?: ReactNode }) {
       <Link to="/app" className="font-serif text-xl font-black tracking-[-0.5px]">
         우연한 식탁
       </Link>
+      <DemoClock />
       {right ?? (
         <Link
           to="/app/profile"

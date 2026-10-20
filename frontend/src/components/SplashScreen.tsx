@@ -1,18 +1,12 @@
 import { useState } from 'react'
 
-const SEEN_KEY = 'siktak.splash.seen'
-
+// 페이지를 새로 불러올 때(첫 접속·새로고침)마다 한 번 보여준다. 앱 안에서 화면을 옮길 때는 다시 뜨지 않는다.
 function shouldShow(): boolean {
-  // 운영자 웹(/admin)에는 띄우지 않는다. 세션당 한 번만 보여준다
-  if (location.pathname.startsWith('/admin')) return false
-  try {
-    return sessionStorage.getItem(SEEN_KEY) !== '1'
-  } catch {
-    return true
-  }
+  // 운영자 웹(/admin)에는 띄우지 않는다
+  return !location.pathname.startsWith('/admin')
 }
 
-// 앱 첫 진입 스플래시: 이미지가 페이드인했다가 페이드아웃한 뒤 사라진다.
+// 앱 진입 스플래시: 이미지가 페이드인했다가 페이드아웃한 뒤 사라진다.
 export default function SplashScreen() {
   const [visible, setVisible] = useState(shouldShow)
   if (!visible) return null
@@ -21,14 +15,7 @@ export default function SplashScreen() {
     <div
       className="splash-fade fixed inset-0 z-[100] flex justify-center bg-[#1b1510]"
       aria-hidden="true"
-      onAnimationEnd={() => {
-        try {
-          sessionStorage.setItem(SEEN_KEY, '1')
-        } catch {
-          // 저장 실패해도 이번 화면만 닫으면 된다
-        }
-        setVisible(false)
-      }}
+      onAnimationEnd={() => setVisible(false)}
     >
       <img src="/illustrations/splash.jpg" alt="" className="h-full w-full max-w-[520px] object-cover" />
     </div>

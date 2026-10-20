@@ -89,6 +89,13 @@ public class DemoService {
         return status();
     }
 
+    /** 임의 시각으로 이동 (헤더의 테스트 시간 선택). 앞으로만 가능하다 — DemoClockService.jumpTo가 검사한다. */
+    public void jumpToInstant(Instant target, Long actorId) {
+        requireEnabled();
+        clockService.jumpTo(target, actorId);
+        jobRunner.runDue(JobTrigger.byOperator(actorId, "테스트 시간 이동 → " + target));
+    }
+
     public DemoStatus advance(Duration amount, Long operatorId) {
         requireEnabled();
         clockService.advance(amount, operatorId);

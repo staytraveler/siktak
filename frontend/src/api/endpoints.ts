@@ -141,6 +141,9 @@ export const api = {
   tableNotifications:(id: number) => get<TableNotification[]>(`/api/v1/admin/tables/${id}/notifications`),
 
   // 데모 도구
+  // 헤더의 테스트용 시간 (참가자·운영자 공통)
+  demoClock: () => get<{ enabled: boolean; now: string; offsetSeconds: number }>('/api/v1/demo/clock'),
+  demoSetClock: (at: string) => post<{ enabled: boolean; now: string; offsetSeconds: number }>('/api/v1/demo/clock', { at }),
   demoStatus: () => get<DemoStatus>('/api/v1/admin/demo'),
   demoReset: () => post<DemoStatus>('/api/v1/admin/demo/reset'),
   demoJump: (code: string) => post<DemoStatus>(`/api/v1/admin/demo/jump/${code}`),

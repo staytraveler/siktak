@@ -83,12 +83,12 @@ export default function LoginPage() {
         <span className="rounded-full border border-line bg-card px-3 py-1 text-[11px] font-bold tracking-[1.5px] text-accent">
           MVP 미연동
         </span>
-        <p className="text-xs text-body">아이디·비밀번호 로그인은 준비 중이에요.<br />아래 테스트 계정으로 들어가 주세요.</p>
+        <p className="text-xs text-body">아래 테스트 계정으로 들어가 주세요.</p>
       </div>
       </div>
 
       <section className="flex flex-col gap-2 px-4 pt-7 pb-10">
-        <SectionHeader title="Test accounts" label="테스트 계정" />
+        <SectionHeader title="Test accounts" />
         <p className="text-xs text-muted">탭하면 바로 로그인</p>
         {login.isError && <ErrorText>{errorMessage(login.error)}</ErrorText>}
         <ul className="flex flex-col gap-2">
