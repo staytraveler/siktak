@@ -26,6 +26,7 @@ public class AdminDemoController {
 
     private final DemoService demoService;
     private final DemoScenarioActions actions;
+    private final org.springframework.beans.factory.ObjectProvider<com.siktak.payment.infra.MockPaymentGateway> mockGateway;
 
     @GetMapping
     public DemoService.DemoStatus status() {
@@ -65,6 +66,27 @@ public class AdminDemoController {
     @PostMapping("/round2-applications")
     public DemoScenarioActions.Result round2Applications() {
         return actions.round2Applications();
+    }
+
+    public record PaymentFailureState(boolean enabled) {
+    }
+
+    /** 모의 결제 승인 실패 주입 상태 (결제 오류 예외 시연, MAT-13). */
+    @GetMapping("/mock-payment-failure")
+    public PaymentFailureState paymentFailure() {
+        com.siktak.payment.infra.MockPaymentGateway gateway = mockGateway.getIfAvailable();
+        return new PaymentFailureState(gateway != null && gateway.isFailApprove());
+    }
+
+    /** 켜면 이후 모든 결제 승인이 실패한다. 끄면 정상. */
+    @PostMapping("/mock-payment-failure")
+    public PaymentFailureState setPaymentFailure(@RequestParam boolean enabled) {
+        com.siktak.payment.infra.MockPaymentGateway gateway = mockGateway.getIfAvailable();
+        if (gateway == null) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "모의 결제를 쓰고 있지 않습니다.");
+        }
+        gateway.setFailApprove(enabled);
+        return new PaymentFailureState(enabled);
     }
 
     /** 시계를 minutes만큼 앞당긴다 (+1시간 = 60, +1일 = 1440). */

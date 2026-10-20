@@ -27,6 +27,11 @@ export default function AdminDemoPage() {
   const checkInAll = useMutation({ mutationFn: api.demoCheckInAll, onSuccess: onActionDone })
   const feedbackAll = useMutation({ mutationFn: api.demoFeedbackAll, onSuccess: onActionDone })
   const round2 = useMutation({ mutationFn: api.demoRound2, onSuccess: onActionDone })
+  const payFailure = useQuery({ queryKey: ['demo-payment-failure'], queryFn: api.demoPaymentFailure })
+  const togglePayFailure = useMutation({
+    mutationFn: (enabled: boolean) => api.demoSetPaymentFailure(enabled),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['demo-payment-failure'] }),
+  })
   const actions = [
     { label: '체크인 일괄', hint: '1회차 확정자 중 user13 제외 전원 체크인', mutation: checkInAll },
     { label: '피드백 일괄', hint: '체크인한 사람 중 피드백 없는 사람에게 기본 피드백', mutation: feedbackAll },
@@ -98,6 +103,22 @@ export default function AdminDemoPage() {
               회차·매칭 결과 보기 →
             </Link>
           </div>
+        </section>
+
+        <section className="mt-4 rounded-lg border border-gray-200 bg-white p-4">
+          <h2 className="font-semibold">결제 오류 주입 (MAT-13 시연)</h2>
+          <p className="mt-1 text-xs text-gray-500">
+            켜면 이후 모든 모의 결제 승인이 실패해 신청이 "결제 실패"가 되고 예외 처리함에 "결제 오류"가 올라옵니다.
+            끄고 참가자가 다시 결제하면 예외가 자동으로 해소됩니다.
+          </p>
+          <button
+            type="button"
+            disabled={togglePayFailure.isPending}
+            onClick={() => togglePayFailure.mutate(!payFailure.data?.enabled)}
+            className="mt-2 rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-amber-50 disabled:text-gray-400"
+          >
+            {payFailure.data?.enabled ? '🔴 결제 실패 주입 중 — 눌러서 끄기' : '⚪ 꺼짐 — 눌러서 결제 실패 주입'}
+          </button>
         </section>
 
         <section className="mt-4 rounded-lg border border-gray-200 bg-white p-4">

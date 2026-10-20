@@ -23,9 +23,12 @@ public class MockPaymentGateway implements PaymentGateway {
     private final Map<String, AtomicInteger> cancelCalls = new ConcurrentHashMap<>();
     private final Map<String, Boolean> canceled = new ConcurrentHashMap<>();
     private volatile boolean failCancel;
+    private volatile boolean failApprove;
 
-    public MockPaymentGateway(@Value("${siktak.payment.mock.fail-cancel:false}") boolean failCancel) {
+    public MockPaymentGateway(@Value("${siktak.payment.mock.fail-cancel:false}") boolean failCancel,
+            @Value("${siktak.payment.mock.fail-approve:false}") boolean failApprove) {
         this.failCancel = failCancel;
+        this.failApprove = failApprove;
     }
 
     @Override
@@ -35,7 +38,19 @@ public class MockPaymentGateway implements PaymentGateway {
 
     @Override
     public ApprovalResult approve(String orderId, long amount) {
+        if (failApprove) {
+            return ApprovalResult.failure("모의 결제: 승인 실패 주입(siktak.payment.mock.fail-approve)");
+        }
         return ApprovalResult.success("mock_" + orderId);
+    }
+
+    /** 승인 실패 주입을 켜고 끈다 (결제 오류 예외 경로 시연용, MAT-13). */
+    public void setFailApprove(boolean failApprove) {
+        this.failApprove = failApprove;
+    }
+
+    public boolean isFailApprove() {
+        return failApprove;
     }
 
     @Override

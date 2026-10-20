@@ -148,6 +148,9 @@ export const api = {
   demoReset: () => post<DemoStatus>('/api/v1/admin/demo/reset'),
   demoJump: (code: string) => post<DemoStatus>(`/api/v1/admin/demo/jump/${code}`),
   demoAdvance: (minutes: number) => post<DemoStatus>(`/api/v1/admin/demo/advance?minutes=${minutes}`),
+  demoPaymentFailure: () => get<{ enabled: boolean }>('/api/v1/admin/demo/mock-payment-failure'),
+  demoSetPaymentFailure: (enabled: boolean) =>
+    post<{ enabled: boolean }>(`/api/v1/admin/demo/mock-payment-failure?enabled=${enabled}`),
   demoCheckInAll: () => post<DemoActionResult>('/api/v1/admin/demo/check-in-all'),
   demoFeedbackAll: () => post<DemoActionResult>('/api/v1/admin/demo/feedback-all'),
   demoRound2: () => post<DemoActionResult>('/api/v1/admin/demo/round2-applications'),

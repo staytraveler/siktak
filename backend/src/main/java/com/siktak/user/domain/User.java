@@ -56,6 +56,12 @@ public class User extends BaseTimeEntity {
         }
     }
 
+    /** 이름·연락처 수정 (ACC-02). */
+    public void changeContact(String name, String phone) {
+        this.name = name;
+        this.phone = phone;
+    }
+
     public void ban() {
         accountStatus = AccountStatus.BANNED;
     }

@@ -84,12 +84,15 @@ function Detail({ application }: { application: ApplicationItem }) {
             )}
           </div>
           <NextStep application={application} />
-          {application.paymentStatus === 'PENDING' && (
+          {(application.paymentStatus === 'PENDING' || application.paymentStatus === 'FAILED') && (
             <>
               <p className="text-[11px] text-muted">진행 2일 전부터 환불 불가, 당일 취소 및 단체방 퇴장 불가</p>
+              {application.paymentStatus === 'FAILED' && (
+                <ErrorText>결제가 승인되지 않았어요. 다시 시도해 주세요. 계속 안 되면 운영자가 확인하고 있어요.</ErrorText>
+              )}
               {pay.isError && <ErrorText>{errorMessage(pay.error)}</ErrorText>}
               <PrimaryButton disabled={pay.isPending} onClick={() => pay.mutate()}>
-                결제하기 (테스트 결제 9,900원)
+                {application.paymentStatus === 'FAILED' ? '다시 결제하기 (테스트 결제 9,900원)' : '결제하기 (테스트 결제 9,900원)'}
               </PrimaryButton>
             </>
           )}
@@ -116,7 +119,7 @@ function Detail({ application }: { application: ApplicationItem }) {
 
 // 대기 상태에서도 다음에 무슨 일이 일어나는지 보여준다 (STA-02)
 function NextStep({ application }: { application: ApplicationItem }) {
-  if (application.paymentStatus === 'PENDING') {
+  if (application.paymentStatus === 'PENDING' || application.paymentStatus === 'FAILED') {
     return <p className="text-sm text-body">결제를 마치면 매칭 대기열에 들어가요.</p>
   }
   if (application.matchStatus === 'WAITING') {

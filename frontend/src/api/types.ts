@@ -146,6 +146,8 @@ export interface Resolution {
 
 export interface Profile {
   complete: boolean
+  name: string | null
+  phone: string | null
   birthYear: number | null
   gender: string | null
   job: string | null

@@ -35,7 +35,7 @@ const MBTIS = [
 ]
 
 const EMPTY: ProfileInput = {
-  birthYear: null, gender: null, job: null, mbti: null, interests: [], selfTraits: [], preferredTraits: [],
+  name: null, phone: null, birthYear: null, gender: null, job: null, mbti: null, interests: [], selfTraits: [], preferredTraits: [],
   conversationStyle: null, priceRange: null, foodRestrictions: null, allergies: null,
   privacyAgreed: false, policyAgreed: false,
 }
@@ -74,7 +74,7 @@ export default function ProfilePage() {
     })
 
   const ready =
-    form.birthYear != null && form.gender != null && form.interests.length >= 1 && form.selfTraits.length >= 1 &&
+    !!form.name?.trim() && !!form.phone?.trim() && form.birthYear != null && form.gender != null && form.interests.length >= 1 && form.selfTraits.length >= 1 &&
     form.priceRange != null && form.privacyAgreed && form.policyAgreed
 
   return (
@@ -94,6 +94,27 @@ export default function ProfilePage() {
       {profile.isError && <p className="mt-4 text-sm font-medium text-accent">{errorMessage(profile.error)}</p>}
 
       <Section title="1. 기본 정보">
+        <Label>이름</Label>
+        <input
+          type="text"
+          value={form.name ?? ''}
+          onChange={(e) => set('name', e.target.value || null)}
+          maxLength={30}
+          placeholder="이름"
+          autoComplete="name"
+          className="min-h-[44px] w-full rounded-xl border border-line bg-card px-3 text-sm"
+        />
+        <Label>연락처</Label>
+        <input
+          type="tel"
+          inputMode="tel"
+          value={form.phone ?? ''}
+          onChange={(e) => set('phone', e.target.value || null)}
+          maxLength={15}
+          placeholder="010-1234-5678"
+          autoComplete="tel"
+          className="min-h-[44px] w-full rounded-xl border border-line bg-card px-3 text-sm"
+        />
         <Label>출생연도 (만 19~45세)</Label>
         <input
           type="number"

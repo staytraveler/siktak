@@ -23,6 +23,7 @@ import com.siktak.application.infra.ApplicationRepository;
 import com.siktak.common.error.BusinessException;
 import com.siktak.common.error.ErrorCode;
 import com.siktak.payment.application.PaymentService;
+import com.siktak.exception.application.ExceptionCaseService;
 import com.siktak.payment.application.UserPassService;
 import com.siktak.payment.domain.Payment;
 import com.siktak.payment.domain.PaymentPurpose;
@@ -51,6 +52,7 @@ public class ApplicationService {
     private final StatusTransitionService transitionService;
     private final PaymentService paymentService;
     private final UserPassService userPassService;
+    private final ExceptionCaseService exceptionCaseService;
     private final ProfileService profileService;
     private final Clock clock;
 
@@ -120,12 +122,28 @@ public class ApplicationService {
         if (application.getPaymentStatus() == PaymentStatus.PAID) {
             return application;
         }
+        if (application.getPaymentStatus() == PaymentStatus.FAILED) {
+            // P4: 결제 기한 이내에만 다시 결제할 수 있다 (states.md)
+            Instant due = application.getPaymentDueAt();
+            if (due != null && Instant.now(clock).isAfter(due)) {
+                throw new BusinessException(ErrorCode.CONFLICT, "결제 기한이 지났어요.");
+            }
+            transitionService.apply(application, Transition.P4,
+                    TransitionContext.of(ActorType.PARTICIPANT, userId, "재결제 시도"));
+        }
         boolean approved = paymentService.approve(application.getPaymentId());
         TransitionContext gateway = TransitionContext.of(ActorType.PAYMENT_GATEWAY, null, "모의 결제");
+        String caseKey = "PAYMENT_ERROR:application-" + application.getId();
         if (!approved) {
             transitionService.apply(application, Transition.P3, gateway);
-            throw new BusinessException(ErrorCode.PAYMENT_FAILED);
+            // 예외를 던지면 트랜잭션이 롤백돼 실패 이력·예외가 사라지므로, 실패 상태를 저장하고 그대로 돌려준다.
+            // 참가자는 FAILED 상태에서 다시 결제할 수 있고, 반복되는 오류는 운영자 예외 처리함(MAT-13)에서 본다.
+            exceptionCaseService.open(com.siktak.exception.domain.CaseType.PAYMENT_ERROR, caseKey,
+                    application.getId(), null, "결제 승인 실패: 참가자가 다시 결제하거나 운영자가 확인해야 합니다.",
+                    java.util.Map.of("paymentId", application.getPaymentId()));
+            return application;
         }
+        exceptionCaseService.resolve(caseKey, null, "재결제로 해결됨");
         transitionService.apply(application, Transition.P2, gateway);
         transitionService.apply(application, Transition.M1, TransitionContext.system("결제 완료, 매칭 대기"));
         return application;

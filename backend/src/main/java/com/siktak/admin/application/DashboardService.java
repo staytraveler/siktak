@@ -53,12 +53,14 @@ public class DashboardService {
                         rs.getTimestamp("starts_at").toInstant(), rs.getString("slot_status"), rs.getLong("applied"),
                         rs.getLong("paid"), rs.getLong("confirmed"), rs.getLong("waiting"), rs.getLong("refunds")));
 
-        // 자동 확정률: 해산되지 않은 테이블 중 예외가 한 번도 붙지 않은 테이블
+        // 자동 확정률 (PRD 3장): 확정된 테이블 중 운영자가 상태를 바꾼 적 없는 테이블.
+        // 확정 뒤에 생기는 예외(노쇼 후보·식당 부족 등)는 "확정"에 대한 개입이 아니므로 세지 않는다.
         long tables = count("select count(*) from dining_tables where table_status <> 'DISSOLVED'");
         long autoTables = count("""
                 select count(*) from dining_tables t
                 where t.table_status <> 'DISSOLVED'
-                  and not exists (select 1 from exception_cases e where e.dining_table_id = t.id)
+                  and not exists (select 1 from status_histories h
+                                  where h.target_type = 'TABLE' and h.target_id = t.id and h.actor_type = 'OPERATOR')
                 """);
         // 자동 재배치 성공률: 최초 조합에서 못 배치된 신청(재배치·보류·실패 기록이 있는 신청) 중 재배치로 배치된 신청
         long firstFailed = count("""

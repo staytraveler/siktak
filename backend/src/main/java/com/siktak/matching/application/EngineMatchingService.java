@@ -392,10 +392,21 @@ public class EngineMatchingService {
             // respond_by = 원래 1순위 회차 행사 시작 시각 (미응답 시 보관, D6)
             Instant respondBy = allSlots.stream().filter(s -> !chosen.isEmpty() && s.getId().equals(chosen.get(0)))
                     .map(EventSlot::getStartsAt).findFirst().orElse(ctx.now);
+            if (offered.isEmpty() && isConditionConflict(u.reasonCode())) {
+                // MAT-13: 필수 조건 충돌로 못 배치됐고 권할 대체 일정도 없다 → 자동으로 해결되지 않은 조건 충돌
+                exceptionCaseService.open(CaseType.MATCH_CONFLICT, "MATCH_CONFLICT:application-" + a.getId(),
+                        a.getId(), null, "필수 조건 충돌(" + u.reasonCode() + ")로 배치하지 못했고 대체 일정도 없습니다.",
+                        Map.of("matchRunId", ctx.run.getId(), "reasonCode", u.reasonCode().name()));
+            }
             MatchResolution resolution = resolutionRepository.save(MatchResolution.offer(a.getId(), offered, respondBy));
             // 미응답 시 보관 처리 (M8a) — 커밋 뒤 작업 실행기에 등록
             jobRegistry.schedule(new ScheduledJob(ResolutionService.TIMEOUT_JOB, resolution.getId(), respondBy));
         }
+    }
+
+    /** 연령·차단·점수 기준 등 "조건" 때문에 못 배치된 경우 (인원 부족과 구분한다). */
+    private static boolean isConditionConflict(ReasonCode reason) {
+        return reason == ReasonCode.AGE_GAP || reason == ReasonCode.BLOCKED_PAIR || reason == ReasonCode.LOW_SCORE;
     }
 
     // ------------------------------------------------------------------ 식당 배정

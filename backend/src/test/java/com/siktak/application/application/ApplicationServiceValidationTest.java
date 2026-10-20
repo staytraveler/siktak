@@ -37,6 +37,7 @@ class ApplicationServiceValidationTest {
     @Mock private StatusTransitionService transitionService;
     @Mock private PaymentService paymentService;
     @Mock private com.siktak.payment.application.UserPassService userPassService;
+    @Mock private com.siktak.exception.application.ExceptionCaseService exceptionCaseService;
     @Mock private ProfileService profileService;
 
     private ApplicationService service;
@@ -44,7 +45,7 @@ class ApplicationServiceValidationTest {
     @BeforeEach
     void setUp() {
         service = new ApplicationService(applicationRepository, eventSlotRepository, transitionService, paymentService,
-                userPassService, profileService, Clock.fixed(NOW, ZoneId.of("Asia/Seoul")));
+                userPassService, exceptionCaseService, profileService, Clock.fixed(NOW, ZoneId.of("Asia/Seoul")));
     }
 
     private BusinessException submitFailure(List<Long> ids) {
