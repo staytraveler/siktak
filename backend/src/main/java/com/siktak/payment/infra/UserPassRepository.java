@@ -16,5 +16,7 @@ public interface UserPassRepository extends JpaRepository<UserPass, Long> {
     Optional<UserPass> findFirstByUserIdAndPassTypeAndPassStatusOrderByIdAsc(Long userId, UserPassType passType,
             PassStatus passStatus);
 
+    List<UserPass> findByUserIdAndPassStatusOrderByIdDesc(Long userId, PassStatus passStatus);
+
     List<UserPass> findByUserIdAndPassTypeAndPassStatus(Long userId, UserPassType passType, PassStatus passStatus);
 }

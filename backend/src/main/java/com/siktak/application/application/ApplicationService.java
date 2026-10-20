@@ -59,10 +59,6 @@ public class ApplicationService {
     /** 신청 제출: A1 → A2, 1회권이면 결제 대기 P1. */
     @Transactional
     public Application submit(Long userId, List<Long> slotIdsInPriorityOrder, PassType passType) {
-        if (passType == PassType.MEMBERSHIP) {
-            // 멤버십은 아직 없다 — 1회권과 보관 이용권(크레딧)만 지원한다.
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "현재는 1회권과 보관 이용권만 신청할 수 있습니다.");
-        }
         List<Long> slotIds = List.copyOf(new LinkedHashSet<>(slotIdsInPriorityOrder));
         if (slotIds.isEmpty() || slotIds.size() > MAX_SLOT_CHOICES) {
             throw new BusinessException(ErrorCode.INVALID_REQUEST,
@@ -89,6 +85,18 @@ public class ApplicationService {
         transitionService.apply(application, Transition.A2, participant);
         application.markSubmitted(now);
 
+        if (passType == PassType.MEMBERSHIP) {
+            // P1a: 유효한 멤버십이면 결제 없이 바로 PAID → 매칭 대기. 기간 안의 회차만 신청할 수 있다 (횟수 제한 없음, D1)
+            UserPass membership = userPassService.activeMembership(userId, now)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.CONFLICT, "이용 중인 멤버십이 없어요."));
+            if (slots.stream().anyMatch(slot -> !slot.getStartsAt().isBefore(membership.getExpiresAt()))) {
+                throw new BusinessException(ErrorCode.CONFLICT, "멤버십 기간이 끝난 뒤의 일정이 포함되어 있어요.");
+            }
+            application.linkCredit(membership.getId());
+            transitionService.apply(application, Transition.P1a, TransitionContext.system("멤버십 이용"));
+            transitionService.apply(application, Transition.M1, TransitionContext.system("멤버십 이용, 매칭 대기"));
+            return application;
+        }
         if (passType == PassType.CREDIT) {
             // P1a: 보관 이용권 1장을 소진하고 결제 없이 바로 PAID → 매칭 대기 (states.md P1a)
             UserPass credit = userPassService.consumeCredit(userId, application.getId())

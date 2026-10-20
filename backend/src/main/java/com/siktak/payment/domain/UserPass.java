@@ -64,6 +64,29 @@ public class UserPass extends BaseTimeEntity {
         return pass;
     }
 
+    /** 기간권 멤버십 (D1: 1·3·6개월, 한 번 결제, 기간 내 횟수 제한 없음). */
+    public static UserPass membership(Long userId, UserPassType type, Long sourcePaymentId, Instant startsAt,
+            Instant expiresAt) {
+        UserPass pass = new UserPass();
+        pass.userId = userId;
+        pass.passType = type;
+        pass.startsAt = startsAt;
+        pass.expiresAt = expiresAt;
+        pass.passStatus = PassStatus.ACTIVE;
+        pass.sourcePaymentId = sourcePaymentId;
+        return pass;
+    }
+
+    public boolean isMembership() {
+        return passType != UserPassType.SINGLE_CREDIT;
+    }
+
+    /** 멤버십이 이 시각에 유효한가. 크레딧은 항상 false. */
+    public boolean isValidMembershipAt(Instant at) {
+        return isMembership() && passStatus == PassStatus.ACTIVE && !startsAt.isAfter(at)
+                && expiresAt != null && expiresAt.isAfter(at);
+    }
+
     /** 신청 제출에 크레딧을 쓴다 (P1a). */
     public void use(Long applicationId) {
         this.passStatus = PassStatus.USED;

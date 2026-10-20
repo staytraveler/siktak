@@ -27,13 +27,19 @@ export default function SlotsPage() {
   // 체크한 순서 = 우선순위 (matching.md MD7)
   const [picked, setPicked] = useState<number[]>([])
 
-  const credits = useQuery({ queryKey: ['my-credits'], queryFn: api.myCredits })
-  const creditCount = credits.data?.activeCount ?? 0
-  // 보관 이용권이 있으면 "다음"에서 결제 수단을 고른다. 없으면 바로 1회권으로 신청
+  const passes = useQuery({ queryKey: ['my-passes'], queryFn: api.myPasses })
+  const creditCount = passes.data?.creditCount ?? 0
+  const membership = passes.data?.membership ?? null
+  // 멤버십·보관 이용권이 있으면 "다음"에서 이용권을 고른다. 없으면 바로 1회권으로 신청
+  const hasPass = creditCount > 0 || membership != null
   const [choosing, setChoosing] = useState(false)
+  const buyMembership = useMutation({
+    mutationFn: (months: number) => api.buyMembership(months),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-passes'] }),
+  })
 
   const submit = useMutation({
-    mutationFn: (passType: 'SINGLE' | 'CREDIT') => api.submitApplication(picked, passType),
+    mutationFn: (passType: 'SINGLE' | 'CREDIT' | 'MEMBERSHIP') => api.submitApplication(picked, passType),
     onError: (error) => {
       // 프로필 미완성이면 프로필 화면으로 안내 (APP-02)
       if (error instanceof AxiosError && (error.response?.data as ApiError | undefined)?.code === 'PROFILE_INCOMPLETE') {
@@ -43,7 +49,7 @@ export default function SlotsPage() {
     onSuccess: (created) => {
       setPicked([])
       setChoosing(false)
-      queryClient.invalidateQueries({ queryKey: ['my-credits'] })
+      queryClient.invalidateQueries({ queryKey: ['my-passes'] })
       queryClient.invalidateQueries({ queryKey: ['my-applications'] })
       navigate(`/app/applications/${created.id}`)
     },
@@ -87,17 +93,45 @@ export default function SlotsPage() {
           )
         })}
 
-        {creditCount === 0 && (
-          <div className="mt-2 flex flex-wrap gap-2 text-sm">
-            <span className="rounded-xl border border-line bg-mustard px-3 py-2 font-bold">1회권 9,900원</span>
+        <div className="mt-2 flex flex-wrap gap-2 text-sm">
+          <span className="rounded-xl border border-line bg-mustard px-3 py-2 font-bold">1회권 9,900원</span>
+        </div>
+        {membership ? (
+          <p className="rounded-xl border border-line bg-card px-3 py-2 text-xs text-body">
+            멤버십 이용 중 · <b>{formatDateTime(membership.expiresAt)}</b>까지 횟수 제한 없이 신청할 수 있어요
+          </p>
+        ) : (
+          <div className="rounded-2xl border border-line bg-card p-3">
+            <b className="text-sm">멤버십 (기간 내 횟수 제한 없음)</b>
+            <p className="mt-1 text-[11px] text-muted">한 번 결제로 기간 동안 추가 결제 없이 신청해요. 테스트 결제는 버튼 한 번으로 완료돼요.</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(passes.data?.plans ?? []).map((plan) => (
+                <SecondaryButton
+                  key={plan.months}
+                  className="!w-auto px-3"
+                  disabled={buyMembership.isPending}
+                  onClick={() => buyMembership.mutate(plan.months)}
+                >
+                  {plan.months}개월 {plan.price.toLocaleString('ko-KR')}원
+                </SecondaryButton>
+              ))}
+            </div>
+            {buyMembership.isError && <ErrorText>{errorMessage(buyMembership.error)}</ErrorText>}
           </div>
         )}
         {choosing && (
           <div className="mt-2 flex flex-col gap-2 rounded-2xl border border-line bg-card p-3">
             <b className="text-sm">어떻게 신청할까요?</b>
-            <PrimaryButton disabled={submit.isPending} onClick={() => submit.mutate('CREDIT')}>
-              보관 이용권으로 신청 (추가 결제 없음 · {creditCount}장 보유)
-            </PrimaryButton>
+            {membership && (
+              <PrimaryButton disabled={submit.isPending} onClick={() => submit.mutate('MEMBERSHIP')}>
+                멤버십으로 신청 (추가 결제 없음)
+              </PrimaryButton>
+            )}
+            {creditCount > 0 && (
+              <PrimaryButton disabled={submit.isPending} onClick={() => submit.mutate('CREDIT')}>
+                보관 이용권으로 신청 (추가 결제 없음 · {creditCount}장 보유)
+              </PrimaryButton>
+            )}
             <SecondaryButton disabled={submit.isPending} onClick={() => submit.mutate('SINGLE')}>
               1회권으로 신청 (9,900원)
             </SecondaryButton>
@@ -112,7 +146,7 @@ export default function SlotsPage() {
       {/* 하단 고정 선택 바: 메뉴 바로 위. 결제 수단은 신청 직후 상세 화면에서 고른다 */}
       <div className="sticky bottom-[58px] z-20 mt-4 flex items-center justify-between gap-3 border-t border-line bg-card px-[18px] py-2.5">
         <span className="text-sm font-bold">{picked.length}개 선택</span>
-        <PrimaryButton className="!w-auto min-w-[120px]" disabled={picked.length === 0 || submit.isPending} onClick={() => (creditCount > 0 ? setChoosing(true) : submit.mutate('SINGLE'))}>
+        <PrimaryButton className="!w-auto min-w-[120px]" disabled={picked.length === 0 || submit.isPending} onClick={() => (hasPass ? setChoosing(true) : submit.mutate('SINGLE'))}>
           {submit.isPending ? '신청 중…' : '다음 →'}
         </PrimaryButton>
       </div>
