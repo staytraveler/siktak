@@ -442,6 +442,38 @@ export default function GuidePage() {
         <b>위에서부터 한 단계씩, 노란 버튼만 누르면</b> 됩니다. (직접 해보고 싶다면 로그인 화면의 <b>"새 참가자로 시작하기"</b>로 나만의 계정을 만들 수 있어요.) 사람이 하는 일은 거의 없고, 시스템이 스스로 돌아가는 모습을 단계마다 숫자로 보여 드려요.
       </p>
 
+      <details className="mt-4 rounded-2xl border border-line bg-card p-4 text-sm">
+        <summary className="cursor-pointer font-black">👥 두 명이 함께 해보기 — 실제 사용자끼리 매칭되고 대화하는지 확인</summary>
+        <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-body">
+          <li>
+            <b>창을 두 개</b> 엽니다. 하나는 일반 창, 하나는 <b>시크릿 창</b>이에요. (같은 브라우저 창끼리는 계정이 공유돼요)
+          </li>
+          <li>두 창 모두 로그인 화면에서 <b>"새 참가자로 시작하기"</b>를 눌러 서로 다른 참가자가 됩니다.</li>
+          <li>
+            두 창 모두 <b>일정 → 같은 회차(성수의 첫 번째)</b>를 고르고 [다음] → [결제하기]를 누릅니다.
+          </li>
+          <li>
+            아래 버튼으로 <b>매칭 마감 시각까지 시간을 옮깁니다.</b> 시스템이 가상 참가자와 두 사람을 함께 자동 매칭해요.
+          </li>
+          <li>
+            두 창의 하단 <b>"대화"</b> 탭에서 같은 단체방에 들어가 서로 메시지를 주고받아 보세요. 같은 테이블이 아니면 한쪽이 "대체 일정 선택"으로 나올 수 있어요(연령 차·성비 규칙 때문이에요). 비슷한 연령대의 계정이 모이면 같은 테이블이 될 확률이 높아요.
+          </li>
+        </ol>
+        <button
+          type="button"
+          disabled={busy != null || (p?.jumps.find((j) => j.code === 'J1')?.reached ?? false)}
+          onClick={() => act('pair-j1', () => jump('J1'))}
+          className="mt-3 min-h-[44px] w-full rounded-xl border border-accent bg-gold-soft px-3 text-left text-sm font-black text-accent disabled:opacity-50"
+        >
+          {busy === 'pair-j1'
+            ? '진행 중… 잠시만요'
+            : p?.jumps.find((j) => j.code === 'J1')?.reached
+              ? '이미 매칭 마감 시각이 지났어요 (위의 "처음부터 다시 시작" 후 다시 해보세요)'
+              : '▶ 4번: 시간을 매칭 마감 시각으로 옮기기'}
+        </button>
+        <p className="mt-2 text-xs text-muted">가이드의 1~7단계와 따로 해도 돼요. 이 시연을 먼저 하려면 "처음부터 다시 시작"을 누른 뒤 하세요.</p>
+      </details>
+
       {p && (
         <section className="mt-4 rounded-2xl border border-line bg-card p-4">
           <div className="flex items-center justify-between text-sm">
