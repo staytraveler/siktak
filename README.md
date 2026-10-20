@@ -225,7 +225,7 @@ npm run dev                # http://localhost:5173
 | [docs/handoff/](docs/handoff/) | PM ↔ V1·V2 세션 메시지 파일 |
 | [docs/progress.md](docs/progress.md) | 진행 기록 |
 
-> `docs/prd.md`와 `docs/source/`의 PDF는 해커톤 참가자에게 제공된 주최 측(와썹하우스·블레이버스) 안내 자료입니다.
+> `docs/prd.md`는 해커톤 참가자에게 제공된 PRD v0.2(주최 측: 와썹하우스·블레이버스)를 텍스트로 옮긴 것입니다. 주최 측 원본 PDF는 저장소에 올리지 않았습니다.
 
 ## 보안·공개 안내
 

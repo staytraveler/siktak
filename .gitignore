@@ -32,5 +32,8 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
+# 주최 측에서 받은 원본 자료(PDF)는 저장소에 올리지 않는다 (로컬에만 둔다)
+docs/source/
+
 # Claude Code (local only)
 .claude/settings.local.json
