@@ -84,6 +84,19 @@ public class ChatService {
         return chatRoomRepository.findByDiningTableId(diningTableId);
     }
 
+    /** 참석 취소로 단체방에서 나간다 (취소한 사람만, 정책 허용 시점). */
+    @Transactional
+    public void removeMember(Long diningTableId, Long userId) {
+        chatRoomRepository.findByDiningTableId(diningTableId)
+                .ifPresent(room -> chatMemberRepository.deleteByChatRoomIdAndUserId(room.getId(), userId));
+    }
+
+    /** 테이블이 해체되면 단체방을 닫는다 (메시지는 남고 더 보낼 수 없다). */
+    @Transactional
+    public void closeRoom(Long diningTableId) {
+        chatRoomRepository.findByDiningTableId(diningTableId).ifPresent(ChatRoom::close);
+    }
+
     /** 참가자 메시지 전송. 해당 테이블 단체방 구성원만, 이용 제한·정지 계정은 막는다. */
     @Transactional
     public ChatMessage postUserMessage(Long diningTableId, Long userId, String content) {
@@ -91,6 +104,9 @@ public class ChatService {
         ChatRoom room = chatRoomRepository.findByDiningTableId(diningTableId)
                 .filter(r -> chatMemberRepository.existsByChatRoomIdAndUserId(r.getId(), userId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.FORBIDDEN, "이 테이블의 단체방 구성원만 보낼 수 있습니다."));
+        if (room.getRoomStatus() == ChatRoom.RoomStatus.CLOSED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "닫힌 단체방에는 메시지를 보낼 수 없습니다.");
+        }
         User sender = userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.FORBIDDEN));
         if (sender.getAccountStatus() != AccountStatus.ACTIVE) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "이용이 제한된 계정은 메시지를 보낼 수 없습니다.");

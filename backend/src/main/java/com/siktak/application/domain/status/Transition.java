@@ -61,6 +61,8 @@ public enum Transition {
     M9(StatusAxis.MATCH, from(MatchStatus.ALTERNATIVE_OFFERED), MatchStatus.NO_MATCH, SYSTEM),
     M10(StatusAxis.MATCH, from(MatchStatus.CONFIRMED), MatchStatus.REALLOCATING, SYSTEM),
     M11(StatusAxis.MATCH, from(MatchStatus.MATCHING, MatchStatus.REALLOCATING), MatchStatus.EXCEPTION, SYSTEM),
+    /** 매칭 대기 중 참가자가 신청을 취소해 매칭을 종료한다 (states.md 8장 "확정 전 신청 취소"). [해석] 전이표에 없던 취소 경로. */
+    M13(StatusAxis.MATCH, from(MatchStatus.WAITING), MatchStatus.NO_MATCH, PARTICIPANT),
     M12(StatusAxis.MATCH, from(MatchStatus.EXCEPTION),
             List.of(MatchStatus.WAITING, MatchStatus.CONFIRMED, MatchStatus.ALTERNATIVE_OFFERED), OPERATOR),
 

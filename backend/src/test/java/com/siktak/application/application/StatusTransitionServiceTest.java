@@ -162,7 +162,7 @@ class StatusTransitionServiceTest {
     void 전이표는_states_md의_전이를_모두_갖는다() {
         assertThat(Transition.of(StatusAxis.APPLICATION)).hasSize(5);
         assertThat(Transition.of(StatusAxis.PAYMENT)).hasSize(15); // P7b 포함 (6.1)
-        assertThat(Transition.of(StatusAxis.MATCH)).hasSize(14);
+        assertThat(Transition.of(StatusAxis.MATCH)).hasSize(15); // M13 신청 취소 포함
         assertThat(Transition.of(StatusAxis.ATTENDANCE)).hasSize(5);
         assertThat(Transition.M12.getToStatuses())
                 .containsExactlyInAnyOrderElementsOf(List.of(MatchStatus.WAITING, MatchStatus.CONFIRMED,

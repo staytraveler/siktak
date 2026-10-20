@@ -11,6 +11,9 @@ public final class MatchingEngine {
     /** 점수 계산식이 바뀌면 올린다 (matching.md 9장). */
     public static final String ALGORITHM_VERSION = "v1";
 
+    /** 한 테이블 최대 인원 (필수 조건, PRD MAT-02). */
+    public static final int TABLE_MAX_SIZE = com.siktak.matching.domain.engine.constraint.HardConstraints.TABLE_MAX;
+
     public MatchingResult run(MatchingInput input) {
         return new MatchingRun(input).execute();
     }

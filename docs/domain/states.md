@@ -174,6 +174,7 @@ stateDiagram-v2
 | M10 | `CONFIRMED` | `REALLOCATING` | SYSTEM | 동석자 취소로 4명 미만 (15장) | 대기자 충원 불가 | 기존 단체방 정리, 재배치 시작 |
 | M11 | `MATCHING`·`REALLOCATING` | `EXCEPTION` | SYSTEM | 데이터 누락, 해결 불가 조건 충돌 (MAT-13) | — | `ExceptionCase` 생성 |
 | M12 | `EXCEPTION` | `WAITING`·`CONFIRMED`·`ALTERNATIVE_OFFERED` | OPERATOR | 예외 처리 완료 | 사유 필수, 필수 조건 재검증 통과 | 처리 결과 알림 |
+| M13 | `WAITING` | `NO_MATCH` | PARTICIPANT | 매칭 대기 중 신청 취소 | 결제 전이거나 행사 2일 전까지 (8장) | 신청 `CANCELED`(A4), 1회권 환불(P7a)·크레딧 복원 `[CC 2026-10-21]` |
 
 **규칙**
 - 한 참가자는 동시에 두 테이블에 배치되지 않는다. [PRD 7.4]

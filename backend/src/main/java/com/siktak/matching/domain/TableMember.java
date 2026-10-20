@@ -43,6 +43,12 @@ public class TableMember extends BaseTimeEntity {
     @Column(name = "left_at")
     private Instant leftAt;
 
+    /** 취소·재배치로 테이블을 떠난다. */
+    public void leave(Instant at) {
+        this.active = false;
+        this.leftAt = at;
+    }
+
     public static TableMember join(Long diningTableId, Long applicationId, Long userId, Instant joinedAt) {
         TableMember member = new TableMember();
         member.diningTableId = diningTableId;

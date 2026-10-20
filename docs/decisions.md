@@ -102,3 +102,11 @@
 - 2026-10-18 [CC] 8.2 식당·수용량 API(`/admin/venues`, `/admin/venue-capacities`, `PUT /admin/venues/{id}/capacities/{slotId}`)는 `venue` 패키지에 추가(배정 로직 `VenueAssignmentService` 무수정). 수용량은 없으면 만들고(`max_seats_per_table` 기본 6), 이미 배정된 테이블 수보다 줄이면 409. 식당 삭제는 없이 `active` 토글만(참조 무결성).
 - 2026-10-18 [CC] 8.2 신청자 목록·피드백 요약·CSV는 `admin` 패키지의 `AdminReportService`가 읽기 전용 SQL(JDBC)로 집계한다. 피드백 요약의 사람별 선호는 집계 숫자(다시 만남/피함)만, 코멘트는 작성자 없이 테이블 번호만 내려준다(PRD 16장). CSV는 UTF-8 BOM, 엑셀 수식 주입(`=+-@`로 시작) 방지로 앞에 `'`를 붙인다.
 - 2026-10-18 [CC] 8.2 피드백 제출 시 `FeedbackSubmittedEvent` 발행 → `NextSlotRecommendListener`가 `NEXT_SLOT_RECOMMEND` 알림(7.2 추천 최대 3개 `slotIds` 페이로드, dedup `application-{id}`)을 같은 트랜잭션에서 저장. 추천할 회차가 없으면 보내지 않는다.
+- 2026-10-20 [CC] 10.3 재배정으로 장소가 뒤늦게 정해지면 `MATCH_CONFIRMED` 템플릿을 재사용해 장소 알림을 추가 발송한다(PRD에 별도 유형 없음). 멱등 키 `MATCH_CONFIRMED:table-{id}:venueAssigned:app-{id}`. 최초 확정 때 식당이 이미 있으면 보내지 않는다.
+- 2026-10-20 [CC] 10.3 다음 일정 추천이 비던 원인은 J6 점프 후 시드 회차(S1~S5)의 신청 마감이 전부 지나서였다. 시드에 3회차용 S6(성수)·S7(홍대/합정, 모두 D+14·마감 D+12)을 추가해 J6 이후에도 OPEN으로 남긴다.
+- 2026-10-20 [CC] 10.3 `NotificationService.enqueue`는 dedupKey별 `pg_advisory_xact_lock`으로 직렬화한다. 같은 키의 동시 요청이 확인-저장 사이에 끼어 유니크 위반(500)이 나던 문제(RefundConcurrencyIntegrationTest) 수정. 이중 환불은 아니었다(PG 취소 1회, 결제 REFUNDED).
+- 2026-10-21 [CC] P0 보강: ACC-02 이름·연락처는 프로필 저장 API가 함께 받아 users에 반영(ContactService). APP-04 멤버십은 `POST /me/memberships`(모의 결제, 1·3·6개월, 중복 구매 거절)와 `passType=MEMBERSHIP` 신청(P1a, 기간 안 회차만, 횟수 무제한)으로 구현. 정기결제 없음(D1).
+- 2026-10-21 [CC] MAT-13: 결제 승인 실패는 예외를 던지지 않고 P3 `FAILED`를 저장하며 `PAYMENT_ERROR` 예외를 연다(재결제 P4 성공 시 자동 해소). 필수 조건 충돌로 못 배치됐고 대체 일정도 없으면 `MATCH_CONFLICT` 예외. 모의 결제 실패 주입은 데모 도구 토글(`mock-payment-failure`).
+- 2026-10-21 [CC] INF-01·07 앱 푸시는 외부 푸시 서비스 없이 `PushSender` 포트의 모의 구현(MockPushSender)이 발송 결과를 notifications.push_status에 남기고, 브라우저는 알림함을 15초마다 읽어 시스템 알림(Notification API)으로 띄운다. 푸시 실패는 인앱 알림을 막지 않는다.
+- 2026-10-21 [CC] 취소(states.md 8장): `CancellationService`. 확정 전 신청 취소=M13+환불/복원+A4, 확정 후 참석 취소=T3(2일 전까지, 환불·복원·단체방 퇴장)/T4(2일 전 이후, 환불 없음·단체방 유지·`LATE_CANCEL` 이용 제한 검토 예외). 확정 후 취소 뒤 `EngineMatchingService.reallocateAfterCancel`로 4명 이상이면 유지, 미만이면 다른 확정 테이블로 이동(M10→M5)하거나 대체 일정(M10→M6). 실행 키 `cancel-{tableId}-{신청ID}`(matching.md의 `cancel-{tableId}`는 한 테이블에서 취소가 여러 번 날 수 있어 확장).
+- 2026-10-21 [CC] 대시보드 자동 확정률은 "테이블 상태를 운영자가 바꾼 적 없는 확정 테이블" 비율로 바꿨다(확정 뒤 노쇼 후보·식당 부족 예외가 자동 확정률을 깎지 않게).

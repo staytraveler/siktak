@@ -32,6 +32,11 @@ public class ChatRoom extends BaseTimeEntity {
     @Column(name = "room_status", nullable = false)
     private RoomStatus roomStatus;
 
+    /** 테이블 해체로 방을 닫는다 (메시지는 남는다). */
+    public void close() {
+        this.roomStatus = RoomStatus.CLOSED;
+    }
+
     public static ChatRoom open(Long diningTableId) {
         ChatRoom room = new ChatRoom();
         room.diningTableId = diningTableId;

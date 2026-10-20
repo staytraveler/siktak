@@ -94,6 +94,21 @@ public class DiningTable extends BaseTimeEntity {
         return table;
     }
 
+    /** 취소·재배치로 구성이 바뀐 뒤 인원·점수·요약을 다시 기록한다 (확정 후 취소, matching.md 6장). */
+    public void updateComposition(int memberCount, BigDecimal totalScore, Map<String, Object> scoreDetail,
+            Map<String, Object> summary) {
+        this.memberCount = memberCount;
+        this.totalScore = totalScore;
+        this.scoreDetail = new HashMap<>(scoreDetail);
+        this.summary = new HashMap<>(summary);
+    }
+
+    /** 4명 미만이 되어 해체한다. */
+    public void dissolve() {
+        this.tableStatus = TableStatus.DISSOLVED;
+        this.memberCount = 0;
+    }
+
     /** 예약명은 처음 정한 값을 계속 쓴다 (재배정해도 바뀌지 않음). */
     public void proposeReservationName(String name) {
         if (this.reservationName == null) {

@@ -53,6 +53,11 @@ import com.siktak.matching.domain.MatchRun;
 import com.siktak.matching.domain.TableGuidanceRequested;
 import com.siktak.matching.domain.TableMember;
 import com.siktak.matching.domain.TableMemberConfirmedEvent;
+import com.siktak.matching.domain.TableMemberDroppedEvent;
+import com.siktak.matching.domain.TableMemberMovedEvent;
+import com.siktak.matching.domain.TableStatus;
+import com.siktak.matching.domain.engine.CancelReallocationInput;
+import com.siktak.matching.domain.engine.CancelReallocationResult;
 import com.siktak.matching.domain.alternative.AlternativeSlot;
 import com.siktak.matching.domain.alternative.AlternativeSlotRecommender;
 import com.siktak.matching.domain.alternative.SlotOption;
@@ -108,6 +113,7 @@ public class EngineMatchingService {
     private final MatchingApplicationQuery applicationQuery;
     private final MatchingDataReader dataReader;
     private final MatchRunRepository matchRunRepository;
+    private final com.siktak.application.infra.ApplicationRepository applicationRepository;
     private final DiningTableRepository diningTableRepository;
     private final TableMemberRepository tableMemberRepository;
     private final MatchPlacementLogRepository placementLogRepository;
@@ -373,8 +379,18 @@ public class EngineMatchingService {
 
     /** M4 → M6 (+ 1회권이면 P5), 대체 일정 추천 (MAT-11, STA-03·04). */
     private void failApplication(Context ctx, UnplacedCandidate u, List<EventSlot> allSlots, MatchingConfig config) {
+        failApplication(ctx, u, allSlots, config, false);
+    }
+
+    /** @param fromConfirmed 확정 테이블에서 빠진 멤버(확정 후 취소 재배치)는 M4 대신 M10으로 재배치에 들어간다 */
+    private void failApplication(Context ctx, UnplacedCandidate u, List<EventSlot> allSlots, MatchingConfig config,
+            boolean fromConfirmed) {
         Application a = ctx.app(u.applicationId());
-        transitionService.apply(a, Transition.M4, ctx.system("최초 배치 실패(" + u.causeCode() + "), 자동 재배치 시도"));
+        if (fromConfirmed) {
+            transitionService.apply(a, Transition.M10, ctx.system("동석자 취소로 테이블이 성립하지 않아 재배치 시도"));
+        } else {
+            transitionService.apply(a, Transition.M4, ctx.system("최초 배치 실패(" + u.causeCode() + "), 자동 재배치 시도"));
+        }
         transitionService.apply(a, Transition.M6, ctx.system("재배치 1~4단계 모두 실패(" + u.reasonCode() + ")"));
         if (a.getPassType() == PassType.SINGLE && a.getPaymentStatus() == PaymentStatus.PAID) {
             transitionService.apply(a, Transition.P5, ctx.system("매칭 실패로 1회권 환불 가능"));
@@ -402,6 +418,130 @@ public class EngineMatchingService {
             // 미응답 시 보관 처리 (M8a) — 커밋 뒤 작업 실행기에 등록
             jobRegistry.schedule(new ScheduledJob(ResolutionService.TIMEOUT_JOB, resolution.getId(), respondBy));
         }
+    }
+
+    /**
+     * 확정 후 취소 재배치 (PRD 15장 "확정 후 1명 취소", matching.md 6장, E21·E22). 취소한 사람이 테이블에서 빠진 뒤 부른다.
+     * 4명 이상이면 테이블을 유지하고 점수만 다시 계산한다. 4명 미만이면 남은 멤버를 같은 회차의 자리 남은 확정 테이블로
+     * 옮기고(필수 조건·최소 점수 유지), 못 옮기면 대체 일정 선택({@code ALTERNATIVE_OFFERED})으로 넘긴다.
+     * 실행 키 {@code cancel-{tableId}-{취소한 신청}}으로 같은 취소는 한 번만 처리한다 (멱등).
+     * [해석] matching.md는 {@code cancel-{tableId}}라고 했지만 한 테이블에서 취소가 여러 번 날 수 있어 신청 ID를 덧붙였다.
+     */
+    @Transactional
+    public void reallocateAfterCancel(Long tableId, Long canceledApplicationId) {
+        DiningTable table = diningTableRepository.findById(tableId).orElseThrow();
+        String runKey = "cancel-" + tableId + "-" + canceledApplicationId;
+        if (table.getTableStatus() == TableStatus.DISSOLVED || matchRunRepository.findByRunKey(runKey).isPresent()) {
+            return;
+        }
+        Instant now = Instant.now(clock);
+        EventSlot slot = eventSlotRepository.findById(table.getEventSlotId()).orElseThrow();
+        List<EventSlot> allSlots = eventSlotRepository.findAllByOrderByStartsAtAscIdAsc();
+
+        List<TableMember> remainingMembers = tableMemberRepository.findByDiningTableIdAndActiveTrue(tableId);
+        Map<Long, List<TableMember>> openMembers = new TreeMap<>();
+        for (DiningTable other : diningTableRepository.findByEventSlotIdOrderByIdAsc(slot.getId())) {
+            if (!other.getId().equals(tableId) && other.getTableStatus() == TableStatus.CONFIRMED
+                    && other.getMemberCount() < MatchingEngine.TABLE_MAX_SIZE) {
+                openMembers.put(other.getId(), tableMemberRepository.findByDiningTableIdAndActiveTrue(other.getId()));
+            }
+        }
+
+        List<Long> applicationIds = new ArrayList<>();
+        remainingMembers.forEach(m -> applicationIds.add(m.getApplicationId()));
+        openMembers.values().forEach(list -> list.forEach(m -> applicationIds.add(m.getApplicationId())));
+        Map<Long, Application> applications = applicationRepository.findAllById(applicationIds).stream()
+                .collect(Collectors.toMap(Application::getId, Function.identity()));
+        Map<Long, UserProfile> profiles = dataReader.profiles(
+                applications.values().stream().map(Application::getUserId).distinct().toList());
+        Map<Long, EventSlot> slotById = Map.of(slot.getId(), slot);
+        List<Long> targetIds = List.of(slot.getId());
+        Function<TableMember, Candidate> toCand = m -> toCandidate(applications.get(m.getApplicationId()),
+                profiles.get(m.getUserId()), targetIds, slotById, now);
+
+        List<Candidate> remaining = remainingMembers.stream().map(toCand).toList();
+        List<CancelReallocationInput.OpenTable> openTables = openMembers.entrySet().stream()
+                .map(e -> new CancelReallocationInput.OpenTable(e.getKey(), slot.getId(),
+                        e.getValue().stream().map(toCand).toList()))
+                .toList();
+        List<Long> userIds = applications.values().stream().map(Application::getUserId).distinct().toList();
+        MatchingConfig config = dataReader.config();
+        CancelReallocationResult result = engine.reallocateAfterCancel(new CancelReallocationInput(
+                new SlotInfo(slot.getId(), dateOf(slot), slot.getRegion().getId()), tableId, remaining, openTables,
+                dataReader.blockedPairs(userIds), dataReader.encounters(userIds), config));
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("slotIds", targetIds);
+        params.put("trigger", "CANCEL");
+        params.put("tableId", tableId);
+        params.put("canceledApplicationId", canceledApplicationId);
+        MatchRun run = matchRunRepository.save(MatchRun.start(runKey, dateOf(slot), ALGORITHM, params,
+                remaining.size(), now));
+        Context ctx = new Context(run, null, now, applications);
+
+        Map<Long, Long> toTable = new HashMap<>();
+        result.moves().forEach(m -> toTable.put(m.applicationId(), m.toTableId()));
+
+        if (result.outcome() == CancelReallocationResult.Outcome.KEPT) {
+            applyUpdate(table, result.keptTable());
+            ChatRoom room = chatService.openForTable(tableId, List.of());
+            chatService.postSystemMessage(room.getId(), ChatMessage.MessageType.NOTICE,
+                    "동석자 1명이 참석을 취소했어요. 남은 " + remaining.size() + "명으로 그대로 진행해요.",
+                    "table-" + tableId + ":canceled-" + canceledApplicationId, null);
+        } else {
+            // 4명 미만: 남은 멤버를 다른 확정 테이블로 옮기거나, 못 옮기면 대체 일정으로. 원래 테이블은 해체하고 단체방을 닫는다.
+            for (TableMember m : remainingMembers) {
+                Application a = applications.get(m.getApplicationId());
+                m.leave(now);
+                Long target = toTable.get(a.getId());
+                if (target != null) {
+                    transitionService.apply(a, Transition.M10, ctx.system("동석자 취소로 테이블이 성립하지 않아 재배치 시도"));
+                    transitionService.apply(a, Transition.M5, ctx.system("같은 일정의 다른 테이블로 재배치"));
+                    tableMemberRepository.save(TableMember.join(target, a.getId(), a.getUserId(), now));
+                    events.publishEvent(new TableMemberMovedEvent(a.getId(), tableId, target));
+                    ChatRoom room = chatService.openForTable(target, List.of(a.getUserId()));
+                    chatService.postSystemMessage(room.getId(), ChatMessage.MessageType.NOTICE,
+                            "다른 테이블이 정리되어 새 동석자 1명이 합류했어요.",
+                            "table-" + target + ":joined-" + a.getId(), null);
+                }
+            }
+            for (UnplacedCandidate u : result.failed()) {
+                failApplication(ctx, u, allSlots, config, true);
+                events.publishEvent(new TableMemberDroppedEvent(u.applicationId(), tableId));
+            }
+            for (CancelReallocationResult.TableUpdate update : result.updatedTables()) {
+                applyUpdate(diningTableRepository.findById(update.tableId()).orElseThrow(), update);
+            }
+            chatService.postSystemMessage(chatService.openForTable(tableId, List.of()).getId(),
+                    ChatMessage.MessageType.NOTICE, "동석자 취소로 인원이 부족해 이 테이블이 정리됐어요. 안내 알림을 확인해 주세요.",
+                    "table-" + tableId + ":dissolved", null);
+            table.dissolve();
+            chatService.closeRoom(tableId);
+            writeFailReasons(ctx);
+            for (UnplacedCandidate u : result.failed()) {
+                eventPublisher.publishEvent(new MatchFailureRecorded(u.applicationId()));
+            }
+        }
+        for (PlacementLog l : result.placementLogs()) {
+            placementLogRepository.save(MatchPlacementLog.fromEngine(run.getId(), l.applicationId(),
+                    MatchDecision.valueOf(l.decision().name()), l.fromSlotId(), l.toSlotId(),
+                    toTable.get(l.applicationId()), l.reallocStep(), l.reasonCode().name(),
+                    l.causeCode() == null ? null : l.causeCode().name(), l.reasonText()));
+        }
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("outcome", result.outcome().name());
+        summary.put("tableId", tableId);
+        summary.put("moved", result.moves().size());
+        summary.put("failed", result.failed().size());
+        summary.put("slotIds", targetIds);
+        run.complete(summary, now);
+    }
+
+    /** 재계산된 점수·요약을 테이블에 반영한다. */
+    private void applyUpdate(DiningTable table, CancelReallocationResult.TableUpdate update) {
+        table.updateComposition(update.members().size(),
+                BigDecimal.valueOf(update.scoreDetail().total()).setScale(2, RoundingMode.HALF_UP),
+                scoreDetail(update.scoreDetail()), JSON.convertValue(update.summary(), Map.class));
     }
 
     /** 연령·차단·점수 기준 등 "조건" 때문에 못 배치된 경우 (인원 부족과 구분한다). */

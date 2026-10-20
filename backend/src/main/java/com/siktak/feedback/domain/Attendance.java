@@ -62,6 +62,18 @@ public class Attendance extends BaseTimeEntity {
         return attendance;
     }
 
+    /** 사전·당일 취소 (T3·T4). 전이표 검사는 AttendanceService가 한다. */
+    public void markCanceled(AttendanceStatus status, Instant at) {
+        this.attendanceStatus = status;
+        this.canceledAt = at;
+        this.noShowCandidate = false;
+    }
+
+    /** 재배치로 다른 테이블로 옮겨졌다. */
+    public void moveToTable(Long diningTableId) {
+        this.diningTableId = diningTableId;
+    }
+
     /** 전이표 검사는 AttendanceService가 한다. */
     public void markAttended(Instant at) {
         this.attendanceStatus = AttendanceStatus.ATTENDED;

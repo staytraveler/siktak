@@ -105,6 +105,7 @@ public class ApplicationNotificationListener {
             case M4, M10 -> "REALLOCATING";
             case P6, P7a -> "REFUND_REQUESTED";
             case P9, P12 -> "REFUND_COMPLETED";
+            case A4 -> "APPLICATION_CANCELED";
             default -> null;
         };
     }

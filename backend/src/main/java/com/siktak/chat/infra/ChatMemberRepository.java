@@ -10,4 +10,6 @@ import com.siktak.chat.domain.ChatMember;
 public interface ChatMemberRepository extends JpaRepository<ChatMember, Long> {
 
     boolean existsByChatRoomIdAndUserId(Long chatRoomId, Long userId);
+
+    void deleteByChatRoomIdAndUserId(Long chatRoomId, Long userId);
 }

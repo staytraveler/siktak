@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.siktak.application.application.ApplicationService;
+import com.siktak.application.application.CancellationService;
 import com.siktak.application.domain.Application;
 import com.siktak.application.domain.PassType;
 import com.siktak.common.security.AuthUser;
@@ -37,6 +38,7 @@ public class ApplicationController {
 
     private final ApplicationService applicationService;
     private final EventSlotRepository eventSlotRepository;
+    private final CancellationService cancellationService;
 
     /** 신청 제출. slotIds는 선택 순서 = 우선순위. */
     @PostMapping("/applications")
@@ -57,6 +59,21 @@ public class ApplicationController {
     @GetMapping("/me/applications")
     public List<ApplicationResponse> mine(@AuthenticationPrincipal AuthUser user) {
         return toResponses(applicationService.findMine(user.id()));
+    }
+
+    /** 취소 안내: 지금 취소할 수 있는지, 환불·복원이 되는지, 화면에 보여줄 문구 (PAY-02 환불 규정). */
+    @GetMapping("/me/applications/{applicationId}/cancel-info")
+    public CancellationService.CancelInfo cancelInfo(@AuthenticationPrincipal AuthUser user,
+            @PathVariable Long applicationId) {
+        return cancellationService.info(user.id(), applicationId);
+    }
+
+    /** 신청(확정 전)·참석(확정 후) 취소. 1회권은 자동 환불, 크레딧은 복원한다. */
+    @PostMapping("/me/applications/{applicationId}/cancel")
+    public ApplicationResponse cancel(@AuthenticationPrincipal AuthUser user, @PathVariable Long applicationId) {
+        cancellationService.cancel(user.id(), applicationId);
+        return toResponses(applicationService.findMine(user.id())).stream()
+                .filter(r -> r.id().equals(applicationId)).findFirst().orElseThrow();
     }
 
     private List<ApplicationResponse> toResponses(List<Application> applications) {

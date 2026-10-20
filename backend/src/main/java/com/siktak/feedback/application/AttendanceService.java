@@ -34,6 +34,8 @@ import com.siktak.feedback.infra.AttendanceRepository;
 import com.siktak.feedback.infra.UserEncounterWriter;
 import com.siktak.matching.domain.DiningTable;
 import com.siktak.matching.domain.TableMemberConfirmedEvent;
+import com.siktak.matching.domain.TableMemberDroppedEvent;
+import com.siktak.matching.domain.TableMemberMovedEvent;
 import com.siktak.matching.infra.DiningTableRepository;
 import com.siktak.slot.domain.EventSlot;
 import com.siktak.slot.domain.SlotStatus;
@@ -96,6 +98,40 @@ public class AttendanceService {
         jobRegistry.schedule(new ScheduledJob(EVENT_END_JOB, slot.getId(), slot.getEndsAt()));
     }
 
+    /** 확정 후 취소 재배치로 다른 확정 테이블로 옮겨졌다 — 참석 정보의 테이블을 맞춘다. */
+    @EventListener
+    @Transactional
+    public void onTableMemberMoved(TableMemberMovedEvent event) {
+        attendanceRepository.findByApplicationId(event.applicationId()).ifPresent(a -> a.moveToTable(event.toTableId()));
+    }
+
+    /** 확정 후 취소 재배치에서 들어갈 테이블이 없어 빠졌다 — 참석 예정을 없애 노쇼 후보로 잡히지 않게 한다. */
+    @EventListener
+    @Transactional
+    public void onTableMemberDropped(TableMemberDroppedEvent event) {
+        attendanceRepository.findByApplicationId(event.applicationId()).ifPresent(attendanceRepository::delete);
+    }
+
+    /**
+     * T3·T4: 참가자가 참석을 취소한다. 행사 2일 전까지면 사전 취소(T3), 그 뒤면 당일·제한 시점 이후 취소(T4).
+     * 사전 취소의 환불·크레딧 복원, 후속 재배치는 CancellationService가 맡는다.
+     */
+    @Transactional
+    public Attendance cancel(Long userId, Long applicationId, boolean early) {
+        applicationService.getOwned(userId, applicationId);
+        Attendance attendance = attendanceRepository.findByApplicationId(applicationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "참석 예정 정보가 없습니다."));
+        if (attendance.getAttendanceStatus() != AttendanceStatus.SCHEDULED) {
+            throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION, "이미 처리된 참석입니다.");
+        }
+        AttendanceStatus to = early ? AttendanceStatus.CANCELED_EARLY : AttendanceStatus.CANCELED_LATE;
+        attendance.markCanceled(to, Instant.now(clock));
+        recordHistory(attendance, early ? Transition.T3 : Transition.T4, AttendanceStatus.SCHEDULED, to,
+                TransitionContext.of(ActorType.PARTICIPANT, userId,
+                        early ? "참석 사전 취소 (행사 2일 전까지)" : "참석 취소 (행사 2일 전 이후)"));
+        return attendance;
+    }
+
     /** T2: 앱 체크인. 행사 시작 {@code checkin-open-minutes}분 전부터 종료 시각까지. 이미 체크인했으면 그대로 (멱등). */
     @Transactional
     public Attendance checkIn(Long userId, Long applicationId) {
@@ -119,6 +155,12 @@ public class AttendanceService {
         recordHistory(attendance, Transition.T2, AttendanceStatus.SCHEDULED, AttendanceStatus.ATTENDED,
                 TransitionContext.of(ActorType.PARTICIPANT, userId, "앱 체크인"));
         return attendance;
+    }
+
+    /** 신청의 참석 상태 (참석 정보가 없으면 null). */
+    @Transactional(readOnly = true)
+    public AttendanceStatus statusOf(Long applicationId) {
+        return attendanceRepository.findByApplicationId(applicationId).map(Attendance::getAttendanceStatus).orElse(null);
     }
 
     @Transactional(readOnly = true)

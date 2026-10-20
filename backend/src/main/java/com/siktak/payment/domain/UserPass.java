@@ -87,6 +87,12 @@ public class UserPass extends BaseTimeEntity {
                 && expiresAt != null && expiresAt.isAfter(at);
     }
 
+    /** 신청 취소로 쓴 크레딧을 되돌린다 (states.md 8장 "크레딧 복원"). */
+    public void restore() {
+        this.passStatus = PassStatus.ACTIVE;
+        this.usedApplicationId = null;
+    }
+
     /** 신청 제출에 크레딧을 쓴다 (P1a). */
     public void use(Long applicationId) {
         this.passStatus = PassStatus.USED;

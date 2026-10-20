@@ -67,6 +67,13 @@ export const api = {
       plans: { months: number; price: number }[]
     }>('/api/v1/me/passes'),
   buyMembership: (months: number) => post<{ id: number; expiresAt: string }>('/api/v1/me/memberships', { months }),
+  // 신청(확정 전)·참석(확정 후) 취소: 안내 문구와 취소 실행. 1회권은 자동 환불, 크레딧은 복원된다.
+  cancelInfo: (applicationId: number) =>
+    get<{ canCancel: boolean; kind: 'APPLICATION' | 'ATTENDANCE' | null; refund: boolean; message: string }>(
+      `/api/v1/me/applications/${applicationId}/cancel-info`,
+    ),
+  cancelApplication: (applicationId: number) =>
+    post<ApplicationItem>(`/api/v1/me/applications/${applicationId}/cancel`),
   myCredits: () => get<{ activeCount: number }>('/api/v1/me/credits'),
   mockApprove: (applicationId: number) =>
     post<ApplicationItem>(`/api/v1/applications/${applicationId}/payments/mock-approve`),

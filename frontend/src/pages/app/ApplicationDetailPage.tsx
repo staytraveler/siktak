@@ -54,6 +54,14 @@ function Detail({ application }: { application: ApplicationItem }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-applications'] }),
   })
   const resolving = RESOLUTION_STATUSES.includes(application.matchStatus ?? '')
+  // 행사 2일 전까지 참석을 취소하면 단체방에서도 나간다 (2일 전 이후 취소는 퇴장 불가라 남는다)
+  const attendanceForChat = useQuery({
+    queryKey: ['attendance', application.id],
+    queryFn: () => api.attendance(application.id),
+    enabled: confirmed,
+    retry: false,
+  })
+  const leftChat = attendanceForChat.data?.attendanceStatus === 'CANCELED_EARLY'
 
   return (
     <>
@@ -99,12 +107,15 @@ function Detail({ application }: { application: ApplicationItem }) {
         </section>
 
         {resolving && <ResolutionSection applicationId={application.id} />}
+        <CancelSection applicationId={application.id} />
         {confirmed && (
           <>
-            <LinkButton to={`/app/applications/${application.id}/table`}>
-              <span>단체방 입장하기</span>
-              <span>→</span>
-            </LinkButton>
+            {!leftChat && (
+              <LinkButton to={`/app/applications/${application.id}/table`}>
+                <span>단체방 입장하기</span>
+                <span>→</span>
+              </LinkButton>
+            )}
             <AttendanceSection applicationId={application.id} />
           </>
         )}
@@ -130,6 +141,39 @@ function NextStep({ application }: { application: ApplicationItem }) {
 }
 
 // 체크인 (7.1, FDB-01): 행사 시작 30분 전부터 종료까지. 체크인한 사람만 피드백을 남길 수 있다
+// 신청·참석 취소 (states.md 8장). 취소하면 어떻게 되는지(환불·이용권 복원·이용 제한 검토)를 먼저 보여준다.
+function CancelSection({ applicationId }: { applicationId: number }) {
+  const queryClient = useQueryClient()
+  const info = useQuery({ queryKey: ['cancel-info', applicationId], queryFn: () => api.cancelInfo(applicationId) })
+  const cancel = useMutation({
+    mutationFn: () => api.cancelApplication(applicationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries()
+    },
+  })
+  if (!info.data) return null
+  const label = info.data.kind === 'ATTENDANCE' ? '참석 취소하기' : '신청 취소하기'
+  if (!info.data.canCancel) {
+    // 취소할 수 없는 이유도 알려준다 (취소됨·종료 상태는 이미 위 상태 배지로 보인다)
+    return info.data.message ? <p className="text-[11px] leading-relaxed text-muted">{info.data.message}</p> : null
+  }
+  return (
+    <section className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-3.5">
+      <b className="text-sm">{label}</b>
+      <p className="text-xs leading-relaxed text-body">{info.data.message}</p>
+      {cancel.isError && <ErrorText>{errorMessage(cancel.error)}</ErrorText>}
+      <SecondaryButton
+        disabled={cancel.isPending}
+        onClick={() => {
+          if (window.confirm(`${info.data?.message}\n\n정말 취소할까요?`)) cancel.mutate()
+        }}
+      >
+        {cancel.isPending ? '취소하는 중…' : label}
+      </SecondaryButton>
+    </section>
+  )
+}
+
 function AttendanceSection({ applicationId }: { applicationId: number }) {
   const queryClient = useQueryClient()
   const attendance = useQuery({
@@ -161,7 +205,15 @@ function AttendanceSection({ applicationId }: { applicationId: number }) {
             </PrimaryButton>
           </>
         ) : (
-          <p className="text-body">참석 상태: {a.attendanceStatus}</p>
+          <p className="text-body">
+            {a.attendanceStatus === 'CANCELED_EARLY'
+              ? '참석을 취소했어요. (행사 2일 전까지 취소 · 환불·이용권 처리 완료)'
+              : a.attendanceStatus === 'CANCELED_LATE'
+                ? '참석을 취소했어요. (행사 2일 전 이후 취소 · 환불 없음)'
+                : a.attendanceStatus === 'NO_SHOW'
+                  ? '노쇼로 기록됐어요.'
+                  : `참석 상태: ${a.attendanceStatus}`}
+          </p>
         )}
       </section>
       {a.attendanceStatus === 'ATTENDED' && <FeedbackSection applicationId={applicationId} />}
