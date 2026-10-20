@@ -36,6 +36,7 @@ final class MatchingRun {
     private final MatchingConfig config;
     private final Set<UserPair> blocked;
     private final Set<UserPair> encounters;
+    private final Set<UserPair> wantAgain;
 
     private final Map<Long, SlotInfo> slots = new TreeMap<>();
     private final Map<Long, Candidate> candidates = new TreeMap<>();
@@ -59,6 +60,7 @@ final class MatchingRun {
         this.config = input.config();
         this.blocked = input.blockedPairs();
         this.encounters = input.encounters();
+        this.wantAgain = input.wantAgain();
     }
 
     MatchingResult execute() {
@@ -638,7 +640,7 @@ final class MatchingRun {
 
     private void set(TempTable t, List<Candidate> members) {
         t.members = members.stream().sorted(BY_ID).toList();
-        t.detail = t.members.size() >= 2 ? TableScorer.score(t.members, encounters, config.weights()) : null;
+        t.detail = t.members.size() >= 2 ? TableScorer.score(t.members, encounters, wantAgain, config.weights()) : null;
     }
 
     private void dissolve(TempTable t, ReasonCode reason) {
@@ -658,7 +660,7 @@ final class MatchingRun {
     // ---------------------------------------------------------------- 공통
 
     private double score(List<Candidate> members) {
-        return TableScorer.total(members, encounters, config.weights());
+        return TableScorer.total(members, encounters, wantAgain, config.weights());
     }
 
     private int conflicts(List<Candidate> members) {

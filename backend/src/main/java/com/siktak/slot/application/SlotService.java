@@ -29,6 +29,7 @@ public class SlotService {
     private final EventSlotRepository eventSlotRepository;
     private final RegionRepository regionRepository;
     private final ScheduledJobRegistry jobRegistry;
+    private final org.springframework.context.ApplicationEventPublisher events;
     private final Clock clock;
 
     /** 회차 수정 (8.2). 모집 중인 회차만. 매칭 실행 시각이 바뀌면 작업 실행기에 다시 등록한다 (같은 키라 덮어쓴다). */
@@ -67,6 +68,8 @@ public class SlotService {
                 request.capacity(), request.applyDeadlineAt(), request.matchRunAt()));
         // 매칭 마감 시각에 자동 매칭 (커밋 후 메모리 일정에 등록, DB 폴링 없음)
         jobRegistry.schedule(new ScheduledJob(MatchRunJobHandler.JOB_TYPE, slot.getId(), slot.getMatchRunAt()));
+        // 다음 모집 시작: 이전 참석자 중 같은 지역·요일에 참석한 사람에게 알린다 (PRD 14장)
+        events.publishEvent(new com.siktak.slot.domain.SlotCreatedEvent(slot.getId(), region.getId(), slot.getStartsAt()));
         return slot;
     }
 

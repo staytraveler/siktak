@@ -186,13 +186,16 @@ public class EngineMatchingService {
         }
         List<Long> userIds = candidates.stream().map(Candidate::userId).distinct().toList();
         Set<UserPair> blocked = dataReader.blockedPairs(userIds);
-        Set<UserPair> encounters = dataReader.encounters(userIds);
+        // 다시 만나고 싶다고 한 쌍(FDB-04)은 이전 만남 감점(S6)을 받지 않고, 같은 테이블이면 가점을 받는다.
+        Set<UserPair> wantAgain = dataReader.wantAgainPairs(userIds);
+        Set<UserPair> encounters = new java.util.HashSet<>(dataReader.encounters(userIds));
+        encounters.removeAll(wantAgain);
         MatchingConfig config = dataReader.config();
 
         List<SlotInfo> slotInfos = targets.stream()
                 .map(s -> new SlotInfo(s.getId(), dateOf(s), s.getRegion().getId()))
                 .toList();
-        MatchingResult result = engine.run(new MatchingInput(slotInfos, candidates, blocked, encounters, config));
+        MatchingResult result = engine.run(new MatchingInput(slotInfos, candidates, blocked, encounters, wantAgain, config));
 
         MatchRun run = matchRunRepository.save(MatchRun.start(runKey,
                 slotInfos.stream().map(SlotInfo::date).min(LocalDate::compareTo).orElse(dateOf(trigger)),
@@ -466,9 +469,10 @@ public class EngineMatchingService {
                 .toList();
         List<Long> userIds = applications.values().stream().map(Application::getUserId).distinct().toList();
         MatchingConfig config = dataReader.config();
+        Set<UserPair> wantAgainOfCancel = dataReader.wantAgainPairs(userIds);
         CancelReallocationResult result = engine.reallocateAfterCancel(new CancelReallocationInput(
                 new SlotInfo(slot.getId(), dateOf(slot), slot.getRegion().getId()), tableId, remaining, openTables,
-                dataReader.blockedPairs(userIds), dataReader.encounters(userIds), config));
+                dataReader.blockedPairs(userIds), cancelEncounters(userIds, wantAgainOfCancel), wantAgainOfCancel, config));
 
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("slotIds", targetIds);
@@ -535,6 +539,13 @@ public class EngineMatchingService {
         summary.put("failed", result.failed().size());
         summary.put("slotIds", targetIds);
         run.complete(summary, now);
+    }
+
+    /** 이전 만남 쌍에서 재회 희망 쌍은 뺀다 (감점하지 않는다). */
+    private Set<UserPair> cancelEncounters(List<Long> userIds, Set<UserPair> wantAgain) {
+        Set<UserPair> encounters = new java.util.HashSet<>(dataReader.encounters(userIds));
+        encounters.removeAll(wantAgain);
+        return encounters;
     }
 
     /** 재계산된 점수·요약을 테이블에 반영한다. */

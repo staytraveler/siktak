@@ -96,6 +96,23 @@ public class MatchingDataReader {
         return pairs;
     }
 
+    /** "다시 만나고 싶음"(person_preferences WANT_AGAIN)을 한쪽이라도 고른 쌍 (FDB-04). 단, 한쪽이 피하고 싶다고 한 쌍은 뺀다. */
+    public Set<UserPair> wantAgainPairs(Collection<Long> userIds) {
+        Set<UserPair> pairs = new HashSet<>();
+        if (userIds.isEmpty()) {
+            return pairs;
+        }
+        jdbc.query("""
+                select from_user_id, to_user_id from person_preferences
+                where preference = 'WANT_AGAIN' and from_user_id in (:ids) and to_user_id in (:ids)
+                  and from_user_id <> to_user_id
+                """, Map.of("ids", userIds), rs -> {
+            pairs.add(UserPair.of(rs.getLong(1), rs.getLong(2)));
+        });
+        pairs.removeAll(blockedPairs(userIds));
+        return pairs;
+    }
+
     /** 이전에 같은 테이블에서 만난 쌍 (S6). */
     public Set<UserPair> encounters(Collection<Long> userIds) {
         Set<UserPair> pairs = new HashSet<>();

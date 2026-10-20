@@ -15,19 +15,28 @@ import java.util.Set;
  * @param candidates   대상 회차를 하나 이상 선택한 {@code WAITING} 신청
  * @param blockedPairs 차단·신고·{@code AVOID} 관계 (한쪽만 선택했어도 쌍 하나로 넣는다)
  * @param encounters   이전에 같은 테이블에서 만난 쌍
+ * @param wantAgain    "다시 만나고 싶음"(FDB-04)을 한쪽이라도 고른 쌍. 같은 테이블이면 가점을 주고, 이전 만남 감점은 받지 않는다
  */
 public record MatchingInput(
         List<SlotInfo> slots,
         List<Candidate> candidates,
         Set<UserPair> blockedPairs,
         Set<UserPair> encounters,
+        Set<UserPair> wantAgain,
         MatchingConfig config) {
+
+    /** 재회 희망이 없는 입력 (기존 호출·테스트 호환). */
+    public MatchingInput(List<SlotInfo> slots, List<Candidate> candidates, Set<UserPair> blockedPairs,
+            Set<UserPair> encounters, MatchingConfig config) {
+        this(slots, candidates, blockedPairs, encounters, Set.of(), config);
+    }
 
     public MatchingInput {
         slots = List.copyOf(slots);
         candidates = List.copyOf(candidates);
         blockedPairs = Set.copyOf(blockedPairs);
         encounters = Set.copyOf(encounters);
+        wantAgain = Set.copyOf(wantAgain);
         Objects.requireNonNull(config, "config");
     }
 }

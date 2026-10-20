@@ -92,11 +92,11 @@ final class CancelReallocation {
             if (!HardConstraints.compatible(next, in.blockedPairs())) {
                 continue;
             }
-            double score = TableScorer.total(next, in.encounters(), in.config().weights());
+            double score = TableScorer.total(next, in.encounters(), in.wantAgain(), in.config().weights());
             if (score < in.config().minScore() - EPS) {
                 continue;
             }
-            double delta = score - TableScorer.total(members, in.encounters(), in.config().weights());
+            double delta = score - TableScorer.total(members, in.encounters(), in.wantAgain(), in.config().weights());
             if (best == null || delta > bestDelta + EPS) {
                 best = e.getKey();
                 bestDelta = delta;
@@ -109,7 +109,7 @@ final class CancelReallocation {
         return new TableUpdate(
                 tableId,
                 members.stream().map(Candidate::applicationId).toList(),
-                TableScorer.score(members, in.encounters(), in.config().weights()),
+                TableScorer.score(members, in.encounters(), in.wantAgain(), in.config().weights()),
                 TableSummarizer.summarize(in.slot().id(), members, in.encounters(), in.blockedPairs()));
     }
 

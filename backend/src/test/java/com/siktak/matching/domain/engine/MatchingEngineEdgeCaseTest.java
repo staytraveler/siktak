@@ -222,6 +222,37 @@ class MatchingEngineEdgeCaseTest {
         });
     }
 
+    /** FDB-04: "다시 만나고 싶음"으로 고른 쌍은 이전에 만났어도 감점이 없고, 같은 테이블이 되도록 가점을 받는다. */
+    @Test
+    void E13b_다시_만나고_싶은_쌍은_같은_테이블로_모인다() {
+        // 재회 희망이 없으면 초기 배정(1·2가 서로 다른 테이블)이 그대로다
+        MatchingResult plain = run(input(ONE_SLOT, eightMixed(), Set.of(), Set.of()));
+        assertThat(tableOf(plain, 1).members()).doesNotContain(2L);
+
+        // 1과 2가 서로 "다시 만나고 싶음"을 골랐다 (이전에 만난 쌍이기도 하다)
+        Set<UserPair> want = Set.of(UserPair.of(1, 2));
+        MatchingInput in = new MatchingInput(ONE_SLOT, eightMixed(), Set.of(), Set.of(), want,
+                MatchingConfig.defaults());
+        MatchingResult r = run(in);
+
+        assertThat(r.summary().confirmedMembers()).isEqualTo(8);
+        assertThat(tableOf(r, 1).members()).contains(2L);
+        // 가점은 총점에만 더해지고, 조건별 원점수(S1~S6)는 그대로다
+        assertThat(tableOf(r, 1).totalScore()).isGreaterThan(tableOf(plain, 1).totalScore() - 1e-9);
+    }
+
+    /** 재회 희망이어도 필수 조건(차단·신고·피하고 싶음)은 완화하지 않는다. */
+    @Test
+    void E13c_재회_희망보다_차단이_우선한다() {
+        Set<UserPair> want = Set.of(UserPair.of(1, 2));
+        Set<UserPair> blocked = Set.of(UserPair.of(1, 2));
+        MatchingInput in = new MatchingInput(ONE_SLOT, eightMixed(), blocked, Set.of(), want,
+                MatchingConfig.defaults());
+        MatchingResult r = run(in);
+
+        assertThat(tableOf(r, 1).members()).doesNotContain(2L);
+    }
+
     @Test
     void E14_전원남성_6명_S2는_0_최소점수_미만이면_해체() {
         Interest[] distinct = {Interest.FOOD, Interest.TRAVEL, Interest.MOVIE, Interest.SPORTS, Interest.READING,

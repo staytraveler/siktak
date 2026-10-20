@@ -23,7 +23,32 @@ public final class TableScorer {
     private TableScorer() {
     }
 
+    /** "다시 만나고 싶음" 쌍이 한 테이블에 앉을 때 쌍당 가점과 최대 가점 (FDB-04 반영). 100점 만점 점수 위에 더한다. */
+    public static final double WANT_AGAIN_BONUS_PER_PAIR = 2.0;
+    public static final double WANT_AGAIN_BONUS_MAX = 8.0;
+
+    /** 이 테이블에 같이 앉은 재회 희망 쌍의 가점. 재회 희망이 없으면 0이라 기존 점수와 같다. */
+    public static double wantAgainBonus(List<Candidate> members, Set<UserPair> wantAgain) {
+        if (wantAgain.isEmpty()) {
+            return 0;
+        }
+        int pairs = 0;
+        for (int i = 0; i < members.size(); i++) {
+            for (int j = i + 1; j < members.size(); j++) {
+                if (wantAgain.contains(UserPair.of(members.get(i).userId(), members.get(j).userId()))) {
+                    pairs++;
+                }
+            }
+        }
+        return Math.min(WANT_AGAIN_BONUS_MAX, pairs * WANT_AGAIN_BONUS_PER_PAIR);
+    }
+
     public static ScoreDetail score(List<Candidate> members, Set<UserPair> encounters, ScoreWeights weights) {
+        return score(members, encounters, Set.of(), weights);
+    }
+
+    public static ScoreDetail score(List<Candidate> members, Set<UserPair> encounters, Set<UserPair> wantAgain,
+            ScoreWeights weights) {
         double[] raws = raws(members, encounters);
         List<ScoreDetail.Item> items = new ArrayList<>(raws.length);
         double total = 0;
@@ -34,17 +59,22 @@ public final class TableScorer {
             items.add(new ScoreDetail.Item(code, raw, weight, weighted));
             total += weighted;
         }
-        return new ScoreDetail(items, total);
+        return new ScoreDetail(items, total + wantAgainBonus(members, wantAgain));
     }
 
     /** {@link #score}의 총점만. 같은 순서로 더하므로 {@code score(...).total()}과 정확히 같다. */
     public static double total(List<Candidate> members, Set<UserPair> encounters, ScoreWeights weights) {
+        return total(members, encounters, Set.of(), weights);
+    }
+
+    public static double total(List<Candidate> members, Set<UserPair> encounters, Set<UserPair> wantAgain,
+            ScoreWeights weights) {
         double[] raws = raws(members, encounters);
         double total = 0;
         for (ScoreCode code : ScoreCode.values()) {
             total += raws[code.ordinal()] * weights.of(code);
         }
-        return total;
+        return total + wantAgainBonus(members, wantAgain);
     }
 
     private static double[] raws(List<Candidate> members, Set<UserPair> encounters) {

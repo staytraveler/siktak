@@ -17,7 +17,8 @@ const TEMPLATE_NAME: Record<string, string> = {
   REFUND_COMPLETED: '환불 완료',
   REMINDER_D1: '행사 1일 전 리마인드',
   FEEDBACK_REQUEST: '행사 종료 후 피드백 요청',
-  NEXT_SLOT_RECOMMEND: '다음 모집 추천',
+  FEEDBACK_REMINDER: '피드백 미응답 1회 리마인드',
+  NEXT_SLOT_RECOMMEND: '다음 모집 시작·추천',
   APPLICATION_CANCELED: '취소 접수',
 }
 

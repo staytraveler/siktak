@@ -18,7 +18,14 @@ public record CancelReallocationInput(
         List<OpenTable> openTables,
         Set<UserPair> blockedPairs,
         Set<UserPair> encounters,
+        Set<UserPair> wantAgain,
         MatchingConfig config) {
+
+    /** 재회 희망이 없는 입력 (기존 호출·테스트 호환). */
+    public CancelReallocationInput(SlotInfo slot, long tableId, List<Candidate> remainingMembers,
+            List<OpenTable> openTables, Set<UserPair> blockedPairs, Set<UserPair> encounters, MatchingConfig config) {
+        this(slot, tableId, remainingMembers, openTables, blockedPairs, encounters, Set.of(), config);
+    }
 
     public CancelReallocationInput {
         Objects.requireNonNull(slot, "slot");
@@ -26,6 +33,7 @@ public record CancelReallocationInput(
         openTables = List.copyOf(openTables);
         blockedPairs = Set.copyOf(blockedPairs);
         encounters = Set.copyOf(encounters);
+        wantAgain = Set.copyOf(wantAgain);
         Objects.requireNonNull(config, "config");
     }
 
