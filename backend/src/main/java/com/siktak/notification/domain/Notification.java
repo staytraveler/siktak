@@ -73,6 +73,18 @@ public class Notification extends BaseTimeEntity {
     @Column(name = "dedup_key", nullable = false, unique = true)
     private String dedupKey;
 
+    /** 앱 푸시 결과: SENT / FAILED (인앱 알림과 별개로 기록, INF-01·07). */
+    @Column(name = "push_status")
+    private String pushStatus;
+
+    @Column(name = "push_sent_at")
+    private Instant pushSentAt;
+
+    public void recordPush(boolean ok, Instant at) {
+        this.pushStatus = ok ? "SENT" : "FAILED";
+        this.pushSentAt = ok ? at : null;
+    }
+
     public static Notification pending(Long userId, NotificationTemplate template, Map<String, String> vars,
             Map<String, Object> payload, Instant scheduledAt, String dedupKey) {
         Notification n = new Notification();

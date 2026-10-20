@@ -36,11 +36,11 @@ public class NotificationController {
     }
 
     public record NotificationResponse(Long id, String templateCode, String title, String body,
-            Map<String, Object> payload, Instant sentAt, Instant readAt) {
+            Map<String, Object> payload, Instant sentAt, Instant readAt, String pushStatus) {
 
         static NotificationResponse from(Notification n) {
             return new NotificationResponse(n.getId(), n.getTemplateCode(), n.getTitle(), n.getBody(), n.getPayload(),
-                    n.getSentAt(), n.getReadAt());
+                    n.getSentAt(), n.getReadAt(), n.getPushStatus());
         }
     }
 }

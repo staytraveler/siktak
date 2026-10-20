@@ -200,6 +200,7 @@ export default function AdminTableDetailPage() {
                     <th className="p-1">대상</th>
                     <th className="p-1">알림</th>
                     <th className="p-1">상태</th>
+                    <th className="p-1">푸시</th>
                     <th className="p-1">시각</th>
                   </tr>
                 </thead>
@@ -212,6 +213,7 @@ export default function AdminTableDetailPage() {
                         {SEND_STATUS[n.sendStatus] ?? n.sendStatus}
                         {n.attempts > 1 && <span className="text-xs text-gray-500"> ({n.attempts}회)</span>}
                       </td>
+                      <td className="p-1 text-xs">{n.pushStatus === 'SENT' ? '발송' : n.pushStatus === 'FAILED' ? '실패' : '-'}</td>
                       <td className="p-1 whitespace-nowrap text-xs">{formatDateTime(n.sentAt ?? n.scheduledAt)}</td>
                     </tr>
                   ))}

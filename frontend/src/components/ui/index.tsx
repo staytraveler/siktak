@@ -3,6 +3,7 @@ import { Bell, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, FileText,
 import { Link, NavLink } from 'react-router-dom'
 import Illustration from './Illustration'
 import DemoClock from '../DemoClock'
+import PushWatcher from '../PushWatcher'
 import { dateParts } from '../../lib/design'
 
 export { default as Illustration } from './Illustration'
@@ -13,6 +14,7 @@ export { default as Illustration } from './Illustration'
 export function AppShell({ children, nav = true }: { children: ReactNode; nav?: boolean }) {
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-paper text-ink">
+      <PushWatcher />
       <div className="flex-1 pb-6">{children}</div>
       {nav && <BottomNav />}
     </div>

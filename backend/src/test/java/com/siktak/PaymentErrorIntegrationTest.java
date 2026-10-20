@@ -47,6 +47,7 @@ class PaymentErrorIntegrationTest {
     @Autowired private EventSlotRepository eventSlotRepository;
     @Autowired private ExceptionCaseRepository exceptionCaseRepository;
     @Autowired private MockPaymentGateway mockGateway;
+    @Autowired private com.siktak.notification.infra.NotificationRepository notificationRepository;
     @Autowired private Clock clock;
     @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
@@ -66,6 +67,11 @@ class PaymentErrorIntegrationTest {
                 """, user.getId());
         Application application = applicationService.submit(user.getId(), List.of(slot.getId()), PassType.SINGLE);
         String caseKey = "PAYMENT_ERROR:application-" + application.getId();
+
+        // INF-01·07: 인앱 알림과 함께 푸시 발송 결과가 기록된다
+        var sent = notificationRepository.findByUserIdAndSendStatusOrderByIdDesc(user.getId(),
+                com.siktak.notification.domain.NotificationStatus.SENT);
+        assertThat(sent).isNotEmpty().allSatisfy(n -> assertThat(n.getPushStatus()).isEqualTo("SENT"));
 
         mockGateway.setFailApprove(true);
         try {

@@ -76,7 +76,7 @@ public class AdminTableController {
         return notificationRepository.findByUserIdInOrderByIdAsc(users.keySet()).stream()
                 .map(n -> new NotificationStatusResponse(n.getId(), n.getUserId(), users.get(n.getUserId()).getName(),
                         n.getTemplateCode(), n.getSendStatus().name(), n.getAttempts(), n.getLastError(),
-                        n.getScheduledAt(), n.getSentAt()))
+                        n.getScheduledAt(), n.getSentAt(), n.getPushStatus()))
                 .toList();
     }
 
@@ -184,7 +184,8 @@ public class AdminTableController {
     }
 
     public record NotificationStatusResponse(Long id, Long userId, String userName, String templateCode,
-            String sendStatus, int attempts, String lastError, Instant scheduledAt, Instant sentAt) {
+            String sendStatus, int attempts, String lastError, Instant scheduledAt, Instant sentAt,
+            String pushStatus) {
     }
 
     /** 운영자 화면용 구성원 정보 (참가자 앱에는 노출하지 않는다). */

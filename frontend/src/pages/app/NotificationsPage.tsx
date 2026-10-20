@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { api } from '../../api/endpoints'
 import { AppShell, EmptyState, ErrorText, PageTitle } from '../../components/ui'
+import { pushSupported } from '../../components/PushWatcher'
 import { formatDateTime } from '../../lib/format'
 
 // 참가자 알림함 (/app/notifications, INF-01). 눌러서 읽음 처리하고, 연결된 신청으로 이동한다.
@@ -14,11 +16,26 @@ export default function NotificationsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   })
   const unread = notifications.data?.filter((n) => !n.readAt).length ?? 0
+  const [permission, setPermission] = useState(() => (pushSupported() ? Notification.permission : 'unsupported'))
 
   return (
     <AppShell>
       <PageTitle kicker="Letters for you." title="알림" right={unread > 0 ? <span className="rounded-full bg-coral px-2.5 py-0.5 text-[11px] font-bold">새 알림 {unread}</span> : undefined} />
       <div className="flex flex-col gap-2.5 px-[18px]">
+        {pushSupported() && permission !== 'granted' && (
+          <button
+            type="button"
+            disabled={permission === 'denied'}
+            onClick={() => Notification.requestPermission().then(setPermission)}
+            className="min-h-[44px] rounded-xl border border-line bg-gold-soft px-3 text-left text-sm font-bold disabled:opacity-60"
+          >
+            🔔 앱 푸시 알림 켜기{permission === 'denied' ? ' (브라우저에서 차단됨)' : ''}
+            <span className="block text-xs font-normal text-body">새 알림이 오면 기기 알림으로도 알려드려요.</span>
+          </button>
+        )}
+        {pushSupported() && permission === 'granted' && (
+          <p className="text-xs text-muted">🔔 앱 푸시 알림이 켜져 있어요. 새 알림은 기기 알림으로도 와요.</p>
+        )}
         {notifications.isPending && <p className="text-sm text-muted">불러오는 중…</p>}
         {notifications.isError && <ErrorText>{errorMessage(notifications.error)}</ErrorText>}
         {notifications.data?.length === 0 && <EmptyState>아직 알림이 없어요.</EmptyState>}
@@ -30,7 +47,10 @@ export default function NotificationsPage() {
               className={`rounded-xl border border-line p-3.5 ${n.readAt ? 'bg-card' : 'bg-card shadow-print'}`}
             >
               <div className="flex items-center justify-between text-[10px] tracking-[1.5px] text-muted">
-                <span>{formatDateTime(n.sentAt)}</span>
+                <span>
+                  {formatDateTime(n.sentAt)}
+                  {n.pushStatus === 'SENT' && ' · 푸시 발송됨'}
+                </span>
                 {!n.readAt && <span className="rounded-full bg-coral px-2.5 py-0.5 font-bold text-ink">NEW</span>}
               </div>
               <h2 className="mt-1.5 font-serif text-base font-black">{n.title}</h2>

@@ -42,6 +42,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationTemplateRepository templateRepository;
     private final NotificationSender sender;
+    private final com.siktak.notification.domain.PushSender pushSender;
     private final ExceptionCaseService exceptionCaseService;
     private final ScheduledJobRegistry jobRegistry;
     private final JdbcTemplate jdbc;
@@ -50,11 +51,13 @@ public class NotificationService {
 
     public NotificationService(NotificationRepository notificationRepository,
             NotificationTemplateRepository templateRepository, NotificationSender sender,
+            com.siktak.notification.domain.PushSender pushSender,
             ExceptionCaseService exceptionCaseService, ScheduledJobRegistry jobRegistry, JdbcTemplate jdbc, Clock clock,
             @Value("${siktak.policy.notification-retry-max:3}") int retryMax) {
         this.notificationRepository = notificationRepository;
         this.templateRepository = templateRepository;
         this.sender = sender;
+        this.pushSender = pushSender;
         this.exceptionCaseService = exceptionCaseService;
         this.jobRegistry = jobRegistry;
         this.jdbc = jdbc;
@@ -111,6 +114,14 @@ public class NotificationService {
         try {
             sender.send(n);
             n.markSent(now);
+            // 인앱 알림이 나간 뒤 앱 푸시를 함께 보낸다. 푸시만 실패해도 인앱 알림은 성공으로 둔다.
+            try {
+                pushSender.push(n);
+                n.recordPush(true, now);
+            } catch (RuntimeException pushError) {
+                n.recordPush(false, now);
+                log.warn("Push for notification {} failed: {}", n.getId(), pushError.getMessage());
+            }
         } catch (RuntimeException e) {
             n.markAttemptFailed(String.valueOf(e.getMessage()));
             if (n.getAttempts() > retryMax) {

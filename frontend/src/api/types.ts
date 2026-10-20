@@ -176,6 +176,7 @@ export interface NotificationItem {
   payload: Record<string, unknown> | null
   sentAt: string | null
   readAt: string | null
+  pushStatus: string | null
 }
 
 // 신고·차단 (SAF-01)
@@ -448,4 +449,5 @@ export interface TableNotification {
   lastError: string | null
   scheduledAt: string
   sentAt: string | null
+  pushStatus: string | null
 }
